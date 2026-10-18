@@ -32,3 +32,5 @@ _original_player_photos/
 
 # VOD timeline log (per siaran)
 public/database/vod.json
+public/database/pause.json
+public/database/lang.json

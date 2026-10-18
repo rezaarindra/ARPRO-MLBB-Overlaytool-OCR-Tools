@@ -7,7 +7,7 @@
 (() => {
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const KIND = { draft: 'DRAFT', game: 'GAME', result: 'HASIL', notif: 'VIDEO', ocr: 'OCR AUTO', multikill: 'MULTIKILL', event: 'PEMAIN', milestone: 'MILESTONE', manual: 'MANUAL' };
+    const KIND = { draft: 'DRAFT', game: 'GAME', result: 'HASIL', notif: 'VIDEO', ocr: 'OCR AUTO', multikill: 'MULTIKILL', event: 'PEMAIN', pause: 'PAUSE', milestone: 'MILESTONE', manual: 'MANUAL' };
     let vod = null, skew = 0, filter = 'all', pending = false;
 
     const msg = (t, cls = '') => { $('vtMsg').textContent = t; $('vtMsg').className = 'vt-msg ' + cls; };

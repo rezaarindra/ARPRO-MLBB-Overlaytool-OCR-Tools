@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broadcast Control</title>
+    <link rel="stylesheet" href="ocrcontrol.css">
+    <style>
+        :root { --blue: #00b4ff; --red: #ff3b55; --gold: #ffcf4a; }
+        .bc-main { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 16px; padding: 16px 22px 40px; align-items: start; }
+        .bc-wide { grid-column: span 2; }
+        .pz-status { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 12px 14px; background: #0f1115; border: 1px solid var(--line); border-left: 5px solid #444; margin-bottom: 12px; }
+        .pz-status.blue { border-left-color: var(--blue); } .pz-status.red { border-left-color: var(--red); } .pz-status.admin { border-left-color: var(--gold); }
+        .pz-status b { font: 30px/1 'Noodle', sans-serif; letter-spacing: 1px; display: block; }
+        .pz-status small { color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+        .pz-status .tm { font: 54px/1 'Noodle', sans-serif; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+        .pz-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .pz-btns button { padding: 14px 8px; font-size: 14px; }
+        .pz-btns .b { border-color: var(--blue); color: var(--blue); } .pz-btns .r { border-color: var(--red); color: var(--red); }
+        .pz-btns .b:hover { background: rgba(0, 180, 255, .15); } .pz-btns .r:hover { background: rgba(255, 59, 85, .15); }
+        .pz-btns .go { grid-column: 1 / -1; background: var(--ok); border-color: var(--ok); color: #111; font-size: 16px; padding: 16px; }
+        .bc-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .bc-field input, .bc-field select { width: 100%; text-transform: none; letter-spacing: 0; }
+        .bc-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+        .bc-row > .bc-field { flex: 1; margin: 0; }
+        .bc-row button { padding: 8px 12px; }
+        .pz-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .pz-team { background: #0f1115; border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; }
+        .pz-team b { display: block; font: 22px 'Noodle', sans-serif; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pz-team.blue b { color: var(--blue); } .pz-team.red b { color: var(--red); }
+        .pz-team .over { color: var(--bad); font-weight: 700; }
+        .pz-log { font: 12px Consolas, monospace; color: var(--muted); max-height: 140px; overflow: auto; white-space: pre-line; }
+        .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+        .seg button { padding: 12px 6px; }
+        .seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .da-prev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .da-side { background: #0f1115; border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; line-height: 1.5; }
+        .da-side b { font: 22px 'Noodle', sans-serif; letter-spacing: 1px; display: block; }
+        .da-side.blue b { color: var(--blue); } .da-side.red b { color: var(--red); }
+        .da-side .ty { color: var(--gold); font-weight: 700; }
+        .da-side .unk { color: #ffb84d; }
+        .bc-msg { font-size: 12px; min-height: 16px; margin-top: 6px; color: var(--muted); }
+        .bc-msg.ok { color: var(--ok); } .bc-msg.err { color: var(--bad); }
+        .links { display: flex; flex-direction: column; gap: 8px; }
+        .lk { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; background: #0f1115; border: 1px solid var(--line); padding: 6px 10px; }
+        .lk code { font: 12px Consolas, monospace; word-break: break-all; }
+        .lk small { display: block; color: var(--muted); font-size: 11px; }
+        .lk button, .lk a { padding: 5px 9px; font-size: 11px; }
+        .lk a { color: var(--accent); font-weight: 700; text-decoration: none; border: 1px solid var(--line); }
+        @media (max-width: 1000px) { .bc-wide { grid-column: auto; } }
+    </style>
+</head>
+<!-- Broadcast Control: technical pause (pause.html), analisis komposisi draft (draftanalysis.html), bahasa overlay ID / EN. -->
+<body>
+    <header class="oc-head">
+        <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="ARPRO ESPORT TOOLS">
+        <div class="oc-title">BROADCAST CONTROL <span>PAUSE · ANALISIS DRAFT · BAHASA</span></div>
+        <div class="oc-run"><span id="bcLang">BAHASA: -</span></div>
+    </header>
+
+    <main class="bc-main">
+        <div class="oc-card">
+            <h3>1 · TECHNICAL PAUSE</h3>
+            <div class="pz-status" id="pzStatus"><div><b id="pzState">GAME BERJALAN</b><small id="pzReasonNow">Tidak ada pause</small></div><div class="tm" id="pzTime">--:--</div></div>
+            <div class="bc-row">
+                <label class="bc-field">Alasan
+                    <select id="pzReason">
+                        <option>TECHNICAL ISSUE</option><option>NETWORK ISSUE</option><option>DEVICE ISSUE</option>
+                        <option>AUDIO / HEADSET</option><option>RECONNECT</option><option>REFEREE CHECK</option><option value="">LAINNYA (ketik)…</option>
+                    </select>
+                </label>
+                <label class="bc-field" id="pzCustomWrap" hidden>Alasan lain <input id="pzCustom" maxlength="40"></label>
+            </div>
+            <div class="pz-btns">
+                <button class="b" data-side="blue" id="pzBlue">PAUSE BIRU</button>
+                <button class="r" data-side="red" id="pzRed">PAUSE MERAH</button>
+                <button data-side="admin">PAUSE ADMIN / WASIT</button>
+                <button id="pzReset">RESET JATAH (GAME BARU)</button>
+                <button class="go" id="pzStop">▶ LANJUTKAN GAME</button>
+            </div>
+            <div class="pz-teams" id="pzTeams"></div>
+            <div class="bc-row">
+                <label class="bc-field">Jatah pause per tim (m:ss, 0 = tanpa batas) <input id="pzAllow" placeholder="5:00"></label>
+                <button id="pzAllowSave">SIMPAN</button>
+            </div>
+            <div class="pz-log" id="pzLog"></div>
+            <div class="bc-msg" id="pzMsg"></div>
+        </div>
+
+        <div class="oc-card">
+            <h3>2 · ANALISIS KOMPOSISI DRAFT</h3>
+            <p class="oc-small"><b>AUTO</b> = tampil sendiri saat 10 hero sudah terpilih. Atribut hero (role, damage, kekuatan early/late, teamfight, poke, pick-off, push) di <code>database/herometa.json</code>, bisa diedit.</p>
+            <div class="seg" id="daMode"><button data-m="auto">AUTO</button><button data-m="show">TAMPILKAN</button><button data-m="hide">SEMBUNYIKAN</button></div>
+            <div class="da-prev" id="daPrev"></div>
+            <div class="bc-msg" id="daMsg"></div>
+        </div>
+
+        <div class="oc-card">
+            <h3>3 · BAHASA OVERLAY</h3>
+            <p class="oc-small">Mengganti label overlay turnamen, draft (fase pick/ban), technical pause, analisis draft, dan milestone sekaligus. Nama tim, pemain, dan hero tidak diterjemahkan.</p>
+            <div class="seg" id="lgSeg"><button data-l="">TEKS ASLI</button><button data-l="id">INDONESIA</button><button data-l="en">ENGLISH</button></div>
+            <p class="oc-small">Siaran dua bahasa sekaligus: tambahkan <code>?lang=id</code> atau <code>?lang=en</code> di URL Browser Source; source itu tidak ikut tombol di atas.</p>
+            <div class="bc-msg" id="lgMsg"></div>
+        </div>
+
+        <div class="oc-card">
+            <h3>4 · LINK OVERLAY</h3>
+            <div class="links" id="links"></div>
+        </div>
+    </main>
+
+    <script src="script/tournament-common.js"></script>
+    <script>
+        const $ = (id) => document.getElementById(id), esc = T.esc;
+        const fmt = (s) => { const neg = s < 0; s = Math.abs(Math.floor(s)); return `${neg ? '-' : ''}${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+        const msg = (id, text, cls = '') => { $(id).textContent = text; $(id).className = 'bc-msg ' + cls; };
+        async function post(url, body) {
+            const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(j.message || r.statusText);
+            return j;
+        }
+
+        // ---------- 1. pause ----------
+        let pz = null, skew = 0;
+        function pzRender() {
+            if (!pz) return;
+            const a = pz.active, el = a ? (Date.now() + skew - a.startAt) / 1000 : 0;
+            $('pzStatus').className = 'pz-status ' + (a ? a.side : '');
+            $('pzState').textContent = a ? `PAUSE · ${pz.teams[a.side].name}` : 'GAME BERJALAN';
+            $('pzReasonNow').textContent = a ? a.reason : 'Tidak ada pause';
+            $('pzTime').textContent = a ? fmt(el) : '--:--';
+            $('pzBlue').textContent = `PAUSE ${pz.teams.blue.name}`;
+            $('pzRed').textContent = `PAUSE ${pz.teams.red.name}`;
+            $('pzTeams').innerHTML = ['blue', 'red'].map(s => {
+                const used = pz.used[s] + (a && a.side === s ? el : 0), left = pz.allowance - used;
+                return `<div class="pz-team ${s}"><b>${esc(pz.teams[s].name)}</b>Dipakai ${fmt(used)} · ${pz.count[s]}x pause<br>${pz.allowance ? (left >= 0 ? `Sisa ${fmt(left)}` : `<span class="over">Lewat ${fmt(-left)}</span>`) : 'Tanpa batas'}</div>`;
+            }).join('');
+            $('pzLog').textContent = pz.log.map(l => `${new Date(l.startAt).toLocaleTimeString('id-ID')}  ${pz.teams[l.side] ? pz.teams[l.side].name : l.side}  ${fmt(l.dur)}  ${l.reason}`).join('\n');
+            if (document.activeElement !== $('pzAllow')) $('pzAllow').value = fmt(pz.allowance);
+        }
+        const pzApply = (s) => { pz = s; skew = s.now - Date.now(); pzRender(); };
+        setInterval(() => { if (pz && pz.active) pzRender(); }, 250);
+        $('pzReason').addEventListener('change', () => { $('pzCustomWrap').hidden = $('pzReason').value !== ''; });
+        document.querySelectorAll('.pz-btns [data-side]').forEach(b => b.addEventListener('click', async () => {
+            const reason = $('pzReason').value || $('pzCustom').value.trim() || 'TECHNICAL ISSUE';
+            try { pzApply(await post('/api/pause/start', { side: b.dataset.side, reason })); msg('pzMsg', 'Pause dimulai, overlay pause.html tampil.', 'ok'); } catch (e) { msg('pzMsg', e.message, 'err'); }
+        }));
+        $('pzStop').addEventListener('click', async () => { try { pzApply(await post('/api/pause/stop')); msg('pzMsg', 'Game dilanjutkan.', 'ok'); } catch (e) { msg('pzMsg', e.message, 'err'); } });
+        $('pzReset').addEventListener('click', async () => {
+            if (!confirm('Reset jatah pause kedua tim (untuk game baru)?')) return;
+            try { pzApply(await post('/api/pause/reset')); msg('pzMsg', 'Jatah pause di-reset.', 'ok'); } catch (e) { msg('pzMsg', e.message, 'err'); }
+        });
+        $('pzAllowSave').addEventListener('click', async () => {
+            try { pzApply(await post('/api/pause/settings', { allowance: $('pzAllow').value.trim() || '0' })); msg('pzMsg', 'Jatah pause disimpan.', 'ok'); } catch (e) { msg('pzMsg', e.message, 'err'); }
+        });
+
+        // ---------- 2. analisis draft ----------
+        const TYPE = { teamfight: 'TEAMFIGHT', poke: 'POKE', pickoff: 'PICK-OFF', push: 'SPLIT PUSH' };
+        const CURVE = { early: 'kuat di early game', late: 'kuat di late game', balanced: 'kekuatan seimbang' };
+        const WARN = { notank: 'tanpa frontline', allphysical: 'full physical', allmagic: 'full magic' };
+        async function daLoad() {
+            const d = await T.get('/api/draft-analysis');
+            $('daMode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === d.mode));
+            $('daPrev').innerHTML = [['blue', d.blue], ['red', d.red]].map(([c, s]) => `<div class="da-side ${c}"><b>${esc(s.name || c.toUpperCase())}</b>
+                ${s.count ? `<span class="ty">${TYPE[s.type] || '-'}</span>${s.type2 ? ' + ' + TYPE[s.type2] : ''}<br>${CURVE[s.curve] || ''} · fisik ${Math.round(s.physical * 100)}%
+                ${s.warnings.length ? '<br>⚠ ' + s.warnings.map(w => WARN[w]).join(', ') : ''}
+                ${s.synergy[0] ? `<br>Sinergi: ${esc(s.synergy[0].a)} + ${esc(s.synergy[0].b)} (${s.synergy[0].games}G ${s.synergy[0].wins}W)` : ''}
+                ${s.unknown.length ? `<br><span class="unk">Data hero belum ada: ${esc(s.unknown.join(', '))}</span>` : ''}` : 'Belum ada pick'}
+                <br><small>${s.count}/5 hero</small></div>`).join('');
+            msg('daMsg', d.mode === 'auto' ? (d.complete ? 'AUTO: draft lengkap, overlay sedang tampil.' : 'AUTO: overlay tampil setelah 10 hero terpilih.') : d.mode === 'show' ? 'Overlay dipaksa tampil.' : 'Overlay disembunyikan.');
+        }
+        $('daMode').addEventListener('click', async (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            try { await post('/api/draft-analysis/mode', { mode: b.dataset.m }); daLoad(); } catch (err) { msg('daMsg', err.message, 'err'); }
+        });
+
+        // ---------- 3. bahasa ----------
+        const LANG = { '': 'TEKS ASLI', id: 'INDONESIA', en: 'ENGLISH' };
+        function lgRender(l) {
+            $('lgSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.l === l));
+            $('bcLang').textContent = 'BAHASA: ' + LANG[l];
+        }
+        $('lgSeg').addEventListener('click', async (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            try { const r = await post('/api/lang', { lang: b.dataset.l }); lgRender(r.lang); msg('lgMsg', `Semua overlay sekarang: ${LANG[r.lang]}.`, 'ok'); } catch (err) { msg('lgMsg', err.message, 'err'); }
+        });
+
+        // ---------- 4. link ----------
+        const base = `${location.protocol}//${location.host}/`;
+        $('links').innerHTML = [['pause.html', 'Technical pause (tampil sendiri saat pause)'], ['draftanalysis.html', 'Analisis komposisi draft'], ['pause.html?demo=1', 'Tes tampilan pause']]
+            .map(([p, d]) => `<div class="lk"><div><code>${base}${p}</code><small>${d}</small></div><button data-copy="${base}${p}">COPY</button><a href="${p}" target="_blank">BUKA</a></div>`).join('');
+        $('links').addEventListener('click', (e) => { const b = e.target.closest('[data-copy]'); if (b) navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = 'OK'; setTimeout(() => { b.textContent = 'COPY'; }, 1200); }); });
+
+        // ---------- data ----------
+        async function loadAll() {
+            pzApply(await T.get('/api/pause'));
+            lgRender((await T.get('/api/lang')).lang || '');
+            await daLoad();
+        }
+        let daTimer = null;
+        (function connect() {
+            const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+            ws.onopen = () => loadAll().catch(() => {});
+            ws.onmessage = (ev) => {
+                try {
+                    const m = JSON.parse(ev.data);
+                    if (m.type === 'pause_update') pzApply(m.data);
+                    if (m.type === 'lang_update') lgRender(m.lang || '');
+                    if (['draftdata_update', 'matchdata_update', 'tournament_update', 'draft_analysis_mode'].includes(m.type)) { clearTimeout(daTimer); daTimer = setTimeout(() => daLoad().catch(() => {}), 300); }
+                    if (m.type === 'matchdata_update') T.get('/api/pause').then(pzApply).catch(() => {});
+                } catch (e) {}
+            };
+            ws.onclose = () => setTimeout(connect, 2000);
+        })();
+        T.loadHeroes();
+        loadAll().catch(e => msg('pzMsg', 'Server tidak terjangkau: ' + e.message, 'err'));
+    </script>
+</body>
+</html>

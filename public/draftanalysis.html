@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Draft Analysis</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1640px; transition: opacity .4s ease; }
+        .tp.off { opacity: 0; }
+        .da { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+        .sd { --c: var(--blue); border-top: 5px solid var(--c); padding-top: 16px; }
+        .sd.red { --c: var(--red); }
+        .sd-head { display: grid; grid-template-columns: 84px 1fr auto; gap: 16px; align-items: center; }
+        .sd.red .sd-head { grid-template-columns: auto 1fr 84px; text-align: right; }
+        .sd.red .sd-head .logo { order: 3; } .sd.red .sd-head .ty { order: 1; text-align: left; } .sd.red .sd-head > div:not(.ty) { order: 2; min-width: 0; }
+        .sd-head > div { min-width: 0; }
+        .sd-head .logo { width: 84px; height: 84px; }
+        .nm { font-size: 46px; letter-spacing: 2px; line-height: 1; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cv { font-size: 22px; letter-spacing: 3px; color: var(--muted); margin-top: 4px; }
+        .ty { text-align: right; }
+        .ty b { display: block; font-weight: normal; font-size: 40px; letter-spacing: 2px; line-height: 1; color: var(--gold); }
+        .ty small { font-size: 20px; letter-spacing: 2px; color: var(--muted); }
+        .heroes { display: flex; gap: 10px; margin: 16px 0 14px; }
+        .sd.red .heroes { flex-direction: row-reverse; }
+        .hr { flex: 1; text-align: center; }
+        .hr img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--line); display: block; background: #222; }
+        .hr span { display: block; font-size: 18px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+        .hr span.unk { color: #ffb84d; }
+        .axes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 26px; }
+        .ax { display: grid; grid-template-columns: 150px 1fr 44px; gap: 10px; align-items: center; font-size: 22px; letter-spacing: 2px; }
+        .ax .bar { margin: 0; height: 12px; }
+        .ax .bar i { background: var(--c); transition: width .6s ease; }
+        .ax.top .lb { color: var(--gold); }
+        .ax .v { text-align: right; color: var(--muted); font-size: 20px; }
+        .dmg { margin-top: 16px; }
+        .dmg .row { display: flex; justify-content: space-between; font-size: 22px; letter-spacing: 2px; }
+        .dmg .row .p { color: #ff9f43; } .dmg .row .m { color: #4dd9ff; }
+        .dmg .split { display: flex; height: 14px; margin-top: 6px; background: rgba(255, 255, 255, .08); }
+        .dmg .split i { background: #ff9f43; transition: width .6s ease; } .dmg .split u { flex: 1; background: #4dd9ff; }
+        .lbl { font-size: 20px; letter-spacing: 3px; color: var(--muted); margin: 16px 0 6px; }
+        .syn { display: flex; flex-direction: column; gap: 6px; min-height: 76px; }
+        .syn div { display: flex; align-items: center; gap: 10px; font-size: 26px; letter-spacing: 1px; }
+        .syn img { width: 34px; height: 34px; object-fit: cover; border: 1px solid var(--line); }
+        .syn em { font-style: normal; margin-left: auto; color: var(--gold); }
+        .syn .none { color: var(--muted); font-size: 22px; letter-spacing: 2px; }
+        .warn { display: flex; gap: 8px; margin-top: 10px; min-height: 34px; flex-wrap: wrap; }
+        .warn span { font-size: 20px; letter-spacing: 2px; padding: 4px 10px; border: 1px solid #ffb84d; color: #ffb84d; }
+    </style>
+</head>
+<!-- Analisis komposisi draft: tipe komposisi, power curve, profil damage, sinergi hero dari arsip turnamen.
+     Tampil otomatis saat 10 hero terpilih (atau dipaksa tampil / sembunyi di Broadcast Control). Atribut hero: database/herometa.json
+     Opsi URL: ?force=1 (selalu tampil) · ?x= &y= &scale= &bg=green|dark &lang=id|en -->
+<body>
+    <div class="tp off" id="tp">
+        <div class="tp-head"><div class="tp-title" id="title">DRAFT ANALYSIS</div><div class="tp-sub" id="sub"></div></div>
+        <div class="da" id="body"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script src="script/i18n.js"></script>
+    <script>
+        const tp = document.getElementById('tp'), t = (k) => I18N.t(k);
+        T.place(tp);
+        let data = null;
+        const pct = (v) => Math.round((v || 0) * 100);
+
+        function side(s, cls) {
+            if (!s.count) return `<div class="sd ${cls}"><div class="sd-head"><img class="logo" src="${T.esc(s.logo || 'Assets/Other/nologo.png')}"><div><div class="nm" data-noi18n>${T.esc(s.name)}</div></div><div></div></div><div class="tp-empty">${t('WAITING_DRAFT')}</div></div>`;
+            const axes = ['early', 'late', 'teamfight', 'poke', 'pickoff', 'push'];
+            const best = s.type;
+            const heroes = s.heroes.map(h => `<div class="hr"><img src="${T.esc(T.heroImg(h.hero))}" onerror="this.style.visibility='hidden'"><span class="${h.known ? '' : 'unk'}">${h.known ? t(h.role) : '?'}</span></div>`).join('')
+                + '<div class="hr"></div>'.repeat(5 - s.heroes.length);
+            const syn = s.synergy.length ? s.synergy.slice(0, 2).map(x => `<div><img src="${T.esc(T.heroImg(x.a))}"><img src="${T.esc(T.heroImg(x.b))}"><span data-noi18n>${T.esc(x.a)} + ${T.esc(x.b)}</span><em>${x.games}${t('G')} ${x.wins}${t('W')}</em></div>`).join('')
+                : `<div class="none">${t('NEW_COMBO')}</div>`;
+            const warn = [...s.warnings.map(w => t('warn_' + w)), ...(s.unknown.length ? [`${t('NO_META')}: ${s.unknown.join(', ')}`] : [])];
+            return `<div class="sd ${cls}">
+                <div class="sd-head">
+                    <img class="logo" src="${T.esc(s.logo || 'Assets/Other/nologo.png')}" onerror="this.src='Assets/Other/nologo.png'">
+                    <div><div class="nm" data-noi18n>${T.esc(s.name)}</div><div class="cv">${s.curve ? t('curve_' + s.curve) : ''}</div></div>
+                    <div class="ty"><b>${best ? t('comp_' + best) : ''}</b><small>${s.type2 ? '+ ' + t(s.type2) : ''}</small></div>
+                </div>
+                <div class="heroes">${heroes}</div>
+                <div class="axes">${axes.map(a => `<div class="ax ${a === best ? 'top' : ''}"><span class="lb">${t(a)}</span><div class="bar"><i style="width:${pct(s.axes[a])}%"></i></div><span class="v">${pct(s.axes[a])}</span></div>`).join('')}</div>
+                <div class="dmg"><div class="row"><span class="p">${t('PHYSICAL')} ${pct(s.physical)}%</span><span>${t('DAMAGE')}</span><span class="m">${t('MAGIC')} ${100 - pct(s.physical)}%</span></div>
+                    <div class="split"><i style="width:${pct(s.physical)}%"></i><u></u></div></div>
+                <div class="lbl">${t('SYNERGY')}</div>
+                <div class="syn">${syn}</div>
+                <div class="warn">${warn.map(w => `<span>${T.esc(w)}</span>`).join('')}</div>
+            </div>`;
+        }
+
+        function render() {
+            if (!data) return;
+            const show = T.q.get('force') || data.mode === 'show' || (data.mode === 'auto' && data.complete);
+            tp.classList.toggle('off', !show);
+            document.getElementById('title').textContent = t('DRAFT_ANALYSIS');
+            document.getElementById('sub').textContent = data.totalGames ? `${data.totalGames} GAME` : '';
+            document.getElementById('body').innerHTML = side(data.blue, 'blue') + side(data.red, 'red');
+        }
+
+        T.live(async () => { data = await T.get('/api/draft-analysis'); render(); },
+            ['tournament_update', 'matchdata_update', 'draftdata_update', 'draft_analysis_mode']);
+        I18N.onChange(render);
+    </script>
+</body>
+</html>

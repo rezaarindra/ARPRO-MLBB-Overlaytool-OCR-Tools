@@ -1145,7 +1145,7 @@ const VIDEO_LABEL = {
     videoPlayer7: 'FIRST BLOOD', videoPlayer8: 'DOUBLE KILL', videoPlayer9: 'TRIPLE KILL',
     videoPlayer10: 'MANIAC', videoPlayer11: 'SAVAGE', videoPlayer12: 'WIPE OUT'
 };
-const VOD_KINDS = ['draft', 'game', 'result', 'notif', 'ocr', 'multikill', 'event', 'milestone', 'manual'];
+const VOD_KINDS = ['draft', 'game', 'result', 'notif', 'ocr', 'multikill', 'event', 'pause', 'milestone', 'manual'];
 let vodSaveTimer = null;
 
 function saveVod() {
@@ -1213,7 +1213,7 @@ function vodYoutube(intro) {
 }
 
 const EDL_COLOR = { draft: 'ResolveColorBlue', game: 'ResolveColorGreen', result: 'ResolveColorYellow', notif: 'ResolveColorRed', ocr: 'ResolveColorRed',
-    multikill: 'ResolveColorPink', event: 'ResolveColorPurple', milestone: 'ResolveColorCyan', manual: 'ResolveColorCream' };
+    multikill: 'ResolveColorPink', event: 'ResolveColorPurple', pause: 'ResolveColorLemon', milestone: 'ResolveColorCyan', manual: 'ResolveColorCream' };
 
 function vodExport(format, opts) {
     const list = vodInRange(), long = vodLong();
@@ -1284,6 +1284,162 @@ app.post('/api/vod/clear', (req, res) => {
 });
 
 // ==========================================
+// BAHASA OVERLAY (ID / EN): script/i18n.js di overlay menerjemahkan label saat bahasa diganti
+// ==========================================
+// '' = teks asli tiap overlay (seperti sebelumnya), 'id' = Indonesia, 'en' = English
+const langPath = path.join(dbDir, 'lang.json');
+let overlayLang = '';
+try { const l = JSON.parse(fsSync.readFileSync(langPath, 'utf8')).lang; if (['id', 'en'].includes(l)) overlayLang = l; } catch (e) {}
+app.get('/api/lang', (req, res) => { res.json({ lang: overlayLang }); });
+app.post('/api/lang', (req, res) => {
+    const l = (req.body || {}).lang;
+    if (!['', 'id', 'en'].includes(l)) return res.status(400).json({ message: 'lang harus "", "id", atau "en"' });
+    overlayLang = l;
+    fileQueue.enqueue(() => writeFileSafe(langPath, JSON.stringify({ lang: overlayLang }, null, 2)));
+    broadcast({ type: 'lang_update', lang: overlayLang });
+    res.json({ lang: overlayLang });
+});
+
+// ==========================================
+// TECHNICAL PAUSE (pause.html): timer jeda per tim dengan jatah waktu, seperti aturan MPL
+// ==========================================
+const pausePath = path.join(dbDir, 'pause.json');
+const defaultPause = () => ({ allowance: 300, active: null, used: { blue: 0, red: 0 }, count: { blue: 0, red: 0 }, log: [] });
+let pause = defaultPause();
+try { pause = { ...pause, ...JSON.parse(fsSync.readFileSync(pausePath, 'utf8')) }; } catch (e) {}
+
+function pauseTeams() {
+    const td = (cache.matchdata && cache.matchdata.teamdata) || {};
+    const t = (k, d) => ({ name: tName((td[k] || {}).teamname) || d, logo: (td[k] || {}).logo || '' });
+    return { blue: t('blueteam', 'BLUE'), red: t('redteam', 'RED'), admin: { name: 'ADMIN', logo: '' } };
+}
+function pauseState() {
+    const now = Date.now(), a = pause.active, elapsed = a ? Math.floor((now - a.startAt) / 1000) : 0;
+    const remain = (s) => pause.allowance - pause.used[s] - (a && a.side === s ? elapsed : 0);
+    return { allowance: pause.allowance, active: a ? { ...a, elapsed } : null, used: pause.used, count: pause.count,
+        remaining: { blue: remain('blue'), red: remain('red') }, teams: pauseTeams(), now, log: pause.log.slice(-12).reverse() };
+}
+function savePause() {
+    const p = JSON.stringify(pause, null, 2);
+    fileQueue.enqueue(() => writeFileSafe(pausePath, p));
+    broadcast({ type: 'pause_update', data: pauseState() });
+}
+function pauseStop() {
+    const a = pause.active;
+    if (!a) return null;
+    const dur = Math.max(0, Math.floor((Date.now() - a.startAt) / 1000));
+    if (a.side !== 'admin') pause.used[a.side] += dur;
+    pause.log.push({ side: a.side, reason: a.reason, startAt: a.startAt, dur });
+    pause.log = pause.log.slice(-50);
+    pause.active = null;
+    vodLog(`RESUME · ${pauseTeams()[a.side].name} (${Math.floor(dur / 60)}:${String(dur % 60).padStart(2, '0')})`, 'pause');
+    return dur;
+}
+app.get('/api/pause', (req, res) => { res.json(pauseState()); });
+// body: { side: blue|red|admin, reason }
+app.post('/api/pause/start', (req, res) => {
+    const b = req.body || {};
+    if (!['blue', 'red', 'admin'].includes(b.side)) return res.status(400).json({ message: 'side harus blue, red, atau admin' });
+    pauseStop();
+    pause.active = { side: b.side, reason: tName(b.reason).slice(0, 40).toUpperCase() || 'TECHNICAL ISSUE', startAt: Date.now() };
+    if (b.side !== 'admin') pause.count[b.side]++;
+    vodLog(`TECHNICAL PAUSE · ${pauseTeams()[b.side].name} (${pause.active.reason})`, 'pause');
+    savePause();
+    res.json(pauseState());
+});
+app.post('/api/pause/stop', (req, res) => {
+    if (pauseStop() == null) return res.status(400).json({ message: 'Tidak ada pause yang berjalan.' });
+    savePause();
+    res.json(pauseState());
+});
+app.post('/api/pause/reset', (req, res) => {
+    pause = { ...defaultPause(), allowance: pause.allowance };
+    savePause();
+    res.json(pauseState());
+});
+app.post('/api/pause/settings', (req, res) => {
+    const s = parseDur((req.body || {}).allowance);
+    if (s == null || s < 0 || s > 3600) return res.status(400).json({ message: 'Jatah pause harus m:ss, contoh 5:00' });
+    pause.allowance = s;
+    savePause();
+    res.json(pauseState());
+});
+
+// ==========================================
+// ANALISIS KOMPOSISI DRAFT (draftanalysis.html): tipe komposisi, power curve, damage, sinergi hero di turnamen
+// ==========================================
+// Atribut hero di public/database/herometa.json (bisa diedit, dibaca ulang setiap kali dipakai).
+const AXES = ['early', 'late', 'teamfight', 'poke', 'pickoff', 'push'];
+const herometaPath = path.join(dbDir, 'herometa.json');
+let draftAnalysisMode = 'auto'; // auto = tampil saat 10 hero terpilih, show / hide = paksa
+
+function heroMetaMap() {
+    const map = new Map();
+    try {
+        const j = JSON.parse(fsSync.readFileSync(herometaPath, 'utf8'));
+        for (const [n, v] of Object.entries(j.heroes || {})) if (Array.isArray(v))
+            map.set(heroLoose(n), { role: v[0] || '', dmg: v[1] || '', axes: (Array.isArray(v[2]) ? v[2] : []).concat([1, 1, 1, 1, 1, 1]).slice(0, 6).map(x => Math.max(0, Math.min(3, +x || 0))) });
+    } catch (e) {}
+    return map;
+}
+
+function draftAnalysis() {
+    const md = cache.matchdata || {}, td = md.teamdata || {}, dd = (cache.matchdraft && cache.matchdraft.draftdata) || {};
+    const hero = heroResolver(), meta = heroMetaMap(), st = tournamentStats(), games = tournament.games;
+    const side = (dkey, tkey) => {
+        let picks = ((dd[dkey] || {}).pick || []).map(p => hero(p && p.hero));
+        if (!picks.some(Boolean)) picks = ((td[tkey] || {}).playerlist || []).map(p => hero(p.hero)); // draft sudah di-reset: pakai hero di matchdata
+        const list = picks.slice(0, 5).filter(Boolean).map(h => {
+            const m = meta.get(heroLoose(h)), hs = st.heroes.find(x => heroLoose(x.hero) === heroLoose(h));
+            return { hero: h, role: m ? m.role : '', dmg: m ? m.dmg : '', known: !!(m && m.role), axes: m ? m.axes : null, picks: hs ? hs.picks : 0, wins: hs ? hs.wins : 0 };
+        });
+        const known = list.filter(x => x.known);
+        const axes = Object.fromEntries(AXES.map((a, i) => [a, known.length ? known.reduce((s, x) => s + x.axes[i], 0) / (3 * known.length) : 0]));
+        const style = ['teamfight', 'poke', 'pickoff', 'push'].sort((a, b) => axes[b] - axes[a]);
+        const diff = axes.early - axes.late;
+        const dmgW = { P: [1, 0], M: [0, 1], X: [0.5, 0.5] };
+        const dsum = known.reduce((s, x) => { const w = dmgW[x.dmg] || [0.5, 0.5]; return [s[0] + w[0], s[1] + w[1]]; }, [0, 0]);
+        const physical = known.length ? dsum[0] / known.length : 0.5;
+        const roles = {};
+        known.forEach(x => { roles[x.role] = (roles[x.role] || 0) + 1; });
+        const warnings = [];
+        if (known.length >= 4) {
+            if (!roles.tank && !roles.support) warnings.push('notank');
+            if (physical >= 0.85) warnings.push('allphysical');
+            if (physical <= 0.15) warnings.push('allmagic');
+        }
+        // sinergi: pasangan hero draft ini yang pernah dipakai bersama oleh satu tim di turnamen
+        const synergy = [];
+        for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+            const ka = heroLoose(list[i].hero), kb = heroLoose(list[j].hero);
+            let n = 0, w = 0;
+            for (const g of games) for (const s of ['blue', 'red']) {
+                const hs = g[s].players.map(p => heroLoose(p.hero));
+                if (hs.includes(ka) && hs.includes(kb)) { n++; if (g.winner === s) w++; }
+            }
+            if (n) synergy.push({ a: list[i].hero, b: list[j].hero, games: n, wins: w });
+        }
+        synergy.sort((x, y) => y.games - x.games || y.wins - x.wins);
+        const t = td[tkey] || {};
+        return { name: tName(t.teamname), logo: t.logo || '', heroes: list, count: list.length, known: known.length, axes,
+            type: known.length ? style[0] : '', type2: known.length ? style[1] : '',
+            curve: !known.length ? '' : diff >= 0.12 ? 'early' : diff <= -0.12 ? 'late' : 'balanced',
+            physical, roles, warnings, synergy: synergy.slice(0, 3), unknown: list.filter(x => !x.known).map(x => x.hero) };
+    };
+    const blue = side('blueside', 'blueteam'), red = side('redside', 'redteam');
+    return { mode: draftAnalysisMode, complete: blue.count === 5 && red.count === 5, totalGames: games.length, blue, red };
+}
+
+app.get('/api/draft-analysis', (req, res) => { res.json(draftAnalysis()); });
+app.post('/api/draft-analysis/mode', (req, res) => {
+    const m = (req.body || {}).mode;
+    if (!['auto', 'show', 'hide'].includes(m)) return res.status(400).json({ message: 'mode harus auto, show, atau hide' });
+    draftAnalysisMode = m;
+    broadcast({ type: 'draft_analysis_mode', mode: m });
+    res.json({ mode: m });
+});
+
+// ==========================================
 // STREAM DECK / BITFOCUS COMPANION: satu URL per tombol (GET atau POST, tanpa body)
 // ==========================================
 // Contoh: http://IP-SERVER:3000/api/companion/notif/firstblood · daftar lengkap di companion.html / GET /api/companion
@@ -1306,7 +1462,18 @@ const COMPANION_ACTIONS = {
     'vod-mark': ['Tandai highlight di timeline VOD (?label=...)', '/api/vod/mark', (q) => ({ label: q.label || 'HIGHLIGHT' })],
     'vod-chapter': ['Chapter baru di timeline VOD (?label=...)', '/api/vod/mark', (q) => ({ label: q.label || 'CHAPTER', chapter: true })],
     'vod-start': ['Mulai hitung waktu rekaman VOD', '/api/vod/start', (q) => ({ offset: q.offset || 0 })],
-    'vod-stop': ['Stop hitung waktu rekaman VOD', '/api/vod/stop', () => ({})]
+    'vod-stop': ['Stop hitung waktu rekaman VOD', '/api/vod/stop', () => ({})],
+    'pause-blue': ['Technical pause tim biru (?reason=...)', '/api/pause/start', (q) => ({ side: 'blue', reason: q.reason })],
+    'pause-red': ['Technical pause tim merah (?reason=...)', '/api/pause/start', (q) => ({ side: 'red', reason: q.reason })],
+    'pause-admin': ['Pause admin / wasit', '/api/pause/start', (q) => ({ side: 'admin', reason: q.reason || 'ADMIN PAUSE' })],
+    'pause-stop': ['Lanjutkan game (stop pause)', '/api/pause/stop', () => ({})],
+    'pause-reset': ['Reset jatah pause (game baru)', '/api/pause/reset', () => ({})],
+    'analysis-show': ['Tampilkan analisis draft', '/api/draft-analysis/mode', () => ({ mode: 'show' })],
+    'analysis-hide': ['Sembunyikan analisis draft', '/api/draft-analysis/mode', () => ({ mode: 'hide' })],
+    'analysis-auto': ['Analisis draft otomatis (10 hero)', '/api/draft-analysis/mode', () => ({ mode: 'auto' })],
+    'lang-id': ['Bahasa overlay: Indonesia', '/api/lang', () => ({ lang: 'id' })],
+    'lang-en': ['Bahasa overlay: English', '/api/lang', () => ({ lang: 'en' })],
+    'lang-original': ['Bahasa overlay: teks asli', '/api/lang', () => ({ lang: '' })]
 };
 
 app.get('/api/companion', (req, res) => {

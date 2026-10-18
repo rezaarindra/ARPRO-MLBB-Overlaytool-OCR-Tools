@@ -41,6 +41,9 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 🎙️ | **Caster Dashboard** | Layar kedua untuk caster: talking points otomatis (H2H, streak, match point, hero andalan, ban yang menarget pemain, rekor), statistik 10 pemain, gold & timer live. |
 | 📱 | **Social Card** | Kartu PNG 1080×1080 / 1350 / 1920 sekali klik: hasil series, hasil game, MVP, klasemen, top pemain, hero meta. |
 | 🎬 | **VOD Timeline** | Event siaran tercatat otomatis dengan jam rekam → chapter YouTube, marker DaVinci Resolve (EDL), CSV. |
+| ⏸️ | **Technical Pause** | Timer jeda per tim dengan jatah waktu (default 5:00), pause admin, riwayat, overlay `pause.html` tampil sendiri. |
+| 🧩 | **Analisis Komposisi Draft** | Tipe komposisi (teamfight/poke/pick-off/split push), power curve, profil damage, sinergi hero dari arsip turnamen. |
+| 🌐 | **Overlay Dua Bahasa** | Label overlay ID ⇄ EN satu tombol, atau dikunci per Browser Source dengan `?lang=id` / `?lang=en`. |
 | 🎛️ | **Stream Deck / Companion** | Satu URL per tombol: notifikasi, MVP, lineup, skor, pemenang, simpan hasil game. |
 | 🏆 | **Postgame & MVP** | Statistik pasca-pertandingan, tampilan MVP, dan build/item hero. |
 | 📅 | **Schedule & Lineup** | Jadwal pertandingan, lineup pemain, dan undian/drawing grup. |
@@ -179,6 +182,13 @@ http://IP-SERVER:3000/api/companion/save-result
 1. Buka **`vodtimeline.html`**, tekan **MULAI REKAM** bersamaan dengan Start Recording / Go Live (terlambat? isi offset, mis. `12:30`).
 2. Selama siaran, event tercatat sendiri: draft dimulai, game dimulai (timer OCR), notifikasi video/pemain, multikill, hasil game, milestone. Tandai highlight manual dengan tombol **H** atau Stream Deck `/api/companion/vod-mark?label=SAVAGE`.
 3. Selesai siaran: **SALIN CHAPTER** → tempel ke deskripsi YouTube, atau unduh **EDL** (DaVinci Resolve › Timelines › Import › Timeline Markers from EDL) / **CSV**.
+
+## ⏸️ Broadcast Control (pause · analisis draft · bahasa)
+
+Buka **`broadcastcontrol.html`**:
+- **Technical Pause**: pilih alasan, tekan **PAUSE BIRU / MERAH / ADMIN**, lalu **LANJUTKAN GAME**. Overlay `pause.html` menampilkan durasi jeda dan sisa jatah tim. Tekan **RESET JATAH** tiap game baru. Stream Deck: `/api/companion/pause-blue?reason=NETWORK`, `pause-red`, `pause-stop`.
+- **Analisis Draft**: overlay `draftanalysis.html` tampil sendiri saat 10 hero terpilih (mode AUTO), atau paksa TAMPILKAN / SEMBUNYIKAN. Atribut hero ada di `public/database/herometa.json` (role, damage P/M/X, nilai 0–3 untuk early, late, teamfight, poke, pick-off, push); sesuaikan dengan meta terbaru.
+- **Bahasa Overlay**: TEKS ASLI / INDONESIA / ENGLISH untuk semua overlay turnamen, draft, pause, analisis draft, dan milestone.
 
 ## ⚙️ Konfigurasi (opsional)
 
