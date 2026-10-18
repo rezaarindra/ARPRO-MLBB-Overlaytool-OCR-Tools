@@ -7,7 +7,7 @@
 //
 // Urutan per pick (timing mengikuti video referensi):
 //   1. Splash hero penuh bergeser masuk menutupi 5 box tim (biru dari kiri, merah dari kanan — ref. "Revisi Splash Tool"):
-//      splash art utuh tanpa terpotong (contain, sisi kosong diisi blur gambar yang sama), nama hero,
+//      splash art memenuhi area (cover, fokus bagian atas / herofocus.json), nama hero,
 //      foto & nickname pemain yang memilih di sisi seberang
 //   2. Tahan, lalu nama keluar dan splash bergeser kembali ke arah asalnya
 //   3. Stinger logo tim menyapu diagonal di box pick → hero dipasang di balik stinger → stinger tersibak
@@ -120,9 +120,11 @@
         const el = getSplash(side);
         if (!placeSplash(el, side)) return false;
 
-        // splash art utuh (contain, tanpa crop); latar = gambar yang sama diburamkan agar sisi kiri-kanan tidak kosong
+        // splash art memenuhi area (cover); titik fokus per hero dari herofocus.json bila ada
         const src = info.full || info.portrait;
         const img = el.querySelector('.fx-splash-art img');
+        const f = info.focus;
+        img.style.objectPosition = f && (f.x != null || f.y != null) ? `${f.x != null ? f.x : 50}% ${f.y != null ? f.y : 22}%` : '';
         const bg = el.querySelector('.fx-splash-bg img');
         const player = playerOf(job.slot);
         const pl = el.querySelector('.fx-splash-player');
