@@ -34,6 +34,10 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 🥇 | **Leaderboard Pemain** | Top KDA, kills, assists, MVP terbanyak, avg gold, dan hero andalan tiap pemain. |
 | 🗂️ | **Klasemen & Bracket** | Klasemen otomatis per grup (match W-L, game W-L, selisih) dan bracket playoff 4/8/16 tim. |
 | ⚔️ | **Head-to-Head** | Perbandingan dua tim yang sedang main: rekor, win rate, rata-rata kill & durasi, hero andalan. |
+| 🔦 | **Draft Spotlight** | Kartu otomatis tiap pick/ban: statistik hero di turnamen, FIRST APPEARANCE, pemain yang memilih + hero pool-nya. |
+| 🪪 | **Kartu Profil** | Profil pemain / tim (KDA, MVP, win rate, hero pool, roster) yang dipilih operator. |
+| 🔁 | **Series Recap** | Rekap tiap game dalam BO: pick, pemenang, durasi, MVP, kill, grafik gold. |
+| 🏅 | **Rekor & Milestone** | Popup otomatis: kill terbanyak, game tercepat/terlama, perfect game, MVP ke-N, kemenangan pertama. |
 | 🎛️ | **Stream Deck / Companion** | Satu URL per tombol: notifikasi, MVP, lineup, skor, pemenang, simpan hasil game. |
 | 🏆 | **Postgame & MVP** | Statistik pasca-pertandingan, tampilan MVP, dan build/item hero. |
 | 📅 | **Schedule & Lineup** | Jadwal pertandingan, lineup pemain, dan undian/drawing grup. |
@@ -148,6 +152,10 @@ Semua statistik dihitung otomatis dari **hasil game yang disimpan**.
 | `standings.html` | Klasemen: match W-L, game W-L, selisih, win% | `?group=A` · `&advance=4` |
 | `bracket.html` | Bracket playoff, pemenang maju otomatis | diatur di Tournament Control |
 | `h2h.html` | Head-to-head tim biru vs merah yang sedang main | `?a=TIM&b=TIM` |
+| `draftspotlight.html` | Kartu otomatis tiap pick/ban (statistik hero + pemain yang memilih) | `?hold=5` · `&bans=0` · tes: `?demo=fanny&side=blue&slot=0` |
+| `profile.html` | Kartu profil pemain / tim, dipilih di Tournament Control › Kartu Profil | `?type=player&name=Anaz` (kartu tetap) |
+| `seriesrecap.html` | Rekap series BO yang sedang dimainkan | `?a=TIM&b=TIM` |
+| `milestone.html` | Popup rekor & milestone saat hasil game disimpan | `?hold=6` · tes: `?demo=1` |
 
 Semua overlay: latar transparan, `?x=&y=` (posisi tengah panel), `&scale=`, `&bg=green|dark`.
 Nama turnamen, grup tim, bracket, dan daftar/hapus game diatur di **`tournamentcontrol.html`**.

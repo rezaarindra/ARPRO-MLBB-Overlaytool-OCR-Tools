@@ -6,7 +6,7 @@
 // tournament-common.js — helper bersama overlay turnamen: posisi lewat URL, data, gambar hero/pemain, WebSocket.
 window.T = (() => {
     const q = new URLSearchParams(location.search);
-    const heroMap = {};
+    const heroMap = {}, nameMap = {};
     const strip = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
     // ?x=960&y=540 (posisi tengah panel), &scale=0.9, &bg=green|dark
@@ -25,11 +25,17 @@ window.T = (() => {
         try {
             (await get('/database/herolist.json')).forEach(h => {
                 const file = String(h.img || '').split('/').pop().replace(/\.[a-z]+$/i, '');
-                for (const k of [strip(h.name), loose(h.name), strip(file), loose(file)]) if (k && !heroMap[k]) heroMap[k] = h.img;
+                for (const k of [strip(h.name), loose(h.name), strip(file), loose(file)]) {
+                    if (k && !heroMap[k]) heroMap[k] = h.img;
+                    if (k && !nameMap[k]) nameMap[k] = h.name;
+                }
             });
         } catch (e) {}
     }
     const heroImg = (name) => heroMap[strip(name)] || heroMap[loose(name)] || `/Assets/HeroPick/${encodeURIComponent(String(name || '').toLowerCase())}.png`;
+    // "/Assets/HeroPick/argus.png" atau "argus" → "Argus"
+    const heroName = (src) => { const k = String(src || '').split('?')[0].split('/').pop().replace(/\.[a-z]+$/i, ''); return nameMap[strip(k)] || nameMap[loose(k)] || k; };
+    const sameHero = (a, b) => !!a && !!b && (strip(a) === strip(b) || loose(a) === loose(b));
     const playerImg = (name) => `/Assets/player/${encodeURIComponent(String(name || '').trim())}.png`;
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const pct = (v) => Math.round((v || 0) * 100) + '%';
@@ -50,5 +56,5 @@ window.T = (() => {
         connect();
     }
 
-    return { q, place, get, heroImg, playerImg, esc, pct, fmtTime, live };
+    return { q, place, get, heroImg, heroName, sameHero, playerImg, esc, pct, fmtTime, live, loadHeroes };
 })();

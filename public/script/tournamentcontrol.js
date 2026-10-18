@@ -124,6 +124,10 @@
         ['standings.html', 'Klasemen semua tim (tambah &group=A, &advance=4)'],
         ['bracket.html', 'Bracket playoff'],
         ['h2h.html', 'Head-to-head tim biru vs merah yang sedang main'],
+        ['draftspotlight.html', 'Kartu otomatis saat pick / ban: statistik hero + pemain yang memilih (tes: ?demo=fanny)'],
+        ['profile.html', 'Kartu profil pemain / tim (dipilih di panel 4)'],
+        ['seriesrecap.html', 'Rekap series BO yang sedang dimainkan'],
+        ['milestone.html', 'Popup rekor & milestone (tes: ?demo=1)'],
         ['companion.html', 'Daftar URL tombol Stream Deck / Companion']
     ];
     $('tcLinks').innerHTML = LINKS.map(([p, d]) => {
@@ -138,13 +142,56 @@
         setTimeout(() => { b.textContent = 'COPY'; }, 1200);
     });
 
+    // ---------- 6 · kartu profil ----------
+    let statsCache = null;
+    async function loadProfileOptions() {
+        try {
+            statsCache = await get('/api/tournament/stats');
+            const cur = await get('/api/profile-card');
+            if (!$('pcName').dataset.touched) $('pcType').value = cur.type || 'player';
+            fillNames(cur.name);
+        } catch (e) {}
+    }
+    function fillNames(selected) {
+        const list = !statsCache ? [] : $('pcType').value === 'team'
+            ? statsCache.teams.map(t => t.name)
+            : statsCache.players.slice().sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name)).map(p => p.name);
+        const keep = selected || $('pcName').value;
+        $('pcName').innerHTML = list.map(n => `<option ${n === keep ? 'selected' : ''}>${esc(n)}</option>`).join('') || '<option value="">(belum ada data)</option>';
+    }
+    $('pcType').addEventListener('change', () => fillNames());
+    $('pcName').addEventListener('change', () => { $('pcName').dataset.touched = '1'; });
+    $('pcShow').addEventListener('click', async () => {
+        if (!$('pcName').value) return msg('pcMsg', 'Pilih nama dulu.', false);
+        try { await post('/api/profile-card', { show: true, type: $('pcType').value, name: $('pcName').value }); msg('pcMsg', `Tampil: ${$('pcName').value}`); }
+        catch (e) { msg('pcMsg', e.message, false); }
+    });
+    $('pcHide').addEventListener('click', async () => { await post('/api/profile-card', { show: false }); msg('pcMsg', 'Disembunyikan.'); });
+
+    // ---------- 7 · milestone ----------
+    async function loadMilestones() {
+        try {
+            const [list, t] = await Promise.all([get('/api/tournament/milestones'), get('/api/tournament')]);
+            $('msAuto').checked = t.autoMilestones !== false;
+            $('msList').innerHTML = list.map(m => `<tr><td><b style="color:#ffcf4a">${esc(m.title)}</b><br>${esc(m.text)}<br><span style="color:var(--muted)">${esc([m.player, m.team].filter(Boolean).join(' · '))}</span></td>
+                <td style="width:80px"><button data-ms="${esc(m.id)}">TAYANG</button></td></tr>`).join('') || '<tr><td style="color:var(--muted)">Belum ada rekor / milestone.</td></tr>';
+        } catch (e) {}
+    }
+    $('msAuto').addEventListener('change', () => post('/api/tournament/settings', { autoMilestones: $('msAuto').checked }));
+    $('msList').addEventListener('click', async (e) => {
+        const b = e.target.closest('button[data-ms]');
+        if (!b) return;
+        await post('/api/tournament/milestone/show', { id: b.dataset.ms });
+        b.textContent = 'TAYANG ✓'; setTimeout(() => { b.textContent = 'TAYANG'; }, 1500);
+    });
+
     // ---------- live ----------
     function connect() {
         const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
-        ws.onopen = () => { loadMatch(); loadSettings(); };
+        ws.onopen = () => { loadMatch(); loadSettings(); loadProfileOptions(); loadMilestones(); };
         ws.onmessage = (ev) => {
             const m = JSON.parse(ev.data);
-            if (m.type === 'tournament_update') { get('/api/tournament').then(t => { state.games = t.games; renderGames(); }); loadMatch(); }
+            if (m.type === 'tournament_update') { get('/api/tournament').then(t => { state.games = t.games; renderGames(); }); loadMatch(); loadProfileOptions(); loadMilestones(); }
             else if (['matchdata_update', 'mvp_update', 'matchformat_update'].includes(m.type)) loadMatch();
         };
         ws.onclose = () => setTimeout(connect, 2000);

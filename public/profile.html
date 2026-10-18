@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Profile Card</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1360px; padding: 0; overflow: hidden; opacity: 0; transition: opacity .4s ease; }
+        .tp.show { opacity: 1; }
+        .pc { display: grid; grid-template-columns: 420px 1fr; min-height: 560px; }
+        .pc-photo { position: relative; background: linear-gradient(160deg, rgba(168, 85, 247, .35), rgba(10, 10, 14, .2)); overflow: hidden; }
+        .pc-photo img.ph { position: absolute; left: 0; bottom: 0; width: 100%; }
+        .pc-photo img.lg { position: absolute; left: 50%; top: 50%; width: 300px; height: 300px; object-fit: contain; transform: translate(-50%, -50%); }
+        .pc-body { padding: 34px 40px 30px; display: flex; flex-direction: column; gap: 18px; }
+        .pc-kicker { font-size: 22px; letter-spacing: 4px; color: var(--accent); }
+        .pc-name { font-size: 96px; line-height: .9; letter-spacing: 3px; }
+        .pc-team { display: flex; align-items: center; gap: 12px; font-size: 28px; letter-spacing: 2px; color: var(--muted); }
+        .pc-team img { width: 40px; height: 40px; object-fit: contain; }
+        .pc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .pc-grid div { background: var(--row); padding: 12px 16px; font-size: 44px; line-height: 1; }
+        .pc-grid small { display: block; font-size: 16px; letter-spacing: 2px; color: var(--muted); margin-top: 6px; }
+        .pc-sec { font-size: 18px; letter-spacing: 3px; color: var(--muted); margin-bottom: 8px; }
+        .pc-heroes { display: flex; gap: 12px; }
+        .pc-heroes > div { text-align: center; font-size: 18px; letter-spacing: 1px; }
+        .pc-heroes img { width: 78px; height: 78px; object-fit: cover; border: 1px solid var(--line); display: block; margin-bottom: 4px; }
+        .pc-roster { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .pc-roster > div { background: var(--row); text-align: center; padding-bottom: 8px; }
+        .pc-roster .rp { height: 110px; overflow: hidden; background: #1b1b22; }
+        .pc-roster .rp img { width: 100%; display: block; transform: scale(1.4); transform-origin: 50% 4%; }
+        .pc-roster b { display: block; font-weight: normal; font-size: 24px; margin-top: 6px; }
+        .pc-roster small { font-size: 16px; color: var(--gold); letter-spacing: 1px; }
+        .pc-empty { color: var(--muted); font-size: 24px; letter-spacing: 2px; }
+    </style>
+</head>
+<!-- Kartu profil pemain / tim dari statistik turnamen. Dipilih operator di Tournament Control › KARTU PROFIL (TAMPILKAN / SEMBUNYIKAN).
+     Kartu tetap: ?type=player&name=Anaz atau ?type=team&name=GARUDA MUDA · ?x= &y= &scale= &bg=green|dark -->
+<body>
+    <div class="tp" id="tp"></div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        const tp = document.getElementById('tp');
+        T.place(tp);
+        const FIXED = T.q.get('name') ? { show: true, type: T.q.get('type') === 'team' ? 'team' : 'player', name: T.q.get('name') } : null;
+        const LANE = { exp: 'EXP LANE', junggle: 'JUNGLE', jungle: 'JUNGLE', mid: 'MID LANE', roam: 'ROAM', gold: 'GOLD LANE' };
+        let state = FIXED || { show: false };
+
+        function heroes(list) {
+            return list.length ? `<div class="pc-heroes">${list.map(h => `<div><img src="${T.heroImg(h.hero)}" onerror="this.style.visibility='hidden'">${h.games != null ? `${h.games}G · ${T.pct(h.wins / Math.max(1, h.games))}` : `${h.count}×`}</div>`).join('')}</div>`
+                : '<div class="pc-empty">BELUM ADA DATA</div>';
+        }
+
+        async function render() {
+            if (!state.show || !state.name) { tp.classList.remove('show'); return; }
+            const st = await T.get('/api/tournament/stats');
+            const key = state.name.toLowerCase();
+            if (state.type === 'team') {
+                const t = st.teams.find(x => x.name.toLowerCase() === key) || { name: state.name, logo: '', heroes: [] };
+                const roster = st.players.filter(p => p.team.toLowerCase() === key).sort((a, b) => b.games - a.games).slice(0, 5);
+                tp.innerHTML = `<div class="pc">
+                    <div class="pc-photo">${t.logo ? `<img class="lg" src="${T.esc(t.logo)}" onerror="this.style.display='none'">` : ''}</div>
+                    <div class="pc-body">
+                        <div class="pc-kicker">TEAM PROFILE${t.group ? ' · GROUP ' + T.esc(t.group.toUpperCase()) : ''}</div>
+                        <div class="pc-name">${T.esc(t.name.toUpperCase())}</div>
+                        ${t.games ? `<div class="pc-grid">
+                            <div class="num c-gold">${t.seriesWins}-${t.seriesLosses}<small>MATCH W-L</small></div>
+                            <div class="num">${t.gameWins}-${t.gameLosses}<small>GAME W-L</small></div>
+                            <div class="num">${T.pct(t.winRate)}<small>WIN RATE</small></div>
+                            <div class="num">${(t.kills / t.games).toFixed(1)}<small>AVG KILLS</small></div>
+                            <div class="num">${T.fmtTime(t.avgDuration)}<small>AVG DURASI</small></div>
+                            <div class="num">${(t.gold / t.games / 1000).toFixed(1)}K<small>AVG GOLD TIM</small></div></div>` : '<div class="pc-empty">BELUM ADA DATA TURNAMEN</div>'}
+                        ${roster.length ? `<div><div class="pc-sec">ROSTER</div><div class="pc-roster">${roster.map(p => `<div>
+                            <div class="rp"><img src="${T.playerImg(p.name)}" onerror="this.onerror=null;this.src='/Assets/player/noplayer.png'"></div>
+                            <b>${T.esc(p.name)}</b><small>KDA ${p.kda.toFixed(2)}</small></div>`).join('')}</div></div>` : ''}
+                    </div></div>`;
+            } else {
+                const p = st.players.find(x => x.name.toLowerCase() === key);
+                const team = p ? st.teams.find(x => x.name.toLowerCase() === p.team.toLowerCase()) : null;
+                tp.innerHTML = `<div class="pc">
+                    <div class="pc-photo"><img class="ph" src="${T.playerImg(state.name)}" onerror="this.onerror=null;this.src='/Assets/player/noplayer.png'"></div>
+                    <div class="pc-body">
+                        <div class="pc-kicker">PLAYER PROFILE${p && LANE[p.lane] ? ' · ' + LANE[p.lane] : ''}</div>
+                        <div class="pc-name">${T.esc((p ? p.name : state.name).toUpperCase())}</div>
+                        ${p ? `<div class="pc-team">${team && team.logo ? `<img src="${T.esc(team.logo)}" onerror="this.style.display='none'">` : ''}${T.esc(p.team.toUpperCase())}</div>
+                        <div class="pc-grid">
+                            <div class="num c-gold">${p.kda.toFixed(2)}<small>KDA</small></div>
+                            <div class="num">${(p.k / p.games).toFixed(1)} / ${(p.d / p.games).toFixed(1)} / ${(p.a / p.games).toFixed(1)}<small>AVG K / D / A</small></div>
+                            <div class="num">${p.mvp}<small>MVP</small></div>
+                            <div class="num">${p.games}<small>GAME</small></div>
+                            <div class="num">${T.pct(p.winRate)}<small>WIN RATE</small></div>
+                            <div class="num">${(p.avgGold / 1000).toFixed(1)}K<small>AVG GOLD</small></div></div>
+                        <div><div class="pc-sec">HERO POOL</div>${heroes(p.pool.slice(0, 5))}</div>` : '<div class="pc-empty">BELUM ADA DATA TURNAMEN</div>'}
+                    </div></div>`;
+            }
+            tp.classList.add('show');
+        }
+
+        async function refreshState() {
+            if (FIXED) return render();
+            try { state = await T.get('/api/profile-card'); } catch (e) {}
+            render();
+        }
+        T.live(refreshState, ['tournament_update']);
+        // pilihan operator langsung dari server
+        (function connect() {
+            const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+            ws.onmessage = (ev) => { const m = JSON.parse(ev.data); if (m.type === 'profile_card' && !FIXED) { state = m.data; render(); } };
+            ws.onclose = () => setTimeout(connect, 2000);
+        })();
+    </script>
+</body>
+</html>

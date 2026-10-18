@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Series Recap</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1640px; }
+        .sr-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 30px; margin-bottom: 22px; }
+        .sr-team { display: flex; align-items: center; gap: 18px; font-size: 48px; letter-spacing: 2px; }
+        .sr-team.b { justify-content: flex-end; }
+        .sr-team img { width: 80px; height: 80px; object-fit: contain; }
+        .sr-score { text-align: center; }
+        .sr-score .s { font-size: 96px; line-height: .9; letter-spacing: 8px; }
+        .sr-score small { display: block; font-size: 20px; letter-spacing: 4px; color: var(--muted); }
+        .sr-team.win { color: var(--gold); }
+        .rows { display: flex; flex-direction: column; gap: 10px; }
+        .g { display: grid; grid-template-columns: 1fr 300px 1fr; align-items: center; gap: 18px; background: var(--row); padding: 10px 16px; }
+        .picks { display: flex; gap: 6px; }
+        .picks.b { justify-content: flex-end; }
+        .picks img { width: 66px; height: 66px; object-fit: cover; border: 1px solid var(--line); }
+        .g .lose img { filter: grayscale(.85) brightness(.6); }
+        .mid { text-align: center; }
+        .mid .gn { font-size: 30px; letter-spacing: 3px; }
+        .mid .res { font-size: 22px; letter-spacing: 1px; color: var(--muted); margin-top: 2px; }
+        .mid .res b { font-weight: normal; color: var(--gold); }
+        .mid svg { display: block; width: 100%; height: 46px; margin-top: 6px; }
+        .kills { font-size: 34px; min-width: 52px; text-align: center; }
+        .side { display: flex; align-items: center; gap: 14px; }
+        .side.b { flex-direction: row-reverse; }
+        .w-tag { font-size: 16px; letter-spacing: 2px; background: var(--gold); color: #111; padding: 2px 8px; }
+    </style>
+</head>
+<!-- Rekap series (BO) yang sedang dimainkan: skor series, tiap game (pick, pemenang, durasi, MVP, kill, grafik gold bila OCR berjalan).
+     Default tim biru vs merah saat ini; tim tertentu: ?a=NAMA&b=NAMA · ?x= &y= &scale= &bg=green|dark -->
+<body>
+    <div class="tp" id="tp">
+        <div class="tp-head"><div class="tp-title">SERIES RECAP</div><div class="tp-sub" id="sub"></div></div>
+        <div id="body"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        T.place(document.getElementById('tp'));
+
+        function spark(lead) {
+            if (!lead || lead.length < 2) return '';
+            const W = 300, H = 46, t0 = lead[0][0], t1 = lead[lead.length - 1][0] || t0 + 1, max = Math.max(1000, ...lead.map(p => Math.abs(p[1])));
+            const x = t => (t - t0) / Math.max(1, t1 - t0) * W, y = v => H / 2 - v / max * (H / 2 - 2);
+            const line = lead.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+            const area = `${line} L${W},${H / 2} L0,${H / 2} Z`;
+            return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+                <clipPath id="u"><rect width="${W}" height="${H / 2}"/></clipPath><clipPath id="d"><rect y="${H / 2}" width="${W}" height="${H / 2}"/></clipPath>
+                <line x1="0" x2="${W}" y1="${H / 2}" y2="${H / 2}" stroke="rgba(255,255,255,.3)"/>
+                <path d="${area}" fill="rgba(0,210,255,.35)" clip-path="url(#u)"/><path d="${area}" fill="rgba(255,42,42,.35)" clip-path="url(#d)"/>
+                <path d="${line}" fill="none" stroke="#fff" stroke-width="1.5"/></svg>`;
+        }
+
+        async function load() {
+            const p = new URLSearchParams();
+            if (T.q.get('a')) p.set('a', T.q.get('a'));
+            if (T.q.get('b')) p.set('b', T.q.get('b'));
+            const [s, st] = await Promise.all([T.get('/api/tournament/series/current?' + p), T.get('/api/tournament/stats')]);
+            const logo = (n, fb) => fb || ((st.teams.find(t => t.name.toLowerCase() === String(n).toLowerCase()) || {}).logo || '');
+            const aLogo = logo(s.a, s.aLogo), bLogo = logo(s.b, s.bLogo), win = s.done ? s.winner : '';
+            document.getElementById('sub').textContent = `${st.name ? st.name.toUpperCase() + ' · ' : ''}BO${s.bo}${s.done ? ' · SELESAI' : ''}`;
+            document.getElementById('body').innerHTML = `
+                <div class="sr-head">
+                    <div class="sr-team ${win && win === s.a ? 'win' : ''}">${aLogo ? `<img src="${T.esc(aLogo)}" onerror="this.style.display='none'">` : ''}${T.esc(s.a || 'BLUE')}</div>
+                    <div class="sr-score"><div class="s num"><span class="c-blue">${s.winsA}</span> : <span class="c-red">${s.winsB}</span></div><small>SERIES</small></div>
+                    <div class="sr-team b ${win && win === s.b ? 'win' : ''}">${T.esc(s.b || 'RED')}${bLogo ? `<img src="${T.esc(bLogo)}" onerror="this.style.display='none'">` : ''}</div>
+                </div>
+                <div class="rows anim">${s.games.length ? s.games.map((g, i) => {
+                    const aWon = g.winner.toLowerCase() === s.a.toLowerCase();
+                    const icons = (list) => list.map(h => h ? `<img src="${T.heroImg(h)}" title="${T.esc(h)}" onerror="this.style.visibility='hidden'">` : '<img style="visibility:hidden">').join('');
+                    return `<div class="g">
+                        <div class="side a ${aWon ? '' : 'lose'}"><div class="picks">${icons(g.aPicks)}</div><div class="kills num">${g.aKills}</div>${aWon ? '<span class="w-tag">WIN</span>' : ''}</div>
+                        <div class="mid"><div class="gn">GAME ${g.game || i + 1}</div>
+                            <div class="res">${g.duration ? T.esc(g.duration) + ' · ' : ''}MVP <b>${T.esc(g.mvp || '-')}</b></div>${spark(g.lead)}</div>
+                        <div class="side b ${aWon ? 'lose' : ''}"><div class="picks b">${icons(g.bPicks)}</div><div class="kills num">${g.bKills}</div>${aWon ? '' : '<span class="w-tag">WIN</span>'}</div>
+                    </div>`;
+                }).join('') : '<div class="tp-empty">SERIES BELUM DIMULAI · HASIL GAME MUNCUL SETELAH DISIMPAN</div>'}</div>`;
+        }
+        T.live(load, ['tournament_update', 'matchdata_update']);
+    </script>
+</body>
+</html>

@@ -696,8 +696,14 @@ function buildGameRecord() {
         };
     };
     const mvp = cache.mvp && cache.mvp.mvp ? tName(cache.mvp.mvp.nickname) : '';
+    // grafik gold dari OCR game ini (bila OCR berjalan), maks. 120 titik; g1 = tim biru
+    let goldHistory = null;
+    if (ocrGame && ocrGame.gold.length >= 6) {
+        const src = ocrGame.cur ? [...ocrGame.gold, ocrGame.cur] : ocrGame.gold, step = Math.ceil(src.length / 120);
+        goldHistory = { points: src.filter((p, i) => i % step === 0 || i === src.length - 1).map(p => [p.t, p.g1, p.g2]), marks: ocrGame.marks };
+    }
     return { id: crypto.randomBytes(5).toString('hex'), at: new Date().toISOString(), game: +md.game_number || null,
-        duration: md.game_duration || '', winner: md.winmatches, blue: side('blueteam'), red: side('redteam'), mvp };
+        duration: md.game_duration || '', winner: md.winmatches, blue: side('blueteam'), red: side('redteam'), mvp, goldHistory };
 }
 
 const pairKey = (g) => [tKey(g.blue.name), tKey(g.red.name)].sort().join(' vs ');
@@ -750,9 +756,11 @@ function tournamentStats() {
                 tm.kills += p.k; tm.deaths += p.d; tm.gold += p.gold;
                 if (!p.name) continue;
                 const pk = tKey(p.name);
-                if (!players.has(pk)) players.set(pk, { name: p.name, team: s.name, games: 0, wins: 0, k: 0, d: 0, a: 0, gold: 0, mvp: 0, heroes: {} });
+                if (!players.has(pk)) players.set(pk, { name: p.name, team: s.name, lane: '', games: 0, wins: 0, k: 0, d: 0, a: 0, gold: 0, mvp: 0, heroes: {}, heroWins: {} });
                 const pl = players.get(pk);
                 pl.team = s.name; pl.games++; if (won) pl.wins++;
+                if (p.lane && p.lane !== 'none') pl.lane = p.lane;
+                if (p.hero && won) pl.heroWins[p.hero] = (pl.heroWins[p.hero] || 0) + 1;
                 pl.k += p.k; pl.d += p.d; pl.a += p.a; pl.gold += p.gold;
                 if (p.hero) pl.heroes[p.hero] = (pl.heroes[p.hero] || 0) + 1;
                 if (g.mvp && tKey(g.mvp) === pk) pl.mvp++;
@@ -775,7 +783,9 @@ function tournamentStats() {
         name: tournament.name, totalGames: N,
         heroes: [...heroes.values()].map(h => ({ ...h, pickRate: N ? h.picks / N : 0, banRate: N ? h.bans / N : 0,
             presence: N ? h.present / N : 0, winRate: h.picks ? h.wins / h.picks : 0 })),
-        players: [...players.values()].map(p => ({ ...p, heroes: top(p.heroes, 3), kda: (p.k + p.a) / Math.max(1, p.d),
+        players: [...players.values()].map(p => ({ ...p, heroes: top(p.heroes, 3), heroWins: undefined,
+            pool: Object.entries(p.heroes).map(([hero, games]) => ({ hero, games, wins: p.heroWins[hero] || 0 })).sort((a, b) => b.games - a.games || b.wins - a.wins),
+            kda: (p.k + p.a) / Math.max(1, p.d),
             avgGold: p.games ? Math.round(p.gold / p.games) : 0, winRate: p.games ? p.wins / p.games : 0 })),
         teams: [...teams.values()].map(t => ({ ...t, heroes: top(t.heroes, 5), gameLosses: t.games - t.gameWins, gameDiff: 2 * t.gameWins - t.games,
             winRate: t.games ? t.gameWins / t.games : 0, avgDuration: t.durN ? Math.round(t.durSum / t.durN) : 0 }))
@@ -804,7 +814,7 @@ function tournamentBracket() {
 }
 
 app.get('/api/tournament', (req, res) => {
-    res.json({ name: tournament.name, groups: tournament.groups, bracket: tournament.bracket, matchFormat: matchFormat,
+    res.json({ name: tournament.name, groups: tournament.groups, bracket: tournament.bracket, matchFormat: matchFormat, autoMilestones: tournament.autoMilestones !== false,
         games: tournament.games.map(g => ({ id: g.id, at: g.at, game: g.game, duration: g.duration, winner: g.winner, blue: g.blue.name, red: g.red.name, mvp: g.mvp })) });
 });
 app.get('/api/tournament/stats', (req, res) => { res.json(tournamentStats()); });
@@ -837,26 +847,32 @@ app.post('/api/tournament/game', (req, res) => {
         return res.json({ updated: true, message: `Game ${g.game} ${g.blue.name} vs ${g.red.name} diperbarui.`, total: tournament.games.length });
     }
     g.bo = matchFormat.bo || 3;
+    const milestones = detectMilestones(g, tournament.games);
     tournament.games.push(g);
+    tournament.milestones = [...(tournament.milestones || []), ...milestones].slice(-50);
     saveTournament();
-    res.json({ updated: false, message: `Tersimpan: ${g.blue.name} vs ${g.red.name}${g.game ? ' · game ' + g.game : ''} (${g.winner === 'blue' ? g.blue.name : g.red.name} menang).`, total: tournament.games.length });
+    if (milestones.length && tournament.autoMilestones !== false) broadcast({ type: 'milestone', data: milestones });
+    res.json({ updated: false, milestones: milestones.length, message: `Tersimpan: ${g.blue.name} vs ${g.red.name}${g.game ? ' · game ' + g.game : ''} (${g.winner === 'blue' ? g.blue.name : g.red.name} menang).`, total: tournament.games.length });
 });
 app.post('/api/tournament/game/delete', (req, res) => {
     const before = tournament.games.length;
-    tournament.games = tournament.games.filter(g => g.id !== (req.body || {}).id);
+    const id = (req.body || {}).id;
+    tournament.games = tournament.games.filter(g => g.id !== id);
     if (tournament.games.length === before) return res.status(404).json({ message: 'Game tidak ditemukan.' });
+    tournament.milestones = (tournament.milestones || []).filter(m => m.gameId !== id);
     saveTournament();
     res.json({ total: tournament.games.length });
 });
 app.post('/api/tournament/settings', (req, res) => {
     const b = req.body || {};
     if (typeof b.name === 'string') tournament.name = b.name.trim().slice(0, 80);
+    if (typeof b.autoMilestones === 'boolean') tournament.autoMilestones = b.autoMilestones;
     if (b.groups && typeof b.groups === 'object') {
         tournament.groups = {};
         for (const [team, grp] of Object.entries(b.groups)) if (tName(team) && tName(grp)) tournament.groups[tName(team)] = tName(grp).slice(0, 20);
     }
     saveTournament();
-    res.json({ name: tournament.name, groups: tournament.groups });
+    res.json({ name: tournament.name, groups: tournament.groups, autoMilestones: tournament.autoMilestones !== false });
 });
 app.post('/api/tournament/bracket', (req, res) => {
     const b = req.body || {}, size = [4, 8, 16].includes(+b.size) ? +b.size : 8;
@@ -877,6 +893,91 @@ app.post('/api/tournament/reset', (req, res) => {
     res.json({ ok: true });
 });
 
+// --- SERIES RECAP: game-game dalam series dua tim (default: tim biru vs merah yang sedang main), tim A selalu di kiri ---
+app.get('/api/tournament/series/current', (req, res) => {
+    const td = (cache.matchdata && cache.matchdata.teamdata) || {};
+    const a = tName(req.query.a || (td.blueteam || {}).teamname), b = tName(req.query.b || (td.redteam || {}).teamname);
+    const key = [tKey(a), tKey(b)].sort().join(' vs ');
+    const list = tournamentSeries().filter(s => [tKey(s.a), tKey(s.b)].sort().join(' vs ') === key);
+    const s = list[list.length - 1];
+    const byId = new Map(tournament.games.map(g => [g.id, g]));
+    const games = s ? s.games.map(id => byId.get(id)).filter(Boolean).map(g => {
+        const aSide = tKey(g.blue.name) === tKey(a) ? 'blue' : 'red', bSide = aSide === 'blue' ? 'red' : 'blue';
+        const gh = g.goldHistory;
+        return {
+            game: g.game, duration: g.duration, mvp: g.mvp, winner: g.winner === aSide ? a : b, aSide,
+            aPicks: g[aSide].players.map(p => p.hero), bPicks: g[bSide].players.map(p => p.hero),
+            aBans: g[aSide].players.map(p => p.ban).filter(Boolean), bBans: g[bSide].players.map(p => p.ban).filter(Boolean),
+            aKills: g[aSide].players.reduce((x, p) => x + p.k, 0), bKills: g[bSide].players.reduce((x, p) => x + p.k, 0),
+            // selisih gold dari sudut pandang tim A (positif = A unggul)
+            lead: gh ? gh.points.map(([t, g1, g2]) => [t, aSide === 'blue' ? g1 - g2 : g2 - g1]) : null
+        };
+    }) : [];
+    const winsA = games.filter(g => tKey(g.winner) === tKey(a)).length;
+    res.json({ a, b, aLogo: (td.blueteam || {}).logo || '', bLogo: (td.redteam || {}).logo || '', bo: s ? s.bo : (matchFormat.bo || 3),
+        winsA, winsB: games.length - winsA, done: s ? s.done : false, winner: s ? s.winner : '', games });
+});
+
+// --- KARTU PROFIL PEMAIN / TIM: dipilih operator di Tournament Control, tampil di profile.html ---
+let profileCard = { show: false, type: 'player', name: '' };
+app.get('/api/profile-card', (req, res) => { res.json(profileCard); });
+app.post('/api/profile-card', (req, res) => {
+    const b = req.body || {};
+    profileCard = {
+        show: typeof b.show === 'boolean' ? b.show : profileCard.show,
+        type: b.type === 'team' ? 'team' : b.type === 'player' ? 'player' : profileCard.type,
+        name: typeof b.name === 'string' ? tName(b.name) : profileCard.name
+    };
+    broadcast({ type: 'profile_card', data: profileCard });
+    res.json(profileCard);
+});
+
+// --- REKOR & MILESTONE: dicek setiap hasil game baru disimpan, tampil di milestone.html ---
+const durSec = (d) => { const m = /^(\d{1,3}):(\d{2})$/.exec(String(d || '').trim()); return m ? +m[1] * 60 + +m[2] : 0; };
+const gamePlayers = (g) => ['blue', 'red'].flatMap(s => g[s].players.filter(p => p.name).map(p => ({ ...p, team: g[s].name, logo: g[s].logo, won: g.winner === s })));
+
+function detectMilestones(g, prev) {
+    const out = [], cur = gamePlayers(g), prevPlayers = prev.flatMap(gamePlayers), enough = prev.length >= 2;
+    const winner = g.winner === 'blue' ? g.blue : g.red;
+    // 1. kill terbanyak dalam satu game (rekor turnamen)
+    const best = cur.slice().sort((x, y) => y.k - x.k)[0];
+    if (enough && best && best.k >= 5 && best.k > Math.max(0, ...prevPlayers.map(p => p.k)))
+        out.push({ title: 'REKOR BARU', text: `Kill terbanyak dalam satu game: ${best.k} kill`, player: best.name, team: best.team, logo: best.logo, hero: best.hero });
+    // 2. game tercepat / terlama
+    const d = durSec(g.duration), prevD = prev.map(x => durSec(x.duration)).filter(Boolean);
+    if (enough && d && prevD.length >= 2 && d < Math.min(...prevD))
+        out.push({ title: 'GAME TERCEPAT', text: `Game tercepat turnamen ini: ${g.duration}`, team: winner.name, logo: winner.logo });
+    if (enough && d && prevD.length >= 2 && d > Math.max(...prevD))
+        out.push({ title: 'GAME TERLAMA', text: `Game terlama turnamen ini: ${g.duration}`, team: winner.name, logo: winner.logo });
+    // 3. perfect game: tanpa mati dengan kontribusi besar
+    cur.filter(p => p.d === 0 && p.k + p.a >= 10).sort((x, y) => (y.k + y.a) - (x.k + x.a)).slice(0, 1)
+        .forEach(p => out.push({ title: 'PERFECT GAME', text: `${p.k}/${p.d}/${p.a} tanpa mati sekali pun`, player: p.name, team: p.team, logo: p.logo, hero: p.hero }));
+    // 4. MVP ke-3 / 5 / 10
+    if (g.mvp) {
+        const n = prev.filter(x => tKey(x.mvp) === tKey(g.mvp)).length + 1;
+        const p = cur.find(x => tKey(x.name) === tKey(g.mvp));
+        if ([3, 5, 10, 15, 20].includes(n)) out.push({ title: 'MILESTONE', text: `MVP ke-${n} di turnamen ini`, player: g.mvp, team: p ? p.team : '', logo: p ? p.logo : '', hero: p ? p.hero : '' });
+    }
+    // 5. total kill pemain menembus kelipatan 50
+    for (const p of cur) {
+        const before = prevPlayers.filter(x => tKey(x.name) === tKey(p.name)).reduce((s, x) => s + x.k, 0), after = before + p.k;
+        const mark = Math.floor(after / 50) * 50;
+        if (mark >= 50 && before < mark) out.push({ title: 'MILESTONE', text: `${mark} kill di turnamen ini`, player: p.name, team: p.team, logo: p.logo, hero: p.hero });
+    }
+    // 6. kemenangan pertama tim di turnamen
+    if (prev.length && !prev.some(x => tKey(x.winner === 'blue' ? x.blue.name : x.red.name) === tKey(winner.name)))
+        out.push({ title: 'KEMENANGAN PERTAMA', text: `Kemenangan pertama ${winner.name} di turnamen ini`, team: winner.name, logo: winner.logo });
+    return out.slice(0, 4).map((m, i) => ({ id: `${g.id}-${i}`, gameId: g.id, at: g.at, ...m }));
+}
+
+app.get('/api/tournament/milestones', (req, res) => { res.json((tournament.milestones || []).slice().reverse()); });
+app.post('/api/tournament/milestone/show', (req, res) => {
+    const m = (tournament.milestones || []).find(x => x.id === (req.body || {}).id);
+    if (!m) return res.status(404).json({ message: 'Milestone tidak ditemukan.' });
+    broadcast({ type: 'milestone', data: [m] });
+    res.json({ ok: true });
+});
+
 // ==========================================
 // STREAM DECK / BITFOCUS COMPANION: satu URL per tombol (GET atau POST, tanpa body)
 // ==========================================
@@ -894,6 +995,8 @@ const COMPANION_ACTIONS = {
     'lineup-hide': ['Sembunyikan lineup', '/api/lineup-control', () => ({ mode: 'hide' })],
     'lineup-auto': ['Lineup mode otomatis', '/api/lineup-control', () => ({ mode: 'auto' })],
     'save-result': ['Simpan hasil game ke turnamen', '/api/tournament/game', () => ({})],
+    'profile-hide': ['Sembunyikan kartu profil', '/api/profile-card', () => ({ show: false })],
+    'profile-show': ['Tampilkan kartu profil', '/api/profile-card', (q) => ({ show: true, ...(q.type ? { type: q.type } : {}), ...(q.name ? { name: q.name } : {}) })],
     'ocr-reset': ['Reset data game OCR (gold / timer)', '/api/ocr/game/reset', () => ({})]
 };
 

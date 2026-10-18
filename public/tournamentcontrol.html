@@ -74,8 +74,28 @@
             <div class="oc-row"><button class="danger" id="tcReset">RESET TURNAMEN</button></div>
         </div>
 
+        <div class="oc-card">
+            <h3>4 · KARTU PROFIL</h3>
+            <p class="oc-small">Tampil di <b>profile.html</b>. Pilih pemain / tim lalu TAMPILKAN.</p>
+            <div class="oc-grid2">
+                <label>Jenis <select id="pcType"><option value="player">Pemain</option><option value="team">Tim</option></select></label>
+                <label>Nama <select id="pcName"></select></label>
+            </div>
+            <div class="oc-row"><button class="primary" id="pcShow">TAMPILKAN</button><button id="pcHide">SEMBUNYIKAN</button></div>
+            <div class="tc-msg" id="pcMsg"></div>
+        </div>
+
+        <div class="oc-card">
+            <h3>5 · REKOR &amp; MILESTONE</h3>
+            <p class="oc-small">Dicek otomatis setiap hasil game disimpan, tampil di <b>milestone.html</b>.</p>
+            <label class="oa-check" style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px;cursor:pointer"><input type="checkbox" id="msAuto" style="width:16px;height:16px;accent-color:var(--accent)"> Tayangkan otomatis saat game disimpan</label>
+            <div class="tc-scroll" style="max-height:260px">
+                <table class="tc"><tbody id="msList"></tbody></table>
+            </div>
+        </div>
+
         <div class="oc-card tc-wide">
-            <h3>4 · BRACKET PLAYOFF</h3>
+            <h3>6 · BRACKET PLAYOFF</h3>
             <div class="oc-grid4" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 12px;">
                 <label>Jumlah tim <select id="brSize"><option value="4">4 tim</option><option value="8" selected>8 tim</option><option value="16">16 tim</option></select></label>
                 <label>BO ronde 1 <select class="br-bo"></select></label>
@@ -90,7 +110,7 @@
         </div>
 
         <div class="oc-card tc-wide">
-            <h3>5 · OVERLAY (BROWSER SOURCE 1920×1080)</h3>
+            <h3>7 · OVERLAY (BROWSER SOURCE 1920×1080)</h3>
             <div class="links" id="tcLinks"></div>
         </div>
     </main>

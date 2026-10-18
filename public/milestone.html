@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Milestone</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .ms { position: absolute; left: var(--x, 960px); top: var(--y, 880px); transform: translate(-50%, -50%) scale(var(--s, 1)); width: 900px; height: 130px;
+              display: grid; grid-template-columns: 130px 1fr auto; grid-template-rows: 130px; align-items: stretch; background: var(--panel); border: 1px solid var(--line);
+              box-shadow: 0 12px 40px rgba(0, 0, 0, .55); overflow: hidden; clip-path: inset(0 100% 0 0); transition: clip-path .5s cubic-bezier(.7, 0, .2, 1); }
+        .ms.show { clip-path: inset(0 0 0 0); }
+        .ms-pic { position: relative; background: linear-gradient(160deg, rgba(255, 207, 74, .35), rgba(10, 10, 14, .3)); overflow: hidden; }
+        .ms-pic img.ph { width: 100%; display: block; transform: scale(1.5); transform-origin: 50% 4%; }
+        .ms-pic img.lg { position: absolute; inset: 15px; width: 100px; height: 100px; object-fit: contain; }
+        .ms-body { padding: 8px 22px; min-width: 0; border-left: 6px solid var(--gold); }
+        .ms-title { font-size: 20px; letter-spacing: 4px; color: var(--gold); }
+        .ms-text { font-size: 34px; line-height: 1.05; letter-spacing: 1px; margin: 2px 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ms-who { font-size: 22px; letter-spacing: 2px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ms-hero { width: 130px; height: 100%; object-fit: cover; display: block; }
+        .ms-body { display: flex; flex-direction: column; justify-content: center; }
+    </style>
+</head>
+<!-- Popup rekor & milestone turnamen (kill terbanyak, game tercepat/terlama, perfect game, MVP ke-N, kemenangan pertama, …).
+     Muncul otomatis saat hasil game disimpan (bisa dimatikan di Tournament Control) atau ditayangkan ulang dari daftar milestone.
+     Opsi URL: ?x=960&y=880 · &scale=0.9 · &hold=6 (detik) · &bg=green|dark · ?demo=1 (pratinjau) -->
+<body>
+    <div class="ms" id="ms"></div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        const ms = document.getElementById('ms');
+        T.place(ms);
+        const HOLD = Math.max(2, parseFloat(T.q.get('hold')) || 6) * 1000;
+        const queue = [];
+        let busy = false;
+
+        function fill(m) {
+            const pic = m.player
+                ? `<img class="ph" src="${T.playerImg(m.player)}" onerror="this.onerror=null;this.src='/Assets/player/noplayer.png'">`
+                : m.logo ? `<img class="lg" src="${T.esc(m.logo)}" onerror="this.style.display='none'">` : '';
+            ms.innerHTML = `<div class="ms-pic">${pic}</div>
+                <div class="ms-body"><div class="ms-title">${T.esc(m.title)}</div><div class="ms-text">${T.esc(m.text)}</div>
+                    <div class="ms-who">${T.esc([m.player, m.team].filter(Boolean).join(' · ').toUpperCase())}</div></div>
+                ${m.hero ? `<img class="ms-hero" src="${T.heroImg(m.hero)}" onerror="this.style.display='none'">` : '<div></div>'}`;
+        }
+        async function pump() {
+            if (busy) return;
+            busy = true;
+            while (queue.length) {
+                fill(queue.shift());
+                await new Promise(r => setTimeout(r, 120)); // beri waktu gambar dimuat
+                ms.classList.add('show');
+                await new Promise(r => setTimeout(r, HOLD));
+                ms.classList.remove('show');
+                await new Promise(r => setTimeout(r, 600));
+            }
+            busy = false;
+        }
+        function connect() {
+            const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+            ws.onmessage = (ev) => { const m = JSON.parse(ev.data); if (m.type === 'milestone' && Array.isArray(m.data)) { queue.push(...m.data); pump(); } };
+            ws.onclose = () => setTimeout(connect, 2000);
+        }
+        T.loadHeroes().then(() => {
+            if (T.q.get('demo')) { queue.push({ title: 'REKOR BARU', text: 'Kill terbanyak dalam satu game: 14 kill', player: 'Anaz', team: 'GARUDA MUDA', hero: 'Aulus' }); pump(); }
+            connect();
+        });
+    </script>
+</body>
+</html>

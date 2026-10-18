@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Draft Spotlight</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .sp { position: absolute; left: var(--x, 960px); top: var(--y, 470px); width: 780px; transform: translate(-50%, -50%) scale(var(--s, 1));
+              background: var(--panel); border: 1px solid var(--line); box-shadow: 0 14px 44px rgba(0, 0, 0, .55); opacity: 0; transition: opacity .35s ease, transform .35s ease; }
+        .sp.show { opacity: 1; transform: translate(-50%, -50%) scale(var(--s, 1)) translateY(0); }
+        .sp.blue { --side: var(--blue); } .sp.red { --side: var(--red); }
+        .sp-top { display: grid; grid-template-columns: 170px 1fr; border-left: 6px solid var(--side); }
+        .sp-hero { width: 170px; height: 170px; object-fit: cover; display: block; background: #1b1b22; }
+        .sp.ban .sp-hero { filter: grayscale(1) brightness(.75); }
+        .sp-info { padding: 14px 20px 12px; min-width: 0; }
+        .sp-tag { font-size: 20px; letter-spacing: 3px; color: var(--side); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sp-name { font-size: 58px; line-height: 1; letter-spacing: 2px; margin: 2px 0 10px; }
+        .sp-stats { display: flex; gap: 22px; }
+        .sp-stats div { font-size: 30px; line-height: 1; }
+        .sp-stats small { display: block; font-size: 15px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+        .sp-first { display: inline-block; background: var(--gold); color: #111; font-size: 24px; letter-spacing: 2px; padding: 6px 14px; }
+        .sp-first + small { display: block; color: var(--muted); font-size: 17px; letter-spacing: 1px; margin-top: 6px; }
+        .sp-player { display: grid; grid-template-columns: 76px 1fr auto; gap: 14px; align-items: center; padding: 10px 16px 10px 22px; border-top: 1px solid var(--line); border-left: 6px solid var(--side); }
+        .sp-ph { width: 76px; height: 76px; overflow: hidden; background: #222; }
+        .sp-ph img { width: 100%; display: block; transform: scale(1.9); transform-origin: 50% 6%; }
+        .sp-pn { font-size: 32px; letter-spacing: 1px; line-height: 1; }
+        .sp-pt { font-size: 19px; letter-spacing: 1px; color: var(--gold); margin-top: 4px; }
+        .sp-pool { text-align: right; }
+        .sp-pool small { display: block; font-size: 14px; letter-spacing: 2px; color: var(--muted); margin-bottom: 4px; }
+        .sp-pool div { display: flex; gap: 6px; justify-content: flex-end; }
+        .sp-pool span { position: relative; }
+        .sp-pool img { width: 44px; height: 44px; object-fit: cover; border: 1px solid var(--line); display: block; }
+        .sp-pool span.cur img { border-color: var(--gold); box-shadow: 0 0 8px var(--gold); }
+        .sp-pool b { position: absolute; right: 2px; bottom: 0; font-weight: normal; font-size: 16px; text-shadow: 0 0 4px #000, 0 0 4px #000; }
+    </style>
+</head>
+<!-- Kartu otomatis setiap pick / ban baru di draft: statistik hero di turnamen (pick, ban, win rate, presence, FIRST APPEARANCE)
+     + untuk pick: pemain yang memilih, catatan hero tsb untuknya, dan hero pool-nya. Data dari hasil game di Tournament Control.
+     Opsi URL: ?x=960&y=470 (posisi tengah kartu) · &scale=0.9 · &hold=5 (detik tampil) · &bans=0 (tanpa ban) · &bg=green|dark
+     Pratinjau: ?demo=fanny&side=red&slot=2&type=pick -->
+<body>
+    <div class="sp" id="sp"></div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        const sp = document.getElementById('sp');
+        T.place(sp);
+        const HOLD = Math.max(2, parseFloat(T.q.get('hold')) || 5) * 1000;
+        const SHOW_BANS = T.q.get('bans') !== '0';
+        const queue = [];
+        let busy = false, last = null, md = null;
+
+        const slotKey = (d) => {
+            const out = {};
+            for (const side of ['blue', 'red']) for (const type of ['pick', 'ban']) {
+                ((d && d[side + 'side'] && d[side + 'side'][type]) || []).forEach((x, i) => { out[`${side}|${type}|${i}`] = (x && x.hero) || ''; });
+            }
+            return out;
+        };
+        const ordinal = (n) => `ke-${n}`;
+
+        async function card(job) {
+            const [st, mdNow] = await Promise.all([T.get('/api/tournament/stats').catch(() => null), T.get('/api/matchdata').catch(() => md)]);
+            md = mdNow || md;
+            const hero = T.heroName(job.hero), team = md && md.teamdata ? md.teamdata[job.side + 'team'] : null;
+            const h = st ? st.heroes.find(x => T.sameHero(x.hero, hero)) : null;
+            const games = st ? st.totalGames : 0;
+            const statsHtml = h && (h.picks || h.bans)
+                ? `<div class="sp-stats">
+                    <div class="num">${h.picks}<small>PICK</small></div><div class="num">${h.bans}<small>BAN</small></div>
+                    <div class="num ${h.picks ? (h.winRate >= .5 ? 'c-ok' : 'c-red') : ''}">${h.picks ? T.pct(h.winRate) : '-'}<small>WIN RATE</small></div>
+                    <div class="num">${T.pct(h.presence)}<small>PRESENCE</small></div></div>`
+                : `<span class="sp-first">FIRST APPEARANCE</span><small>${games ? `Belum pernah di-pick / ban dalam ${games} game turnamen ini` : 'Hero pertama yang tampil di turnamen ini'}</small>`;
+
+            let playerHtml = '';
+            const pl = job.type === 'pick' && team && team.playerlist ? team.playerlist[job.slot] : null;
+            if (pl && pl.name && String(pl.name).trim()) {
+                const name = String(pl.name).trim();
+                const p = st ? st.players.find(x => x.name.toLowerCase() === name.toLowerCase()) : null;
+                const used = p ? p.pool.find(x => T.sameHero(x.hero, hero)) : null;
+                const line = used ? `Hero ${ordinal(used.games + 1)} untuk ${name} · ${used.wins}W-${used.games - used.wins}L`
+                    : p && p.games ? `Pertama kali ${name} memakai hero ini` : `Debut ${name} di turnamen ini`;
+                const pool = p ? p.pool.slice(0, 4) : [];
+                playerHtml = `<div class="sp-player">
+                    <div class="sp-ph"><img src="${T.playerImg(name)}" onerror="this.onerror=null;this.src='/Assets/player/noplayer.png'"></div>
+                    <div><div class="sp-pn">${T.esc(name)}</div><div class="sp-pt">${T.esc(line)}</div></div>
+                    ${pool.length ? `<div class="sp-pool"><small>HERO POOL</small><div>${pool.map(x => `<span class="${T.sameHero(x.hero, hero) ? 'cur' : ''}"><img src="${T.heroImg(x.hero)}" onerror="this.style.visibility='hidden'"><b>${x.games}</b></span>`).join('')}</div></div>` : ''}
+                </div>`;
+            }
+            sp.className = `sp ${job.side} ${job.type}`;
+            sp.innerHTML = `<div class="sp-top">
+                    <img class="sp-hero" src="${T.heroImg(hero)}" onerror="this.style.visibility='hidden'">
+                    <div class="sp-info"><div class="sp-tag">${T.esc(((team && team.teamname) || (job.side === 'blue' ? 'BLUE' : 'RED')).toUpperCase())} · ${job.type === 'pick' ? 'PICK' : 'BAN'}</div>
+                        <div class="sp-name">${T.esc(hero.toUpperCase())}</div>${statsHtml}</div>
+                </div>${playerHtml}`;
+        }
+
+        async function pump() {
+            if (busy) return;
+            busy = true;
+            while (queue.length) {
+                const job = queue.shift();
+                await card(job);
+                await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                sp.classList.add('show');
+                await new Promise(r => setTimeout(r, HOLD));
+                sp.classList.remove('show');
+                await new Promise(r => setTimeout(r, 450));
+            }
+            busy = false;
+        }
+
+        function onDraft(d) {
+            const now = slotKey(d);
+            if (last) {
+                for (const [k, hero] of Object.entries(now)) {
+                    if (!hero || last[k] === hero) continue;
+                    const [side, type, i] = k.split('|');
+                    if (type === 'ban' && !SHOW_BANS) continue;
+                    if (queue.some(j => j.key === k)) continue;
+                    queue.push({ key: k, side, type, slot: +i, hero });
+                }
+            }
+            last = now;
+            pump();
+        }
+
+        function connect() {
+            const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+            ws.onopen = async () => {
+                // posisi draft saat ini jadi patokan: yang sudah ada tidak diumumkan ulang
+                try { const d = await T.get('/api/matchdraft'); if (!last) last = slotKey(d.draftdata); } catch (e) {}
+            };
+            ws.onmessage = (ev) => { const m = JSON.parse(ev.data); if (m.type === 'draftdata_update') onDraft(m.data); };
+            ws.onclose = () => setTimeout(connect, 2000);
+        }
+
+        T.loadHeroes().then(() => {
+            const demo = T.q.get('demo');
+            if (demo) { queue.push({ key: 'demo', side: T.q.get('side') === 'red' ? 'red' : 'blue', type: T.q.get('type') === 'ban' ? 'ban' : 'pick', slot: +(T.q.get('slot') || 0), hero: demo }); pump(); }
+            connect();
+        });
+    </script>
+</body>
+</html>
