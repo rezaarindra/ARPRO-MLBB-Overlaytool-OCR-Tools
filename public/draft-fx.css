@@ -2,6 +2,9 @@
    Splash hero penuh menutupi 5 box tim → keluar berlawanan arah → stinger logo tim → hero masuk box.
    Semua angka yang biasa di-tuning ada di :root. */
 
+/* font efek selalu Big Noodle (display2.html memakai font lain untuk 'myfonts') */
+@font-face { font-family: 'fxnoodle'; src: url('Assets/Font/big_noodle_titling.ttf') format('truetype'); }
+
 :root {
     --fx-blue: #1b5cff;
     --fx-blue-dark: #071a5c;
@@ -106,7 +109,7 @@ body.fx-ready .uppermiddle .image-box img {
     position: absolute;
     bottom: 10px;
     left: 26px;
-    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-family: 'fxnoodle', 'myfonts', sans-serif;
     font-size: var(--fx-name-size);
     line-height: 0.9;
     letter-spacing: 3px;
@@ -154,7 +157,7 @@ body.fx-ready .uppermiddle .image-box img {
     right: -14px;
     bottom: 12px;
     padding: 4px 8px 2px;
-    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-family: 'fxnoodle', 'myfonts', sans-serif;
     font-size: 30px;
     line-height: 1;
     letter-spacing: 1.5px;
@@ -212,7 +215,7 @@ body.fx-ready .uppermiddle .image-box img {
     left: 0;
     right: 0;
     text-align: center;
-    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-family: 'fxnoodle', 'myfonts', sans-serif;
     font-size: 54px;
     line-height: 1;
     letter-spacing: 2px;
@@ -258,7 +261,7 @@ body.fx-ready .timermid { position: relative; z-index: 2; } /* angka timer tetap
     right: 0;
     bottom: 64px;
     text-align: center;
-    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-family: 'fxnoodle', 'myfonts', sans-serif;
     font-size: 22px;
     letter-spacing: 3px;
     line-height: 1;
@@ -268,6 +271,12 @@ body.fx-ready .timermid { position: relative; z-index: 2; } /* angka timer tetap
 }
 
 .fx-phase-no:empty { display: none; }
+
+/* ---------- Layout display2.html / display2ban6.html ---------- */
+/* skor di display2 tanpa kelas .name-box; label fase di bawah panah giliran */
+.fx-pips-on > [id^="name-box"] { visibility: hidden; position: absolute; }
+body.fx-ready .lowermid > .upperlowermid { position: relative; }
+.upperlowermid > .fx-phase-no { top: 10px; bottom: auto; font-size: 20px; }
 
 /* ---------- Stinger logo tim (di dalam box pick yang sedang terisi) ---------- */
 .fx-stinger {
@@ -301,7 +310,7 @@ body.fx-ready .timermid { position: relative; z-index: 2; } /* angka timer tetap
 }
 
 .fx-stinger span {
-    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-family: 'fxnoodle', 'myfonts', sans-serif;
     font-size: 30px;
     letter-spacing: 1px;
     color: #fff;
