@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Standings</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1240px; }
+        .tbl { display: flex; flex-direction: column; gap: 6px; }
+        .row { display: grid; grid-template-columns: 56px 60px 1fr 150px 150px 120px 110px; gap: 16px; align-items: center; background: var(--row); padding: 6px 16px; font-size: 30px; border-left: 5px solid transparent; }
+        .row.head { background: none; font-size: 18px; color: var(--muted); letter-spacing: 2px; padding-top: 0; padding-bottom: 0; }
+        .row.adv { border-left-color: var(--ok); }
+        .row .pos { font-size: 36px; text-align: center; color: var(--muted); }
+        .row.adv .pos { color: var(--ok); }
+        .row .team { letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .row > div:nth-child(n+4) { text-align: center; }
+        .row .main { color: var(--gold); font-size: 34px; }
+        .legend { margin-top: 14px; font-size: 18px; color: var(--muted); letter-spacing: 2px; }
+        .legend i { display: inline-block; width: 14px; height: 14px; background: var(--ok); margin-right: 8px; vertical-align: -1px; }
+    </style>
+</head>
+<!-- Klasemen otomatis dari hasil game & series (Tournament Control). Urutan: menang series → selisih game → menang game.
+     Opsi URL: ?group=A (grup diatur di Tournament Control) · &advance=4 (tandai posisi lolos) · ?x= &y= &scale= &bg=green|dark -->
+<body>
+    <div class="tp" id="tp">
+        <div class="tp-head"><div class="tp-title" id="title">STANDINGS</div><div class="tp-sub" id="sub"></div></div>
+        <div id="body"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        T.place(document.getElementById('tp'));
+        const GROUP = (T.q.get('group') || '').trim();
+        const ADV = parseInt(T.q.get('advance'), 10) || 0;
+        if (GROUP) document.getElementById('title').textContent = `GROUP ${GROUP.toUpperCase()} STANDINGS`;
+
+        async function load() {
+            const st = await T.get('/api/tournament/stats');
+            document.getElementById('sub').textContent = st.name ? st.name.toUpperCase() : '';
+            const teams = st.teams.filter(t => !GROUP || t.group.toLowerCase() === GROUP.toLowerCase());
+            const body = document.getElementById('body');
+            if (!teams.length) { body.innerHTML = `<div class="tp-empty">${GROUP ? 'BELUM ADA TIM DI GRUP ' + T.esc(GROUP.toUpperCase()) : 'BELUM ADA HASIL GAME YANG DISIMPAN'}</div>`; return; }
+            body.innerHTML = `<div class="tbl anim">
+                <div class="row head"><div>#</div><div></div><div>TEAM</div><div>MATCH W-L</div><div>GAME W-L</div><div>DIFF</div><div>WIN%</div></div>
+                ${teams.map((t, i) => `
+                <div class="row ${i < ADV ? 'adv' : ''}">
+                    <div class="pos">${i + 1}</div>
+                    ${t.logo ? `<img class="logo" src="${T.esc(t.logo)}" onerror="this.style.visibility='hidden'">` : '<div></div>'}
+                    <div class="team">${T.esc(t.name)}</div>
+                    <div class="main num">${t.seriesWins} - ${t.seriesLosses}</div>
+                    <div class="num">${t.gameWins} - ${t.gameLosses}</div>
+                    <div class="num ${t.gameDiff > 0 ? 'c-ok' : t.gameDiff < 0 ? 'c-red' : ''}">${t.gameDiff > 0 ? '+' : ''}${t.gameDiff}</div>
+                    <div class="num">${T.pct(t.winRate)}</div>
+                </div>`).join('')}</div>
+                ${ADV ? `<div class="legend"><i></i>LOLOS KE BABAK BERIKUTNYA</div>` : ''}`;
+        }
+        T.live(load, ['tournament_update']);
+    </script>
+</body>
+</html>

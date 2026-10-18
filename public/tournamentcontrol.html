@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Control</title>
+    <link rel="stylesheet" href="ocrcontrol.css">
+    <style>
+        .tc-main { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; padding: 16px 22px 40px; align-items: start; }
+        .tc-wide { grid-column: 1 / -1; }
+        .tc-match { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; font: 26px/1.1 'Noodle', sans-serif; letter-spacing: 1px; margin-bottom: 8px; }
+        .tc-match .b { color: #00d2ff; } .tc-match .r { color: #ff2a2a; text-align: right; } .tc-match .v { color: var(--muted); font-size: 18px; }
+        .tc-match .w { outline: 2px solid #ffcf4a; outline-offset: 3px; }
+        .tc-msg { margin-top: 10px; font-size: 13px; min-height: 18px; }
+        .tc-msg.ok { color: var(--ok); } .tc-msg.err { color: var(--bad); }
+        table.tc { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.tc th { text-align: left; font-size: 11px; letter-spacing: 1px; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+        table.tc td { padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+        table.tc td.win { color: #ffcf4a; font-weight: 700; }
+        table.tc button { padding: 4px 8px; font-size: 11px; }
+        .tc-scroll { max-height: 380px; overflow: auto; }
+        textarea { width: 100%; min-height: 150px; font: 13px Consolas, monospace; color: var(--text); background: #1f2229; border: 1px solid var(--line); padding: 8px; box-sizing: border-box; }
+        .tc-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .tc-field input, .tc-field select { width: 100%; }
+        .br-rounds { display: flex; gap: 14px; overflow-x: auto; }
+        .br-round { min-width: 230px; flex: 1; }
+        .br-round h4 { margin: 0 0 8px; font: 18px 'Noodle', sans-serif; letter-spacing: 1px; color: var(--accent); }
+        .br-m { background: #0f1115; border: 1px solid var(--line); padding: 6px; margin-bottom: 8px; }
+        .br-t { display: grid; grid-template-columns: 1fr 52px; gap: 6px; align-items: center; margin: 3px 0; }
+        .br-t input { padding: 5px 6px; }
+        .br-t .nm { font-size: 13px; padding: 5px 6px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .br-t.win .nm, .br-t.win input.team { color: #ffcf4a; font-weight: 700; }
+        .links { display: flex; flex-direction: column; gap: 8px; }
+        .lk { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; background: #0f1115; border: 1px solid var(--line); padding: 6px 10px; }
+        .lk code { font: 12px Consolas, monospace; color: var(--text); word-break: break-all; }
+        .lk small { display: block; color: var(--muted); font-size: 11px; }
+        .lk button, .lk a { padding: 5px 9px; font-size: 11px; }
+        .lk a { color: var(--accent); font-weight: 700; text-decoration: none; border: 1px solid var(--line); }
+    </style>
+</head>
+<!-- Tournament Control: arsip hasil game → statistik hero, leaderboard, klasemen, head-to-head; editor bracket playoff. -->
+<body>
+    <header class="oc-head">
+        <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="ARPRO ESPORT TOOLS">
+        <div class="oc-title">TOURNAMENT CONTROL <span>STATISTIK · KLASEMEN · BRACKET</span></div>
+        <div class="oc-run"><span id="tcCount">0 game tersimpan</span></div>
+    </header>
+
+    <main class="tc-main">
+        <div class="oc-card">
+            <h3>1 · SIMPAN HASIL GAME</h3>
+            <p class="oc-small">Isi statistik pemain &amp; pilih pemenang di <b>Postgame Control</b>, lalu simpan di sini (atau tombol yang sama di Postgame Control). Simpan ulang game yang sama = koreksi.</p>
+            <div class="tc-match" id="tcMatch"></div>
+            <div class="oc-meta" id="tcMatchMeta">—</div>
+            <div class="oc-row"><button class="primary" id="tcSaveGame">SIMPAN HASIL GAME</button></div>
+            <div class="tc-msg" id="tcSaveMsg"></div>
+        </div>
+
+        <div class="oc-card">
+            <h3>2 · PENGATURAN</h3>
+            <label class="tc-field">Nama turnamen <input id="tcName" placeholder="contoh: ARPRO CUP SEASON 1"></label>
+            <label class="tc-field">Grup (satu baris: Nama Tim = Grup)
+                <textarea id="tcGroups" placeholder="GARUDA MUDA = A&#10;SINGA LAUT = A&#10;TIM KETIGA = B"></textarea>
+            </label>
+            <div class="oc-row"><button id="tcFillTeams">ISI DAFTAR TIM</button><button class="primary" id="tcSaveSettings">SIMPAN PENGATURAN</button></div>
+            <div class="tc-msg" id="tcSettingsMsg"></div>
+        </div>
+
+        <div class="oc-card">
+            <h3>3 · DAFTAR GAME</h3>
+            <div class="tc-scroll">
+                <table class="tc"><thead><tr><th>WAKTU</th><th>G</th><th>BIRU</th><th>MERAH</th><th>MVP</th><th></th></tr></thead><tbody id="tcGames"></tbody></table>
+            </div>
+            <div class="oc-row"><button class="danger" id="tcReset">RESET TURNAMEN</button></div>
+        </div>
+
+        <div class="oc-card tc-wide">
+            <h3>4 · BRACKET PLAYOFF</h3>
+            <div class="oc-grid4" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 12px;">
+                <label>Jumlah tim <select id="brSize"><option value="4">4 tim</option><option value="8" selected>8 tim</option><option value="16">16 tim</option></select></label>
+                <label>BO ronde 1 <select class="br-bo"></select></label>
+                <label>BO ronde 2 <select class="br-bo"></select></label>
+                <label>BO ronde 3 <select class="br-bo"></select></label>
+                <label>BO ronde 4 <select class="br-bo"></select></label>
+            </div>
+            <p class="oc-small">Ketik nama tim di ronde pertama (urutan = pasangan 1v2, 3v4, …). Isi skor; pemenang maju otomatis saat skor mencapai kemenangan BO.</p>
+            <div class="br-rounds" id="brRounds"></div>
+            <div class="oc-row" style="max-width: 420px;"><button class="primary" id="brSave">SIMPAN BRACKET</button></div>
+            <div class="tc-msg" id="brMsg"></div>
+        </div>
+
+        <div class="oc-card tc-wide">
+            <h3>5 · OVERLAY (BROWSER SOURCE 1920×1080)</h3>
+            <div class="links" id="tcLinks"></div>
+        </div>
+    </main>
+
+    <script src="script/tournamentcontrol.js"></script>
+</body>
+</html>

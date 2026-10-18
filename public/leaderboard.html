@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Leaderboard</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1720px; }
+        /* mode ringkas: 4 papan */
+        .boards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+        .board h3 { margin: 0 0 12px; font-weight: normal; font-size: 30px; letter-spacing: 2px; }
+        .board .rows { display: flex; flex-direction: column; gap: 8px; }
+        .p { display: grid; grid-template-columns: 30px 52px 1fr auto; gap: 10px; align-items: center; background: var(--row); padding: 6px 10px; }
+        .p .rank { font-size: 26px; color: var(--muted); text-align: center; }
+        .p:first-child { background: linear-gradient(90deg, rgba(255, 207, 74, .16), var(--row)); }
+        .p:first-child .rank { color: var(--gold); }
+        /* foto 3:4 (Assets/player) diperbesar ke bagian kepala-bahu */
+        .ph { width: 52px; height: 52px; overflow: hidden; background: #222; border: 1px solid var(--line); flex: none; }
+        .ph img { width: 100%; display: block; transform: scale(1.9); transform-origin: 50% 6%; }
+        .p .name { font-size: 24px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p .team { font-size: 15px; color: var(--muted); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p .val { font-size: 32px; color: var(--gold); }
+        /* mode detail: satu statistik */
+        .list { display: flex; flex-direction: column; gap: 8px; }
+        .d { display: grid; grid-template-columns: 50px 84px 1.4fr 110px 170px 110px 110px 260px; gap: 16px; align-items: center; background: var(--row); padding: 6px 16px; font-size: 26px; }
+        .d.head { background: none; font-size: 17px; color: var(--muted); letter-spacing: 2px; padding-top: 0; padding-bottom: 0; }
+        .d .rank { font-size: 34px; text-align: center; color: var(--muted); }
+        .d:nth-child(2) .rank { color: var(--gold); }
+        .d .ph { width: 84px; height: 84px; }
+        .d .name { font-size: 32px; letter-spacing: 1px; }
+        .d .main { color: var(--gold); font-size: 34px; }
+        .d .heroes { display: flex; gap: 6px; }
+        .d .heroes img { width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--line); }
+    </style>
+</head>
+<!-- Leaderboard pemain turnamen (dari hasil game di Tournament Control).
+     Opsi URL: ?stat=kda|kills|assists|mvp|gold (satu daftar detail, tanpa = 4 papan ringkas) · &top=5 · &min=2 (minimal game) · ?x= &y= &scale= &bg=green|dark -->
+<body>
+    <div class="tp" id="tp">
+        <div class="tp-head"><div class="tp-title" id="title">PLAYER LEADERBOARD</div><div class="tp-sub" id="sub"></div></div>
+        <div id="body"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        T.place(document.getElementById('tp'));
+        const STATS = {
+            kda: { title: 'TOP KDA', label: 'KDA', value: p => p.kda, text: p => p.kda.toFixed(2) },
+            kills: { title: 'MOST KILLS', label: 'KILLS', value: p => p.k, text: p => p.k },
+            assists: { title: 'MOST ASSISTS', label: 'ASSISTS', value: p => p.a, text: p => p.a },
+            mvp: { title: 'MOST MVP', label: 'MVP', value: p => p.mvp, text: p => p.mvp },
+            gold: { title: 'HIGHEST AVG GOLD', label: 'AVG GOLD', value: p => p.avgGold, text: p => (p.avgGold / 1000).toFixed(1) + 'K' }
+        };
+        const stat = STATS[T.q.get('stat')] ? T.q.get('stat') : null;
+        const TOP = Math.min(10, Math.max(3, parseInt(T.q.get('top'), 10) || (stat ? 6 : 5)));
+        const MIN = Math.max(1, parseInt(T.q.get('min'), 10) || 1);
+        const photo = (p) => `<div class="ph"><img src="${T.playerImg(p.name)}" onerror="this.onerror=null;this.src='/Assets/player/noplayer.png'"></div>`;
+        const rank = (list, s) => list.filter(p => p.games >= MIN && s.value(p) > 0).sort((a, b) => s.value(b) - s.value(a) || b.kda - a.kda).slice(0, TOP);
+
+        async function load() {
+            const st = await T.get('/api/tournament/stats');
+            const body = document.getElementById('body');
+            document.getElementById('sub').textContent = `${st.name ? st.name.toUpperCase() + ' · ' : ''}${st.totalGames} GAME${MIN > 1 ? ' · MIN ' + MIN + ' GAME' : ''}`;
+            if (!st.totalGames) { body.innerHTML = '<div class="tp-empty">BELUM ADA HASIL GAME YANG DISIMPAN</div>'; return; }
+
+            if (stat) {
+                const s = STATS[stat];
+                document.getElementById('title').textContent = s.title;
+                body.innerHTML = `<div class="list anim">
+                    <div class="d head"><div></div><div></div><div>PLAYER</div><div>GAME</div><div>K / D / A</div><div>KDA</div><div>MVP</div><div>HERO ANDALAN</div></div>
+                    ${rank(st.players, s).map((p, i) => `
+                    <div class="d">
+                        <div class="rank">${i + 1}</div>${photo(p)}
+                        <div><div class="name">${T.esc(p.name)}</div><div class="c-muted" style="font-size:18px">${T.esc(p.team)}</div></div>
+                        <div class="num">${p.games}</div>
+                        <div class="num">${p.k} / ${p.d} / ${p.a}</div>
+                        <div class="num ${stat === 'kda' ? 'main' : ''}">${p.kda.toFixed(2)}</div>
+                        <div class="num ${stat === 'mvp' ? 'main' : ''}">${p.mvp}</div>
+                        <div class="heroes">${p.heroes.map(h => `<img src="${T.heroImg(h.hero)}" title="${T.esc(h.hero)} ×${h.count}" onerror="this.style.display='none'">`).join('')}
+                            ${['kda', 'mvp'].includes(stat) ? '' : `<span class="main" style="margin-left:auto">${s.text(p)}</span>`}</div>
+                    </div>`).join('')}</div>`;
+                return;
+            }
+            body.innerHTML = `<div class="boards">${['kda', 'kills', 'mvp', 'gold'].map(k => {
+                const s = STATS[k], list = rank(st.players, s);
+                return `<div class="board"><h3>${s.title}</h3><div class="rows anim">${list.map((p, i) => `
+                    <div class="p"><div class="rank">${i + 1}</div>${photo(p)}
+                        <div style="min-width:0"><div class="name">${T.esc(p.name)}</div><div class="team">${T.esc(p.team)}</div></div>
+                        <div class="val num">${s.text(p)}</div></div>`).join('') || '<div class="c-muted">-</div>'}</div></div>`;
+            }).join('')}</div>`;
+        }
+        T.live(load, ['tournament_update']);
+    </script>
+</body>
+</html>

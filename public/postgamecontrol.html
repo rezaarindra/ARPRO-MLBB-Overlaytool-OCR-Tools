@@ -110,6 +110,9 @@
         }
         .win-btn.blue:hover, .win-btn.blue.active { background: rgba(0, 175, 255, 0.2); border-color: var(--blue-side); color: var(--blue-side); box-shadow: 0 0 20px rgba(0, 175, 255, 0.3); }
         .win-btn.red:hover, .win-btn.red.active { background: rgba(249, 72, 104, 0.2); border-color: var(--red-side); color: var(--red-side); box-shadow: 0 0 20px rgba(249, 72, 104, 0.3); }
+        .win-btn.save { width: 260px; }
+        .win-btn.save:hover, .win-btn.save.ok { background: rgba(255, 207, 74, 0.18); border-color: #ffcf4a; color: #ffcf4a; box-shadow: 0 0 20px rgba(255, 207, 74, 0.3); }
+        .win-btn.save.err { border-color: #ff4d5e; color: #ff4d5e; }
 
         /* --- TEAMS --- */
         .section-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -291,6 +294,7 @@
         <div class="winner-panel glass-panel">
             <button class="win-btn blue" id="btn-win-blue" onclick="setWinner('blue')">BLUE WIN</button>
             <button class="win-btn red" id="btn-win-red" onclick="setWinner('red')">RED WIN</button>
+            <button class="win-btn save" id="btn-save-tournament" onclick="saveToTournament(this)" title="Simpan hasil game ini ke statistik turnamen (Tournament Control)">SIMPAN KE TURNAMEN</button>
         </div>
 
         <div class="section team-blue glass-panel">
@@ -518,6 +522,21 @@
                     statusEl.classList.remove('status-saved');
                 }, 2000);
             });
+        }
+
+        // Simpan hasil game ke arsip turnamen (statistik hero, leaderboard, klasemen). Data terbaru dikirim dulu agar tidak tertinggal autosave.
+        async function saveToTournament(btn) {
+            const label = 'SIMPAN KE TURNAMEN';
+            btn.classList.remove('ok', 'err');
+            try {
+                await fetch('/api/matchdata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(matchData) });
+                const res = await fetch('/api/tournament/game', { method: 'POST' });
+                const out = await res.json();
+                btn.classList.add(res.ok ? 'ok' : 'err');
+                btn.textContent = res.ok ? (out.updated ? 'DIPERBARUI ✓' : 'TERSIMPAN ✓') : 'GAGAL';
+                if (!res.ok) alert(out.message);
+            } catch (e) { btn.classList.add('err'); btn.textContent = 'GAGAL'; }
+            setTimeout(() => { btn.textContent = label; btn.classList.remove('ok', 'err'); }, 2500);
         }
 
         function setWinner(side) {

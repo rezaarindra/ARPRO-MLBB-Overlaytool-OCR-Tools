@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Bracket</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1760px; }
+        .br { display: flex; gap: 0; height: 760px; }
+        .round { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .round h3 { margin: 0 0 6px; text-align: center; font-weight: normal; font-size: 24px; letter-spacing: 3px; color: var(--muted); }
+        .round h3 small { display: block; font-size: 15px; letter-spacing: 2px; }
+        .matches { flex: 1; display: flex; flex-direction: column; justify-content: space-around; padding: 0 22px; position: relative; }
+        .m { position: relative; background: var(--row); border: 1px solid var(--line); }
+        .round:not(:last-child) .m::after { content: ''; position: absolute; left: 100%; top: 50%; width: 22px; border-top: 2px solid var(--line); }
+        .round:not(:first-child) .m::before { content: ''; position: absolute; right: 100%; top: 50%; width: 22px; border-top: 2px solid var(--line); }
+        .t { display: grid; grid-template-columns: 34px 1fr 40px; gap: 8px; align-items: center; padding: 4px 10px; font-size: 24px; height: 40px; box-sizing: border-box; }
+        .t + .t { border-top: 1px solid var(--line); }
+        .t img { width: 30px; height: 30px; object-fit: contain; }
+        .t .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 1px; }
+        .t .s { text-align: right; font-size: 28px; color: var(--muted); }
+        .t.win .n, .t.win .s { color: var(--gold); }
+        .t.lose { opacity: .45; }
+        .t.tbd .n { color: var(--muted); }
+        .champ { width: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; text-align: center; border-left: 2px solid var(--accent); margin-left: 10px; }
+        .champ .lbl { font-size: 24px; letter-spacing: 4px; color: var(--muted); }
+        .champ .name { font-size: 44px; color: var(--gold); letter-spacing: 2px; line-height: 1; padding: 0 10px; }
+        .champ img { width: 120px; height: 120px; object-fit: contain; }
+    </style>
+</head>
+<!-- Bagan playoff (eliminasi tunggal 4 / 8 / 16 tim). Tim & skor diisi di Tournament Control › BRACKET; pemenang maju otomatis.
+     Opsi URL: ?x= &y= &scale= &bg=green|dark -->
+<body>
+    <div class="tp" id="tp">
+        <div class="tp-head"><div class="tp-title">PLAYOFF BRACKET</div><div class="tp-sub" id="sub"></div></div>
+        <div class="br" id="br"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        T.place(document.getElementById('tp'));
+
+        async function load() {
+            const [b, st] = await Promise.all([T.get('/api/tournament/bracket'), T.get('/api/tournament/stats')]);
+            document.getElementById('sub').textContent = st.name ? st.name.toUpperCase() : '';
+            const logo = (n) => { const t = st.teams.find(x => x.name.toLowerCase() === String(n).toLowerCase()); return t && t.logo ? t.logo : ''; };
+            const team = (n, s, m) => {
+                const cls = !n ? 'tbd' : m.winner ? (m.winner === n ? 'win' : 'lose') : '';
+                const lg = n && logo(n);
+                return `<div class="t ${cls}">${lg ? `<img src="${T.esc(lg)}" onerror="this.style.visibility='hidden'">` : '<span></span>'}
+                    <div class="n">${n ? T.esc(n) : 'TBD'}</div><div class="s num">${n && (m.a && m.b) ? s : ''}</div></div>`;
+            };
+            const cl = logo(b.champion);
+            document.getElementById('br').innerHTML = b.rounds.map(r => `
+                <div class="round"><h3>${r.name}<small>BO${r.matches[0] ? r.matches[0].bo : ''}</small></h3>
+                    <div class="matches">${r.matches.map(m => `<div class="m">${team(m.a, m.sa, m)}${team(m.b, m.sb, m)}</div>`).join('')}</div>
+                </div>`).join('') + `
+                <div class="champ"><div class="lbl">CHAMPION</div>${cl ? `<img src="${T.esc(cl)}">` : ''}<div class="name">${b.champion ? T.esc(b.champion) : '?'}</div></div>`;
+        }
+        T.live(load, ['tournament_update']);
+    </script>
+</body>
+</html>

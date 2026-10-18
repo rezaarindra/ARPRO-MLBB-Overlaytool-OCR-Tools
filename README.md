@@ -30,6 +30,11 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 💰 | **Gold Lead & Grafik Gold** | Bar selisih gold realtime dan grafik selisih gold sepanjang game (ala MPL), langsung dari OCR. |
 | ⏱️ | **Timer Turtle & Lord** | Hitung mundur spawn objektif dari timer game. Video Turtle/Lord Spawn diputar otomatis. |
 | ⚡ | **Notifikasi Otomatis** | First Blood & Lord Slain otomatis dari OCR, plus saran Double/Triple/Maniac/Savage yang tinggal diklik operator. |
+| 📈 | **Statistik Hero** | Most picked / most banned / presence + win rate hero sepanjang turnamen. |
+| 🥇 | **Leaderboard Pemain** | Top KDA, kills, assists, MVP terbanyak, avg gold, dan hero andalan tiap pemain. |
+| 🗂️ | **Klasemen & Bracket** | Klasemen otomatis per grup (match W-L, game W-L, selisih) dan bracket playoff 4/8/16 tim. |
+| ⚔️ | **Head-to-Head** | Perbandingan dua tim yang sedang main: rekor, win rate, rata-rata kill & durasi, hero andalan. |
+| 🎛️ | **Stream Deck / Companion** | Satu URL per tombol: notifikasi, MVP, lineup, skor, pemenang, simpan hasil game. |
 | 🏆 | **Postgame & MVP** | Statistik pasca-pertandingan, tampilan MVP, dan build/item hero. |
 | 📅 | **Schedule & Lineup** | Jadwal pertandingan, lineup pemain, dan undian/drawing grup. |
 | 🔔 | **Notifikasi & Event** | Notifikasi on-air dan event notification (first blood, savage, dll). |
@@ -127,6 +132,36 @@ Video notifikasi tampil di `notifdisplay.html`, jadi pastikan halaman itu terpas
 4. Hubungkan field title GT ke kolom: `killscore1`, `killscore2`, `gold1`, `gold2`, `turret1`, `turret2`, `lord1`, `lord2`, `timer`.
 
 > Tips siaran: biarkan tab OCR Control tetap terbuka dan aktif (jangan di-minimize), dan pakai LAN kabel.
+
+## 🏆 Statistik Turnamen
+
+Semua statistik dihitung otomatis dari **hasil game yang disimpan**.
+
+1. Setelah game selesai, isi KDA/gold/item dan pilih **BLUE WIN / RED WIN** di **Postgame Control**.
+2. Tekan **SIMPAN KE TURNAMEN** (di Postgame Control atau **Tournament Control**). Simpan ulang game yang sama (tim & nomor game sama) = koreksi, bukan game baru.
+3. Game antar dua tim yang sama otomatis dikelompokkan jadi satu **series** sesuai format BO yang aktif.
+
+| Overlay | Isi | Opsi URL |
+|---|---|---|
+| `herostats.html` | Most picked, most banned, highest presence + pick/ban/win rate | `?top=5` |
+| `leaderboard.html` | 4 papan ringkas (KDA, kills, MVP, avg gold) | `?stat=kda\|kills\|assists\|mvp\|gold` (daftar detail) · `&min=2` |
+| `standings.html` | Klasemen: match W-L, game W-L, selisih, win% | `?group=A` · `&advance=4` |
+| `bracket.html` | Bracket playoff, pemenang maju otomatis | diatur di Tournament Control |
+| `h2h.html` | Head-to-head tim biru vs merah yang sedang main | `?a=TIM&b=TIM` |
+
+Semua overlay: latar transparan, `?x=&y=` (posisi tengah panel), `&scale=`, `&bg=green|dark`.
+Nama turnamen, grup tim, bracket, dan daftar/hapus game diatur di **`tournamentcontrol.html`**.
+
+## 🎛️ Stream Deck / Bitfocus Companion
+
+Buka **`companion.html`** untuk daftar lengkap URL (tombol **COPY** & **TES**). Di Companion pakai modul **Generic: HTTP Requests** → aksi **GET**:
+
+```
+http://IP-SERVER:3000/api/companion/notif/firstblood
+http://IP-SERVER:3000/api/companion/score/blue/up
+http://IP-SERVER:3000/api/companion/mvp-show?side=red&slot=2
+http://IP-SERVER:3000/api/companion/save-result
+```
 
 ## ⚙️ Konfigurasi (opsional)
 

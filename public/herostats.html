@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Hero Stats</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1680px; }
+        .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+        .col h3 { margin: 0 0 12px; font-weight: normal; font-size: 30px; letter-spacing: 2px; }
+        .col h3 small { font-size: 18px; color: var(--muted); margin-left: 8px; }
+        .rows { display: flex; flex-direction: column; gap: 8px; }
+        .r { display: grid; grid-template-columns: 34px 56px 1fr auto; gap: 12px; align-items: center; background: var(--row); padding: 8px 12px; }
+        .r .rank { font-size: 30px; color: var(--muted); text-align: center; }
+        .r:first-child .rank { color: var(--gold); }
+        .r .name { font-size: 26px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .r .meta { font-size: 17px; color: var(--muted); letter-spacing: 1px; }
+        .r .big { font-size: 34px; text-align: right; line-height: 1; }
+        .r .big small { display: block; font-size: 15px; color: var(--muted); letter-spacing: 1px; }
+        .pick .bar i { background: var(--blue); } .ban .bar i { background: var(--red); } .pres .bar i { background: var(--gold); }
+    </style>
+</head>
+<!-- Statistik hero turnamen: Most Picked / Most Banned / Highest Presence (dari hasil game yang disimpan di Tournament Control).
+     Opsi URL: ?x=960&y=540 · &scale=0.9 · &top=5 (jumlah baris) · &bg=green|dark -->
+<body>
+    <div class="tp" id="tp">
+        <div class="tp-head"><div class="tp-title">HERO STATISTICS</div><div class="tp-sub" id="sub"></div></div>
+        <div id="body"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        T.place(document.getElementById('tp'));
+        const TOP = Math.min(10, Math.max(3, parseInt(T.q.get('top'), 10) || 5));
+
+        function col(cls, title, list, main, sub) {
+            const max = Math.max(...list.map(main.value), 0.0001);
+            return `<div class="col ${cls}"><h3>${title}</h3><div class="rows anim">${list.map((h, i) => `
+                <div class="r">
+                    <div class="rank">${i + 1}</div>
+                    <img class="hero-img" src="${T.heroImg(h.hero)}" onerror="this.style.visibility='hidden'">
+                    <div><div class="name">${T.esc(h.hero)}</div><div class="meta">${sub(h)}</div><div class="bar"><i style="width:${main.value(h) / max * 100}%"></i></div></div>
+                    <div class="big num">${main.text(h)}<small>${main.label}</small></div>
+                </div>`).join('') || '<div class="c-muted">-</div>'}</div></div>`;
+        }
+
+        async function load() {
+            const st = await T.get('/api/tournament/stats');
+            document.getElementById('sub').textContent = `${st.name ? st.name.toUpperCase() + ' · ' : ''}${st.totalGames} GAME`;
+            if (!st.totalGames) { document.getElementById('body').innerHTML = '<div class="tp-empty">BELUM ADA HASIL GAME YANG DISIMPAN</div>'; return; }
+            const H = st.heroes;
+            const picked = H.filter(h => h.picks).sort((a, b) => b.picks - a.picks || b.winRate - a.winRate).slice(0, TOP);
+            const banned = H.filter(h => h.bans).sort((a, b) => b.bans - a.bans).slice(0, TOP);
+            const pres = H.slice().sort((a, b) => b.presence - a.presence || b.picks - a.picks).slice(0, TOP);
+            document.getElementById('body').innerHTML = `<div class="cols">
+                ${col('pick', 'MOST PICKED', picked, { value: h => h.picks, text: h => h.picks, label: 'PICK' }, h => `PICK RATE ${T.pct(h.pickRate)} · WIN RATE <span class="${h.winRate >= .5 ? 'c-ok' : 'c-red'}">${T.pct(h.winRate)}</span>`)}
+                ${col('ban', 'MOST BANNED', banned, { value: h => h.bans, text: h => h.bans, label: 'BAN' }, h => `BAN RATE ${T.pct(h.banRate)}`)}
+                ${col('pres', 'HIGHEST PRESENCE', pres, { value: h => h.presence, text: h => T.pct(h.presence), label: 'PICK + BAN' }, h => `${h.picks} PICK · ${h.bans} BAN`)}
+            </div>`;
+        }
+        T.live(load, ['tournament_update']);
+    </script>
+</body>
+</html>

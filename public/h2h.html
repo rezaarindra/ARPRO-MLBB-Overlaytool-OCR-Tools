@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Head to Head</title>
+    <link rel="stylesheet" href="tournament.css">
+    <style>
+        .tp { width: 1600px; }
+        .h2h { display: grid; grid-template-columns: 1fr 360px 1fr; align-items: stretch; }
+        .side { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 20px; }
+        .side .lg { width: 150px; height: 150px; object-fit: contain; }
+        .side .nm { font-size: 46px; letter-spacing: 2px; text-align: center; line-height: 1; }
+        .side.blue .nm { color: var(--blue); } .side.red .nm { color: var(--red); }
+        .side.blue { border-top: 4px solid var(--blue); padding-top: 16px; } .side.red { border-top: 4px solid var(--red); padding-top: 16px; }
+        .heroes { display: flex; gap: 8px; }
+        .heroes div { position: relative; }
+        .heroes img { width: 66px; height: 66px; object-fit: cover; border: 1px solid var(--line); display: block; }
+        .heroes span { position: absolute; right: 2px; bottom: 0; font-size: 18px; text-shadow: 0 0 4px #000, 0 0 4px #000; }
+        .hlabel { font-size: 17px; color: var(--muted); letter-spacing: 2px; }
+        .stats { display: flex; flex-direction: column; gap: 0; justify-content: center; }
+        .st { display: grid; grid-template-columns: 1fr 170px 1fr; align-items: center; text-align: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 32px; }
+        .st .lbl { font-size: 17px; letter-spacing: 2px; color: var(--muted); }
+        .st .better { color: var(--gold); }
+        .vs { text-align: center; padding: 14px 0 6px; }
+        .vs .lbl { font-size: 22px; letter-spacing: 4px; color: var(--muted); }
+        .vs .score { font-size: 90px; line-height: 1; letter-spacing: 6px; }
+        .vs .score .b { color: var(--blue); } .vs .score .r { color: var(--red); }
+        .vs .meet { font-size: 20px; letter-spacing: 2px; color: var(--muted); }
+    </style>
+</head>
+<!-- Perbandingan dua tim (default: tim biru vs merah yang sedang dimainkan, ikut berubah otomatis). Data dari hasil game di Tournament Control.
+     Opsi URL: ?a=NAMA TIM&b=NAMA TIM (tim tertentu) · ?x= &y= &scale= &bg=green|dark -->
+<body>
+    <div class="tp" id="tp">
+        <div class="tp-head"><div class="tp-title">HEAD TO HEAD</div><div class="tp-sub" id="sub"></div></div>
+        <div id="body"></div>
+    </div>
+    <script src="script/tournament-common.js"></script>
+    <script>
+        T.place(document.getElementById('tp'));
+
+        function side(cls, t) {
+            const s = t.stats;
+            return `<div class="side ${cls}">
+                ${t.logo ? `<img class="lg" src="${T.esc(t.logo)}" onerror="this.style.visibility='hidden'">` : ''}
+                <div class="nm">${T.esc(t.name || (cls === 'blue' ? 'BLUE' : 'RED'))}</div>
+                <div class="hlabel">HERO ANDALAN</div>
+                <div class="heroes">${s && s.heroes.length ? s.heroes.map(h => `<div><img src="${T.heroImg(h.hero)}" onerror="this.style.visibility='hidden'"><span>${h.count}</span></div>`).join('') : '<span class="c-muted">-</span>'}</div>
+            </div>`;
+        }
+
+        async function load() {
+            const p = new URLSearchParams();
+            if (T.q.get('a')) p.set('a', T.q.get('a'));
+            if (T.q.get('b')) p.set('b', T.q.get('b'));
+            const [d, st] = await Promise.all([T.get('/api/tournament/h2h?' + p), T.get('/api/tournament/stats')]);
+            document.getElementById('sub').textContent = st.name ? st.name.toUpperCase() : '';
+            const A = d.a.stats, B = d.b.stats;
+            if (!d.a.logo && A) d.a.logo = A.logo;
+            if (!d.b.logo && B) d.b.logo = B.logo;
+            const row = (lbl, fa, fb, num, higherBetter = true) => {
+                const va = A ? num(A) : null, vb = B ? num(B) : null;
+                const better = va == null || vb == null || va === vb ? 0 : (va > vb) === higherBetter ? 1 : 2;
+                return `<div class="st"><div class="${better === 1 ? 'better' : ''}">${A ? fa(A) : '-'}</div><div class="lbl">${lbl}</div><div class="${better === 2 ? 'better' : ''}">${B ? fb(B) : '-'}</div></div>`;
+            };
+            const rec = t => `${t.seriesWins}-${t.seriesLosses}`, grec = t => `${t.gameWins}-${t.gameLosses}`;
+            const avgK = t => t.games ? t.kills / t.games : 0;
+            document.getElementById('body').innerHTML = `<div class="h2h">
+                ${side('blue', d.a)}
+                <div class="stats">
+                    <div class="vs"><div class="lbl">HEAD TO HEAD</div>
+                        <div class="score num"><span class="b">${d.a.h2hWins}</span> : <span class="r">${d.b.h2hWins}</span></div>
+                        <div class="meet">${d.meetings ? d.meetings + ' GAME BERTEMU' : 'PERTEMUAN PERTAMA'}</div></div>
+                    ${row('MATCH W-L', rec, rec, t => t.seriesWins - t.seriesLosses)}
+                    ${row('GAME W-L', grec, grec, t => t.gameDiff)}
+                    ${row('WIN RATE', t => T.pct(t.winRate), t => T.pct(t.winRate), t => t.winRate)}
+                    ${row('AVG KILLS', t => avgK(t).toFixed(1), t => avgK(t).toFixed(1), avgK)}
+                    ${row('AVG DURASI', t => T.fmtTime(t.avgDuration), t => T.fmtTime(t.avgDuration), t => t.avgDuration || 9999, false)}
+                </div>
+                ${side('red', d.b)}
+            </div>`;
+        }
+        T.live(load, ['tournament_update', 'matchdata_update']);
+    </script>
+</body>
+</html>
