@@ -36,29 +36,51 @@ body.fx-ready .uppermiddle .image-box img {
     transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
 }
 
-/* ---------- Splash hero penuh (menutupi 5 box satu tim) ---------- */
+/* ---------- Splash hero penuh (menutupi 5 box satu tim) — ref. "Revisi Splash Tool" ---------- */
+/* bingkai diam seukuran 5 box; isinya (.fx-splash-inner) bergeser masuk dari sisi tim */
 .fx-splash {
     position: absolute;
     z-index: 50;
     overflow: hidden;
     visibility: hidden;
     pointer-events: none;
+}
+
+.fx-splash-inner {
+    position: absolute;
+    inset: 0;
     background: #05070f;
-    clip-path: inset(0 100% 0 0);
+    will-change: transform;
+}
+
+/* latar: gambar yang sama, diburamkan & digelapkan, mengisi sisi kiri-kanan splash art */
+.fx-splash-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.fx-splash-bg img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(14px) brightness(0.5) saturate(1.2);
+    transform: scale(1.15);
 }
 
 .fx-splash-art {
     position: absolute;
     inset: 0;
-    will-change: transform;
 }
 
+/* splash art utuh, tidak terpotong */
 .fx-splash-art img {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: 50% 28%;
+    object-fit: contain;
+    object-position: center center;
 }
 
 .fx-splash-shade {
@@ -101,32 +123,6 @@ body.fx-ready .uppermiddle .image-box img {
 }
 
 .fx-splash-hero { display: block; }
-
-/* "3 TIMES PICKED" di atas nama hero (ref. Screen Recording) */
-.fx-splash-count {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 2px;
-}
-
-.fx-splash.fx-red .fx-splash-count { justify-content: flex-end; }
-
-.fx-splash-count b {
-    font-weight: normal;
-    font-size: 64px;
-    line-height: 0.85;
-}
-
-.fx-splash-count i {
-    font-style: normal;
-    font-size: 26px;
-    line-height: 0.95;
-    letter-spacing: 2px;
-    width: min-content; /* "TIMES" / "PICKED" dua baris, lebar mengikuti kata terpanjang */
-    white-space: normal;
-    text-align: left;
-}
 
 /* foto + nickname pemain yang memilih, di sisi seberang nama hero */
 .fx-splash-player {

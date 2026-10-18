@@ -6,9 +6,10 @@
 // draft-fx.js — animasi pick hero (Task 1), dipakai display.html & displayban6.html
 //
 // Urutan per pick (timing mengikuti video referensi):
-//   1. Splash hero penuh menyapu masuk menutupi 5 box tim (biru: kiri → kanan, merah: kanan → kiri):
-//      nama hero + "x TIMES PICKED" (/api/pickstats), foto & nickname pemain yang memilih di sisi seberang
-//   2. Tahan, lalu nama keluar dan splash mundur ke arah sebaliknya (biru: kanan → kiri, merah: kiri → kanan)
+//   1. Splash hero penuh bergeser masuk menutupi 5 box tim (biru dari kiri, merah dari kanan — ref. "Revisi Splash Tool"):
+//      splash art utuh tanpa terpotong (contain, sisi kosong diisi blur gambar yang sama), nama hero,
+//      foto & nickname pemain yang memilih di sisi seberang
+//   2. Tahan, lalu nama keluar dan splash bergeser kembali ke arah asalnya
 //   3. Stinger logo tim menyapu diagonal di box pick → hero dipasang di balik stinger → stinger tersibak
 // Pick yang datang bersamaan (fase 2 pick) diputar berurutan. Ban tidak dianimasikan di sini.
 //
@@ -26,6 +27,7 @@
     };
     const EASE_IN_OUT = 'cubic-bezier(0.7, 0, 0.2, 1)';
     const EASE_OUT = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const EASE_SLIDE = 'cubic-bezier(0.25, 0.8, 0.25, 1)'; // kurva geser dari referensi (display2.css .splash-overlay)
 
     const queue = [];
     let current = null;
@@ -74,24 +76,17 @@
         };
     }
 
-    // berapa kali hero sudah di-pick di turnamen (game lain yang tercatat + pick ini); null bila data tidak ada
-    const statKey = (src) => decodeURIComponent(String(src || '').split('?')[0].split('/').pop()).toLowerCase().replace(/\.[a-z]+$/, '');
-    async function timesPicked(src) {
-        try {
-            const res = await fetch('/api/pickstats', { cache: 'no-store', signal: AbortSignal.timeout(600) });
-            const d = await res.json();
-            return ((d.counts || {})[statKey(src)] || 0) + 1;
-        } catch (e) { return null; }
-    }
-
     // ---------- Splash ----------
+    // .fx-splash = bingkai seukuran 5 box (overflow hidden); .fx-splash-inner yang digeser masuk / keluar
     function getSplash(side) {
         if (!splashes[side]) {
             const el = document.createElement('div');
             el.className = `fx-splash fx-${side}`;
-            el.innerHTML = '<div class="fx-splash-art"><img alt=""></div><div class="fx-splash-shade"></div>'
+            el.innerHTML = '<div class="fx-splash-inner">'
+                + '<div class="fx-splash-bg"><img alt=""></div><div class="fx-splash-art"><img alt=""></div><div class="fx-splash-shade"></div>'
                 + '<div class="fx-splash-player"><img alt=""><span></span></div>'
-                + '<div class="fx-splash-name"><div class="fx-splash-count"><b></b><i></i></div><span class="fx-splash-hero"></span></div>';
+                + '<div class="fx-splash-name"><span class="fx-splash-hero"></span></div>'
+                + '</div>';
             document.body.appendChild(el);
             splashes[side] = el;
         }
@@ -125,37 +120,32 @@
         const el = getSplash(side);
         if (!placeSplash(el, side)) return false;
 
+        // splash art utuh (contain, tanpa crop); latar = gambar yang sama diburamkan agar sisi kiri-kanan tidak kosong
+        const src = info.full || info.portrait;
         const img = el.querySelector('.fx-splash-art img');
-        img.style.objectPosition = info.focus || (info.full ? '50% 28%' : '50% 18%');
+        const bg = el.querySelector('.fx-splash-bg img');
         const player = playerOf(job.slot);
         const pl = el.querySelector('.fx-splash-player');
-        const [, count] = await Promise.all([
-            loadImg(img, info.full || info.portrait),
-            timesPicked(job.src),
+        await Promise.all([
+            loadImg(img, src),
+            loadImg(bg, src),
             player.photo ? loadImg(pl.querySelector('img'), player.photo) : null
         ]);
         el.querySelector('.fx-splash-hero').textContent = (info.name || '').toUpperCase();
-        const cnt = el.querySelector('.fx-splash-count');
-        cnt.style.display = count ? '' : 'none';
-        cnt.querySelector('b').textContent = count || '';
-        cnt.querySelector('i').textContent = count === 1 ? 'TIME PICKED' : 'TIMES PICKED';
         pl.style.display = player.photo || player.name ? '' : 'none';
         pl.classList.toggle('no-photo', !player.photo);
         pl.querySelector('span').textContent = player.name.toUpperCase();
 
-        const hidden = side === 'blue' ? 'inset(0 100% 0 0)' : 'inset(0 0 0 100%)';
-        const shown = 'inset(0 0 0 0)';
+        // geser masuk dari luar sisi tim (biru: kiri, merah: kanan) dan keluar kembali ke sisi yang sama
+        const hidden = `translateX(${-100 * dir}%)`;
+        const shown = 'translateX(0)';
         const hold = queue.length >= 2 ? T.hold * 0.55 : T.hold; // antrean panjang: dipercepat
-        const art = el.querySelector('.fx-splash-art');
+        const inner = el.querySelector('.fx-splash-inner');
         const name = el.querySelector('.fx-splash-name');
 
         el.style.visibility = 'visible';
         if (job.voice) job.voice();
 
-        art.animate(
-            [{ transform: `scale(1.12) translateX(${-2 * dir}%)` }, { transform: 'scale(1.02) translateX(0)' }],
-            { duration: T.splashIn + hold + T.nameOut + T.splashOut, easing: EASE_OUT, fill: 'forwards' }
-        );
         name.animate(
             [{ transform: `translateX(${-90 * dir}px)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }],
             { duration: 340, delay: T.splashIn * 0.45, easing: EASE_OUT, fill: 'both' }
@@ -165,7 +155,7 @@
             [{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
             { duration: 420, delay: T.splashIn * 0.7, easing: EASE_OUT, fill: 'both' }
         );
-        await el.animate([{ clipPath: hidden }, { clipPath: shown }], { duration: T.splashIn, easing: EASE_IN_OUT, fill: 'forwards' }).finished;
+        await inner.animate([{ transform: hidden }, { transform: shown }], { duration: T.splashIn, easing: EASE_SLIDE, fill: 'forwards' }).finished;
 
         await sleep(hold);
 
@@ -178,7 +168,7 @@
             { duration: T.nameOut, easing: 'cubic-bezier(0.6, 0, 0.9, 0.4)', fill: 'forwards' }
         ).finished;
 
-        const out = el.animate([{ clipPath: shown }, { clipPath: hidden }], { duration: T.splashOut, easing: EASE_IN_OUT, fill: 'forwards' });
+        const out = inner.animate([{ transform: shown }, { transform: hidden }], { duration: T.splashOut, easing: EASE_IN_OUT, fill: 'forwards' });
         await sleep(T.splashOut * 0.65); // stinger mulai sebelum splash benar-benar hilang
         const landing = playStinger(job, side);
         await out.finished;
