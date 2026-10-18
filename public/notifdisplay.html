@@ -57,6 +57,17 @@
         const videoPlayer = document.getElementById('videoPlayer');
         const videoSource = document.getElementById('videoSource');
         let isPlaying = false;
+        let playToken = 0;
+
+        // Chrome / Edge biasa menolak video BERSUARA sebelum halaman pernah diklik (OBS & vMix tidak).
+        // Bila ditolak: tetap putar tanpa suara agar notifikasi tetap tampil; suara aktif lagi setelah halaman diklik / ditekan tombol.
+        let soundAllowed = true;
+        const unlockSound = () => {
+            soundAllowed = true;
+            videoPlayer.muted = false;
+            window.removeEventListener('pointerdown', unlockSound);
+            window.removeEventListener('keydown', unlockSound);
+        };
 
         // --- WEBSOCKET CONNECTION ---
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -95,11 +106,26 @@
                 videoPlayer.style.display = 'block';
                 isPlaying = true;
 
-                // Play video
+                // Play video (dengan suara bila diizinkan browser; bila ditolak → ulangi tanpa suara)
+                // token: error dari video sebelumnya yang dihentikan (AbortError) tidak boleh menyembunyikan video baru
+                const token = ++playToken;
+                videoPlayer.muted = !soundAllowed;
                 const playPromise = videoPlayer.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.error("Auto-play prevented:", error);
+                        if (token !== playToken) return;
+                        if (error.name === 'NotAllowedError' && !videoPlayer.muted) {
+                            console.warn('Autoplay bersuara diblokir browser → diputar tanpa suara. Klik halaman ini sekali untuk mengaktifkan suara.');
+                            soundAllowed = false;
+                            window.addEventListener('pointerdown', unlockSound);
+                            window.addEventListener('keydown', unlockSound);
+                            videoPlayer.muted = true;
+                            return videoPlayer.play();
+                        }
+                        throw error;
+                    }).catch(error => {
+                        if (token !== playToken || error.name === 'AbortError') return;
+                        console.error("Video gagal diputar:", error);
                         isPlaying = false;
                         videoPlayer.style.display = 'none';
                     });

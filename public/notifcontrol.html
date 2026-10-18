@@ -63,49 +63,14 @@
             to { transform: translate(50px, -30px) scale(1.2); }
         }
 
-        .main-container {
-            display: flex;
-            gap: 40px;
-            align-items: flex-start;
-            z-index: 1;
-            padding: 20px;
-            box-sizing: border-box; 
-        }
-        
         .transparent-panel {
-            background-color: rgba(26, 28, 32, 0.25); 
+            background-color: rgba(26, 28, 32, 0.25);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--border-color);
             overflow: hidden;
         }
 
-        .control-panel { width: 450px; }
-        .status-bar {
-            background-color: rgba(0, 0, 0, 0.3);
-            text-align: center;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        #status {
-            font-size: 2.5em;
-            color: var(--font-color);
-            font-style: oblique;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        .controls-body {
-            display: flex;
-            padding: 20px;
-            gap: 15px;
-        }
-
-        .separator { width: 30px; background-color: rgba(234, 234, 234, 0.15); }
-        .objective-column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        .sub-buttons { display: flex; gap: 10px; }
-        .sub-buttons button { flex: 1; height: 150px; }
-        
         button {
             width: 100%;
             padding: 15px 10px;
@@ -126,58 +91,6 @@
             background-color: rgba(168, 85, 247, 0.2);
         }
 
-        .blue-side-btn { border-color: var(--blue-side-accent); }
-        .blue-side-btn:hover { background-color: rgba(0, 175, 255, 0.2); box-shadow: 0 0 15px rgba(0, 175, 255, 0.5); }
-        
-        .red-side-btn { border-color: var(--red-side-accent); }
-        .red-side-btn:hover { background-color: rgba(249, 72, 104, 0.2); box-shadow: 0 0 15px rgba(249, 72, 104, 0.5); }
-
-        .kill-notifier { width: 1000px; }
-        .notifier-header {
-            background-color: rgba(0, 0, 0, 0.4);
-            font-size: 5em;
-            text-align: center;
-            padding: 5px 0;
-            font-style: oblique;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .notifier-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 20px;
-            background-color: transparent;
-        }
-
-        .notifier-buttons button {
-            flex: 1;
-            max-width: 150px;
-            height: 200px;
-            background-color: rgba(234, 234, 234, 0.8);
-            color: #111;
-            border: 3px solid rgba(255,255,255,0.5);
-            font-size: 1.5em;
-        }
-        .notifier-buttons button:hover {
-             border-color: var(--active-color);
-             box-shadow: 0 0 20px var(--active-color);
-             background-color: #fff;
-        }
-        
-        @media (max-width: 768px) {
-            body { display: block; padding: 20px 10px; overflow-y: auto; min-height: auto; }
-            .main-container { flex-direction: column; gap: 25px; align-items: center; padding: 0; }
-            .control-panel, .kill-notifier { width: 100%; max-width: 500px; }
-            #status { font-size: 2em; }
-            .notifier-header { font-size: 2.5em; }
-            .controls-body { flex-direction: column; padding: 15px; }
-            .separator { display: none; }
-            .notifier-buttons { flex-wrap: wrap; gap: 10px; padding: 15px; }
-            .notifier-buttons button { height: 100px; font-size: 1.2em; flex-basis: calc(50% - 5px); max-width: none; }
-            button { font-size: 1.1em; }
-        }
-
         .overlaytoollogo { text-align: center; margin-bottom: 30px; padding-top: 20px; }
         .overlaytoollogo img { max-width: 100%; height: auto; }
     </style>
@@ -188,43 +101,6 @@
         <div class="blob"></div>
         <div class="blob"></div>
     </div>
-    <div class="main-container">
-        <div class="control-panel transparent-panel">
-            <div class="status-bar">
-                <div id="status">Standby</div>
-            </div>
-            <div class="controls-body">
-                <div class="objective-column">
-                    <button onclick="setVideo('videoPlayer1')">Turtle Spawn</button>
-                    <div class="sub-buttons">
-                        <button class="blue-side-btn" onclick="setVideo('videoPlayer2')">Blue Turtle Slain</button>
-                        <button class="red-side-btn" onclick="setVideo('videoPlayer3')">Red Turtle Slain</button>
-                    </div>
-                </div>
-                <div class="separator"></div>
-                <div class="objective-column">
-                    <button onclick="setVideo('videoPlayer4')">Lord Spawn</button>
-                    <div class="sub-buttons">
-                        <button class="blue-side-btn" onclick="setVideo('videoPlayer5')">Blue Lord Slain</button>
-                        <button class="red-side-btn" onclick="setVideo('videoPlayer6')">Red Lord Slain</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="kill-notifier transparent-panel">
-            <div class="notifier-header"> MWEHEHEHEHEH </div>
-            <div class="notifier-buttons">
-                <button onclick="setVideo('videoPlayer7')">First blood</button>
-                <button onclick="setVideo('videoPlayer8')">doublekill</button>
-                <button onclick="setVideo('videoPlayer9')">Triple Kill</button>
-                <button onclick="setVideo('videoPlayer10')">Maniac</button>
-                <button onclick="setVideo('videoPlayer11')">Savage</button>
-                <button onclick="setVideo('videoPlayer12')">Wipe Out</button>
-            </div>
-        </div>
-    </div>
-
     <!-- PLAYER NOTIFICATION: notifikasi bergrafis dengan foto, role & nickname pemain (overlay: notifdisplay.html / eventdisplay.html) -->
     <div class="pn-panel transparent-panel" id="pnPanel">
         <div class="pn-head">
@@ -266,14 +142,55 @@
         </div>
     </div>
 
+    <!-- VIDEO NOTIFICATION: video webm layar penuh (overlay: notifdisplay.html). Gaya panel sama dengan Player Notification. -->
+    <div class="pn-panel vn-panel transparent-panel">
+        <div class="pn-head">
+            <span class="pn-title">VIDEO NOTIFICATION</span>
+            <div class="pn-status" id="status">Standby</div>
+        </div>
+        <div class="pn-body">
+            <div class="pn-label vn-label">OBJECTIVE</div>
+            <div class="vn-grid">
+                <button class="vn-btn" onclick="setVideo('videoPlayer1')"><b>TURTLE</b>SPAWN<small>shortcut W</small></button>
+                <button class="vn-btn blue" onclick="setVideo('videoPlayer2')"><b>BLUE</b>TURTLE SLAIN<small>shortcut A</small></button>
+                <button class="vn-btn red" onclick="setVideo('videoPlayer3')"><b>RED</b>TURTLE SLAIN<small>shortcut S</small></button>
+                <button class="vn-btn" onclick="setVideo('videoPlayer4')"><b>LORD</b>SPAWN<small>shortcut R</small></button>
+                <button class="vn-btn blue" onclick="setVideo('videoPlayer5')"><b>BLUE</b>LORD SLAIN<small>shortcut D</small></button>
+                <button class="vn-btn red" onclick="setVideo('videoPlayer6')"><b>RED</b>LORD SLAIN<small>shortcut F</small></button>
+            </div>
+
+            <div class="pn-label vn-label">KILL STREAK</div>
+            <div class="vn-grid">
+                <button class="vn-btn fb" onclick="setVideo('videoPlayer7')"><b>&nbsp;</b>FIRST BLOOD<small>shortcut 1</small></button>
+                <button class="vn-btn kill" onclick="setVideo('videoPlayer8')"><b>&nbsp;</b>DOUBLE KILL<small>shortcut 2</small></button>
+                <button class="vn-btn kill" onclick="setVideo('videoPlayer9')"><b>&nbsp;</b>TRIPLE KILL<small>shortcut 3</small></button>
+                <button class="vn-btn kill" onclick="setVideo('videoPlayer10')"><b>&nbsp;</b>MANIAC<small>shortcut 4</small></button>
+                <button class="vn-btn kill" onclick="setVideo('videoPlayer11')"><b>&nbsp;</b>SAVAGE<small>shortcut 5</small></button>
+                <button class="vn-btn kill" onclick="setVideo('videoPlayer12')"><b>&nbsp;</b>WIPE OUT<small>shortcut 6</small></button>
+            </div>
+
+            <div class="pn-foot">
+                <span>Tampil di <b>notifdisplay.html</b>. Bila dibuka di tab Chrome biasa, klik halaman display sekali agar suara aktif (OBS / vMix tidak perlu).</span>
+            </div>
+        </div>
+    </div>
+
     <div class="overlaytoollogo">
             <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="">
     </div>
 
     <script>
+        const VIDEO_NAMES = {
+            videoPlayer1: 'TURTLE SPAWN', videoPlayer2: 'BLUE TURTLE SLAIN', videoPlayer3: 'RED TURTLE SLAIN',
+            videoPlayer4: 'LORD SPAWN', videoPlayer5: 'BLUE LORD SLAIN', videoPlayer6: 'RED LORD SLAIN',
+            videoPlayer7: 'FIRST BLOOD', videoPlayer8: 'DOUBLE KILL', videoPlayer9: 'TRIPLE KILL',
+            videoPlayer10: 'MANIAC', videoPlayer11: 'SAVAGE', videoPlayer12: 'WIPE OUT'
+        };
+        let statusTimer = null;
+
         // MENGIRIM PERINTAH KE SERVER NODE.JS
         async function setVideo(playerId) {
-            updateStatus(`SENDING ${playerId.replace('videoPlayer', '')}...`);
+            updateStatus(`SENDING ${VIDEO_NAMES[playerId] || playerId}...`);
             
             try {
                 const response = await fetch('/api/notification', {
@@ -285,9 +202,10 @@
                 });
 
                 if (response.ok) {
-                    updateStatus(`PLAYING M${playerId.replace('videoPlayer', '')}`);
-                    // Kembalikan status ke standby setelah 3 detik
-                    setTimeout(() => {
+                    updateStatus(`PLAYING ${VIDEO_NAMES[playerId] || playerId}`);
+                    // Kembalikan status ke standby setelah 3 detik (timer lama dibatalkan agar tidak menimpa klik berikutnya)
+                    clearTimeout(statusTimer);
+                    statusTimer = setTimeout(() => {
                         updateStatus('Standby');
                     }, 3000);
                 } else {
