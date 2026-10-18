@@ -1,0 +1,30 @@
+# Dependencies (install with: npm install)
+node_modules/
+
+# Secrets — NEVER upload (use github_config.example.json)
+github_config.json
+.env
+.env.*
+
+# Big Noodle Titling font — Sentinel Type EULA forbids redistribution/uploading (download it yourself, see README)
+**/big_noodle_titling*.ttf
+
+# Local editor / AI tooling
+.claude/
+.vscode/
+
+# Internal reference material (recordings, WhatsApp, broadcast references)
+bahan re-engine/
+
+# Junk/temporary files
+Berhasil
+Ditemukan
+~$*
+*.tmp
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Original full-size player photos (backup, too big for overlays)
+_original_player_photos/

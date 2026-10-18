@@ -1,0 +1,95 @@
+/* ocrcontrol.css — OCR Control (gaya control panel ARPRO ESPORT TOOLS) */
+@font-face { font-family: 'Noodle'; src: url('Assets/Font/big_noodle_titling.ttf') format('truetype'); }
+
+:root {
+    --bg: #0d0f12;
+    --card: #17191f;
+    --line: #2c2f38;
+    --text: #eaeaea;
+    --muted: #8b8f9a;
+    --accent: #a855f7;
+    --ok: #00ff8c;
+    --bad: #ff4d5e;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: radial-gradient(900px 500px at 15% -10%, rgba(168, 85, 247, 0.18), transparent 60%), var(--bg);
+    color: var(--text);
+    font: 14px/1.4 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+}
+
+button, select, input {
+    font: inherit;
+    color: var(--text);
+    background: #1f2229;
+    border: 1px solid var(--line);
+    padding: 7px 10px;
+}
+button { cursor: pointer; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; font-size: 12px; transition: all 0.15s; }
+button:hover:not(:disabled) { border-color: var(--accent); box-shadow: 0 0 12px rgba(168, 85, 247, 0.45); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+select:focus, input:focus { outline: none; border-color: var(--accent); }
+
+.oc-head {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.35);
+}
+.oc-head img { height: 34px; }
+.oc-title { font: 34px/1 'Noodle', sans-serif; letter-spacing: 1px; }
+.oc-title span { font: 600 12px 'Segoe UI', sans-serif; color: var(--muted); letter-spacing: 2px; margin-left: 10px; }
+.oc-run { margin-left: auto; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+.oc-run button { padding: 10px 22px; font-size: 14px; }
+.oc-dot { width: 12px; height: 12px; border-radius: 50%; background: #555; }
+.oc-dot.on { background: var(--ok); box-shadow: 0 0 10px var(--ok); animation: ocPulse 1.2s infinite; }
+.oc-dot.err { background: var(--bad); }
+@keyframes ocPulse { 50% { opacity: 0.35; } }
+
+.oc-warn { margin: 12px 22px 0; padding: 10px 14px; border: 1px solid #ffb84d; background: rgba(255, 184, 77, 0.12); color: #ffd590; }
+
+.oc-main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; padding: 16px 22px 30px; }
+
+.oc-canvas-wrap { position: relative; border: 1px solid var(--line); background: #000; aspect-ratio: 16 / 9; }
+.oc-canvas-wrap canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+.oc-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 16px; text-align: center; padding: 20px; }
+.oc-empty[hidden] { display: none; }
+.oc-hint { color: var(--muted); font-size: 12px; margin: 6px 0 14px; }
+
+.oc-table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); }
+.oc-table th { text-align: left; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.oc-table td { padding: 6px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: middle; }
+.oc-table tr.sel td { background: rgba(168, 85, 247, 0.14); }
+.oc-table tr { cursor: pointer; }
+.oc-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.oc-label { font-weight: 700; font-family: Consolas, monospace; }
+.oc-prev { height: 34px; max-width: 200px; background: #fff; image-rendering: pixelated; display: block; }
+.oc-val { font: 26px/1 'Noodle', sans-serif; letter-spacing: 1px; min-width: 70px; display: inline-block; }
+.oc-val.stale { color: var(--muted); }
+.oc-raw { display: block; font: 11px Consolas, monospace; color: var(--muted); }
+.oc-table input[type=range] { width: 110px; vertical-align: middle; }
+.oc-table select { padding: 4px 6px; }
+
+.oc-side { display: flex; flex-direction: column; gap: 14px; }
+.oc-card { background: var(--card); border: 1px solid var(--line); padding: 14px; }
+.oc-card h3 { margin: 0 0 10px; font: 22px/1 'Noodle', sans-serif; letter-spacing: 1px; color: var(--accent); }
+.oc-card select { width: 100%; }
+.oc-row { display: flex; gap: 8px; margin-top: 10px; }
+.oc-row button { flex: 1; }
+.oc-meta { margin-top: 10px; font: 12px Consolas, monospace; color: var(--muted); white-space: pre-line; }
+.oc-small { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+.oc-grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oc-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oc-grid4 label, .oc-grid2 label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: flex; flex-direction: column; gap: 4px; }
+.oc-grid4 input { width: 100%; }
+.oc-json { margin: 8px 0; padding: 10px; background: #0b0c10; border: 1px solid var(--line); font: 12px Consolas, monospace; max-height: 220px; overflow: auto; color: var(--ok); }
+.oc-link { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 12px; }
+
+@media (max-width: 1100px) { .oc-main { grid-template-columns: 1fr; } }

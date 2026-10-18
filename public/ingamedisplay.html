@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>In-Game Display</title>
+    <link rel="stylesheet" href="ingamedisplay.css">
+</head>
+<!-- Overlay in-game (latar transparan): badge HIGHLIGHTS kanan atas + banner MVP bawah.
+     Atur dari Control Panel > IN-GAME OVERLAY. Opsi URL: ?accent=2be3c3 (warna aksen, hex tanpa #), ?bg=green -->
+<body>
+    <div class="ig-root" id="igRoot">
+        <div class="ig-hl" id="igHl">
+            <span class="ig-hl-corner tl"></span>
+            <span class="ig-hl-corner br"></span>
+            <div class="ig-hl-text">HIGHLIGHTS</div>
+        </div>
+
+        <div class="ig-mvp" id="igMvp">
+            <div class="ig-bar">
+                <div class="ig-player">
+                    <div class="ig-player-logo"><img id="igTeamLogo" src="Assets/Other/nologo.png" alt=""></div>
+                    <div class="ig-player-text">
+                        <div class="ig-player-nick" id="igNick"></div>
+                        <div class="ig-player-meta" id="igMeta"></div>
+                    </div>
+                </div>
+                <div class="ig-score">
+                    <div class="ig-score-logo"><img id="igLogoBlue" src="Assets/Other/nologo.png" alt=""></div>
+                    <div class="ig-score-num"><span id="igScoreBlue">0</span><i>-</i><span id="igScoreRed">0</span></div>
+                    <div class="ig-score-logo"><img id="igLogoRed" src="Assets/Other/nologo.png" alt=""></div>
+                </div>
+                <div class="ig-sponsor" id="igSponsorBox">
+                    <div class="ig-sponsor-label">SUPPORTED BY</div>
+                    <div class="ig-sponsor-logo"><img id="igSponsor" alt=""></div>
+                </div>
+            </div>
+            <div class="ig-mvp-art"><img id="igHeroArt" alt=""></div>
+            <div class="ig-mvp-photo" id="igPhotoBox"><img id="igPhoto" alt=""></div>
+            <div class="ig-mvp-word">MVP</div>
+        </div>
+    </div>
+
+    <script src="script/hero-assets.js"></script>
+    <script src="script/ingamedisplay.js"></script>
+</body>
+</html>

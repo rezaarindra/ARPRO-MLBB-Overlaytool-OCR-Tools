@@ -1,0 +1,321 @@
+/* ingamedisplay.css — overlay in-game: badge HIGHLIGHTS (kanan atas) + banner MVP (bawah), 1920×1080 transparan */
+
+@font-face {
+    font-family: 'myfonts';
+    src: url('Assets/Font/big_noodle_titling.ttf') format('truetype');
+}
+
+:root {
+    --ig-accent: #2be3c3;
+    --ig-ink: #070b24;
+    --ig-navy: #10164a;
+    --ig-navy-2: #1a2066;
+    --ig-team: #1b5cff; /* warna tim MVP, diganti JS (biru / merah) */
+    --ig-bar-h: 140px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: transparent;
+    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    color: #fff;
+}
+
+body.bg-green { background: #00b140; }
+
+.ig-root {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+}
+
+/* pola titik khas referensi */
+.ig-hl, .ig-bar {
+    background-color: var(--ig-navy);
+    background-image:
+        radial-gradient(rgba(255, 255, 255, 0.07) 1.4px, transparent 1.6px),
+        linear-gradient(100deg, var(--ig-navy-2) 0%, var(--ig-navy) 45%, var(--ig-ink) 100%);
+    background-size: 9px 9px, 100% 100%;
+}
+
+/* ---------- HIGHLIGHTS ---------- */
+.ig-hl {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 480px;
+    height: 168px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: inset(0 0 0 100%);
+    transition: clip-path 0.35s cubic-bezier(0.6, 0, 0.9, 0.4);
+}
+
+.ig-hl-text {
+    font-size: 112px;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--ig-accent);
+    padding-top: 10px;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.2s ease, transform 0.3s ease;
+}
+
+.ig-hl-corner {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.ig-hl-corner.tl { top: 0; left: 0; border-width: 34px 34px 0 0; border-color: var(--ig-accent) transparent transparent transparent; }
+.ig-hl-corner.br { bottom: 0; right: 0; border-width: 0 0 34px 34px; border-color: transparent transparent var(--ig-accent) transparent; }
+
+.ig-hl.show {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ig-hl.show .ig-hl-text {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.3s ease 0.25s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s;
+}
+
+.ig-hl.show .ig-hl-corner { animation: igPulse 2.4s ease-in-out 0.8s infinite; }
+
+@keyframes igPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+/* ---------- MVP ---------- */
+.ig-mvp {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 300px;
+    pointer-events: none;
+}
+
+.ig-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--ig-bar-h);
+    border-top: 4px solid var(--ig-accent);
+    transform: translateY(105%);
+    transition: transform 0.35s cubic-bezier(0.6, 0, 0.9, 0.4) 0.15s;
+}
+
+.ig-mvp-word {
+    position: absolute;
+    left: 34px;
+    bottom: 6px;
+    font-size: 250px;
+    line-height: 0.8;
+    letter-spacing: -4px;
+    color: var(--ig-accent);
+    text-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.3s ease-in;
+}
+
+.ig-mvp-art {
+    position: absolute;
+    left: 300px;
+    bottom: 0;
+    width: 440px;
+    height: 250px;
+    overflow: hidden;
+    clip-path: polygon(14% 0, 100% 0, 100% 0, 14% 0);
+    transition: clip-path 0.3s ease-in;
+    background: var(--ig-ink);
+}
+
+.ig-mvp-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 22%;
+    transform: scale(1.12);
+    transition: transform 0.4s ease;
+}
+
+.ig-mvp-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(7, 11, 36, 0.65) 0%, rgba(7, 11, 36, 0) 40%);
+}
+
+.ig-mvp-photo {
+    position: absolute;
+    left: 600px;
+    bottom: 0;
+    width: 210px;
+    height: 280px;
+    opacity: 0;
+    transform: translateY(60px);
+    transition: opacity 0.2s ease, transform 0.3s ease-in;
+}
+
+.ig-mvp-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: 50% 100%;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+}
+
+.ig-mvp.no-photo .ig-mvp-photo { display: none; }
+
+.ig-player {
+    position: absolute;
+    left: 820px;
+    top: 0;
+    bottom: 0;
+    width: 460px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding-left: 22px;
+    border-left: 8px solid var(--ig-team);
+}
+
+.ig-mvp.no-photo .ig-player { left: 770px; width: 510px; }
+
+.ig-player-logo {
+    width: 78px;
+    height: 78px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ig-player-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.ig-player-text { min-width: 0; flex: 1; }
+
+.ig-player-nick {
+    font-size: 76px;
+    line-height: 0.95;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.ig-player-meta {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ig-score {
+    position: absolute;
+    left: 1300px;
+    top: 0;
+    bottom: 0;
+    width: 360px;
+    display: flex;
+}
+
+.ig-score-logo {
+    width: 105px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ig-ink);
+}
+
+.ig-score-logo img { width: 74px; height: 74px; object-fit: contain; }
+
+.ig-score-num {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--ig-accent);
+    color: var(--ig-ink);
+    font-size: 86px;
+    line-height: 1;
+    padding-top: 6px;
+}
+
+.ig-score-num i { font-style: normal; font-size: 64px; }
+
+.ig-sponsor {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.ig-sponsor.empty { display: none; }
+
+.ig-sponsor-label {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ig-sponsor-logo { height: 76px; display: flex; align-items: center; }
+
+.ig-sponsor-logo img {
+    max-width: 210px;
+    max-height: 76px;
+    object-fit: contain;
+    transition: opacity 0.4s ease;
+}
+
+/* ---------- Tampil (berjenjang) ---------- */
+.ig-mvp.show .ig-bar {
+    transform: translateY(0);
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ig-mvp.show .ig-mvp-word {
+    clip-path: inset(-20% -5% 0 0);
+    transition: clip-path 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s;
+}
+
+.ig-mvp.show .ig-mvp-art {
+    clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
+    transition: clip-path 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s;
+}
+
+.ig-mvp.show .ig-mvp-art img {
+    transform: scale(1);
+    transition: transform 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s;
+}
+
+.ig-mvp.show .ig-mvp-photo {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease 0.6s, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s;
+}

@@ -1,0 +1,314 @@
+/* draft-fx.css — animasi pick hero untuk overlay draft (display.html / displayban6.html)
+   Splash hero penuh menutupi 5 box tim → keluar berlawanan arah → stinger logo tim → hero masuk box.
+   Semua angka yang biasa di-tuning ada di :root. */
+
+:root {
+    --fx-blue: #1b5cff;
+    --fx-blue-dark: #071a5c;
+    --fx-red: #e3263b;
+    --fx-red-dark: #4f0712;
+
+    /* tambahan lebar box hero (px). Box pemain (nama) tidak berubah; 0 = ukuran asli */
+    --fx-hero-extra: 6px;
+
+    --fx-name-size: 92px;
+}
+
+/* ---------- Box hero sedikit lebih lebar (lebar tournamentinfo dikurangi agar total tetap 1900px) ---------- */
+body.fx-ready .uppermiddle > [class^="pickb"],
+body.fx-ready .uppermiddle > [class^="pickr"] {
+    width: calc(160px + var(--fx-hero-extra));
+}
+
+body.fx-ready .uppermiddle > .tournamentinfo {
+    width: calc(300px - 10 * var(--fx-hero-extra));
+    overflow: hidden;
+}
+
+body.fx-ready .uppermiddle > .tournamentinfo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* hero mendarat di box lebih cepat (di balik stinger) — aslinya 2 detik */
+body.fx-ready .uppermiddle .image-box img {
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+
+/* ---------- Splash hero penuh (menutupi 5 box satu tim) ---------- */
+.fx-splash {
+    position: absolute;
+    z-index: 50;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    background: #05070f;
+    clip-path: inset(0 100% 0 0);
+}
+
+.fx-splash-art {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+}
+
+.fx-splash-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 28%;
+}
+
+.fx-splash-shade {
+    position: absolute;
+    inset: 0;
+}
+
+.fx-splash.fx-blue .fx-splash-shade {
+    background:
+        linear-gradient(90deg, rgba(7, 26, 92, 0.88) 0%, rgba(7, 26, 92, 0.35) 34%, rgba(7, 26, 92, 0) 58%),
+        linear-gradient(0deg, rgba(27, 92, 255, 0.85) 0%, rgba(27, 92, 255, 0) 30%);
+    box-shadow: inset 0 -4px 0 var(--fx-blue);
+}
+
+.fx-splash.fx-red .fx-splash-shade {
+    background:
+        linear-gradient(270deg, rgba(79, 7, 18, 0.88) 0%, rgba(79, 7, 18, 0.35) 34%, rgba(79, 7, 18, 0) 58%),
+        linear-gradient(0deg, rgba(227, 38, 59, 0.85) 0%, rgba(227, 38, 59, 0) 30%);
+    box-shadow: inset 0 -4px 0 var(--fx-red);
+}
+
+.fx-splash-name {
+    position: absolute;
+    bottom: 10px;
+    left: 26px;
+    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-size: var(--fx-name-size);
+    line-height: 0.9;
+    letter-spacing: 3px;
+    color: #fff;
+    white-space: nowrap;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+    will-change: transform, opacity;
+}
+
+.fx-splash.fx-red .fx-splash-name {
+    left: auto;
+    right: 26px;
+    text-align: right;
+}
+
+.fx-splash-hero { display: block; }
+
+/* "3 TIMES PICKED" di atas nama hero (ref. Screen Recording) */
+.fx-splash-count {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+}
+
+.fx-splash.fx-red .fx-splash-count { justify-content: flex-end; }
+
+.fx-splash-count b {
+    font-weight: normal;
+    font-size: 64px;
+    line-height: 0.85;
+}
+
+.fx-splash-count i {
+    font-style: normal;
+    font-size: 26px;
+    line-height: 0.95;
+    letter-spacing: 2px;
+    width: min-content; /* "TIMES" / "PICKED" dua baris, lebar mengikuti kata terpanjang */
+    white-space: normal;
+    text-align: left;
+}
+
+/* foto + nickname pemain yang memilih, di sisi seberang nama hero */
+.fx-splash-player {
+    position: absolute;
+    bottom: 0;
+    right: 24px;
+    height: 100%;
+    aspect-ratio: 3 / 4;
+    will-change: transform, opacity;
+}
+
+.fx-splash.fx-red .fx-splash-player { right: auto; left: 24px; }
+
+.fx-splash-player img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: 50% 100%;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.6));
+}
+
+.fx-splash-player.no-photo img { display: none; }
+
+.fx-splash-player span {
+    position: absolute;
+    left: -14px;
+    right: -14px;
+    bottom: 12px;
+    padding: 4px 8px 2px;
+    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: 1.5px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+    background: var(--fx-blue);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.fx-splash.fx-red .fx-splash-player span { background: var(--fx-red); }
+.fx-splash-player span:empty { display: none; }
+
+/* tanpa foto: nickname saja, sejajar baris nama hero */
+.fx-splash-player.no-photo span { bottom: 18px; left: auto; right: 0; }
+.fx-splash.fx-red .fx-splash-player.no-photo span { left: 0; right: auto; }
+
+/* ---------- Giliran pick: "PICK" + sapuan warna tim di box pemain yang sedang memilih (ref. CLD.mp4) ---------- */
+.fx-turn {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.fx-turn.on { opacity: 1; }
+
+.fx-turn::before {
+    content: '';
+    position: absolute;
+    inset: -20% -60%;
+    background: linear-gradient(115deg, transparent 38%, rgba(27, 92, 255, 0.55) 46%, rgba(27, 92, 255, 0.15) 56%, transparent 64%);
+    transform: translateX(-60%);
+}
+
+.fx-turn.fx-red::before {
+    background: linear-gradient(65deg, transparent 38%, rgba(227, 38, 59, 0.55) 46%, rgba(227, 38, 59, 0.15) 56%, transparent 64%);
+    transform: translateX(60%);
+}
+
+.fx-turn.on::before { animation: fxSweep 1.6s cubic-bezier(0.6, 0, 0.4, 1) infinite; }
+.fx-turn.fx-red.on::before { animation-name: fxSweepR; }
+
+@keyframes fxSweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+@keyframes fxSweepR { from { transform: translateX(60%); } to { transform: translateX(-60%); } }
+
+.fx-turn span {
+    position: absolute;
+    top: 40px; /* di bawah ikon lane pojok kiri atas */
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-size: 54px;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--fx-blue);
+    -webkit-text-stroke: 1.5px #fff;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+}
+
+.fx-turn.fx-red span { color: var(--fx-red); }
+.fx-turn.on span { animation: fxPulse 0.9s ease-in-out infinite alternate; }
+
+@keyframes fxPulse { from { opacity: 1; transform: scale(1); } to { opacity: 0.55; transform: scale(0.94); } }
+
+/* ---------- Skor seri sebagai garis kemenangan (BO diatur di control panel) ---------- */
+.fx-pips-on > .name-box { visibility: hidden; position: absolute; }
+
+.fx-pips {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+}
+
+.fx-pips i {
+    display: block;
+    width: 9px;
+    height: 38px;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    transform: skewX(-12deg);
+}
+
+.fx-pips i.won { border-color: #fff; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
+.fx-pips.fx-blue i.won { background: var(--fx-blue); border-color: #fff; }
+.fx-pips.fx-red i.won { background: var(--fx-red); border-color: #fff; }
+
+/* ---------- Label fase "PICK PHASE 1" (kotak tengah, di atas angka timer) ---------- */
+body.fx-ready .uppermiddle > .tournamentinfo { position: relative; }
+body.fx-ready .timermid { position: relative; z-index: 2; } /* angka timer tetap di atas kotak tengah */
+
+.fx-phase-no {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    text-align: center;
+    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+}
+
+.fx-phase-no:empty { display: none; }
+
+/* ---------- Stinger logo tim (di dalam box pick yang sedang terisi) ---------- */
+.fx-stinger {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: polygon(0% 0%, 0% 0%, -40% 100%, -40% 100%);
+}
+
+.fx-stinger.fx-blue {
+    background:
+        repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.07) 0 6px, rgba(255, 255, 255, 0) 6px 18px),
+        linear-gradient(160deg, var(--fx-blue) 0%, var(--fx-blue-dark) 100%);
+}
+
+.fx-stinger.fx-red {
+    background:
+        repeating-linear-gradient(65deg, rgba(255, 255, 255, 0.07) 0 6px, rgba(255, 255, 255, 0) 6px 18px),
+        linear-gradient(200deg, var(--fx-red) 0%, var(--fx-red-dark) 100%);
+}
+
+.fx-stinger img {
+    width: 64%;
+    max-height: 60%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+}
+
+.fx-stinger span {
+    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
+    font-size: 30px;
+    letter-spacing: 1px;
+    color: #fff;
+    text-align: center;
+    padding: 0 8px;
+}

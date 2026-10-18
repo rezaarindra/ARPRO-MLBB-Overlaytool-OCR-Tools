@@ -1,0 +1,141 @@
+/* sscteams.css — tabel tim SSC2027 di control panel (pilih tim → sisi biru / merah) */
+
+/* Tata letak bawah control panel: tabel tim di kiri, tombol kontrol di kanan */
+.ctl-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    max-width: 1760px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.ctl-split-left, .ctl-split-right { min-width: 0; }
+
+@media (max-width: 1100px) {
+    .ctl-split { grid-template-columns: minmax(0, 1fr); }
+    .ctl-split-right { order: -1; } /* layar sempit: tombol kontrol tetap di atas */
+}
+
+/* Kontrol IN-GAME OVERLAY (ingamecontrol.js) */
+.ig-ctl { flex-wrap: wrap; }
+.ig-ctl select { width: 280px; text-align: left; }
+.ig-ctl-msg {
+    min-height: 1.2em;
+    margin-top: -10px;
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.85em;
+    color: #00ff8c;
+}
+
+.ssct {
+    margin: 0 0 30px;
+    font-family: 'Segoe UI', sans-serif;
+    color: var(--font-color);
+}
+
+.ssct-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0 12px;
+}
+
+.ssct-bar input[type="text"] { width: 260px; }
+
+.ssct-bar > button {
+    background-color: var(--card-color);
+    color: var(--font-color);
+    border: 1px solid var(--border-color);
+}
+
+.ssct-bar > button:hover { background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+
+.ssct-msg {
+    min-height: 1.2em;
+    font-size: 0.85em;
+    text-align: center;
+    opacity: 0.75;
+    margin-bottom: 8px;
+}
+
+.ssct-msg.err { color: #ff5c5c; opacity: 1; }
+.ssct-msg.ok { color: #00ff8c; opacity: 1; }
+
+.ssct-wrap {
+    max-height: 460px;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.ssct table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.ssct th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--card-color);
+    text-align: left;
+    font-size: 0.8em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ssct td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: middle;
+}
+
+.ssct tr.is-blue td:first-child { box-shadow: inset 4px 0 0 #1b5cff; }
+.ssct tr.is-red td:first-child { box-shadow: inset 4px 0 0 #e3263b; }
+
+.ssct-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    background: #fff;
+    display: block;
+}
+
+.ssct-name { font-weight: 700; font-size: 1.05em; }
+
+.ssct-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 0.7em;
+    font-weight: 700;
+    color: #fff;
+    vertical-align: middle;
+}
+
+.ssct-tag.blue { background: #1b5cff; }
+.ssct-tag.red { background: #e3263b; }
+
+.ssct-players { line-height: 1.5; }
+.ssct-players span { white-space: nowrap; }
+.ssct-players .sub { opacity: 0.55; }
+
+.ssct-pick { white-space: nowrap; }
+
+.ssct-pick button { padding: 7px 12px; }
+
+.ssct-pick button[data-side="blue"] { color: #4d84ff; border-color: #1b5cff; }
+.ssct-pick button[data-side="blue"]:hover { background: #1b5cff; color: #fff; box-shadow: 0 0 12px #1b5cff88; }
+.ssct-pick button[data-side="red"] { color: #ff5a6b; border-color: #e3263b; margin-left: 6px; }
+.ssct-pick button[data-side="red"]:hover { background: #e3263b; color: #fff; box-shadow: 0 0 12px #e3263b88; }
+
+.ssct-empty { text-align: center; padding: 24px; opacity: 0.6; }

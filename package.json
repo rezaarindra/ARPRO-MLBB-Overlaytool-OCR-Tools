@@ -1,0 +1,30 @@
+{
+  "name": "arpro-mlbb-overlaytool",
+  "version": "5.0.0",
+  "description": "MLBB broadcast overlay tool + OCR gameplay (draft pick/ban, scoreboard, postgame, vMix data) by CV. Arindra Production & ARPRO Esport",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mlbb",
+    "mobile-legends",
+    "esports",
+    "overlay",
+    "broadcast",
+    "ocr",
+    "vmix",
+    "obs"
+  ],
+  "author": "CV. Arindra Production & ARPRO Esport",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools.git"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "ws": "^8.18.3"
+  }
+}

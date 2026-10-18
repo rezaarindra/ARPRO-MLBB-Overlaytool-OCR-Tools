@@ -1,0 +1,148 @@
+<div align="center">
+
+<img src="public/Assets/Other/arpro-logo.png" alt="ARPRO Esport" height="110">
+
+# ARPRO MLBB Overlay Tool & OCR
+
+**Tool overlay broadcast Mobile Legends: Bang Bang. Draft pick/ban, scoreboard, postgame, dan OCR gameplay realtime, siap dipakai di OBS & vMix.**
+
+![Version](https://img.shields.io/badge/version-5.0-8b5cf6)
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
+![OBS](https://img.shields.io/badge/OBS-Browser%20Source-302E31?logo=obsstudio&logoColor=white)
+![vMix](https://img.shields.io/badge/vMix-Data%20Source-1f6feb)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
+
+</div>
+
+---
+
+## ✨ Fitur Utama
+
+| | Fitur | Keterangan |
+|---|---|---|
+| 🎯 | **Draft Pick & Ban** | Mode ban 4 / ban 6 dengan beberapa varian tampilan (standar, v2, custom), efek animasi, dan previous draft. |
+| 📊 | **Scoreboard** | Scoreboard manual, scoreboard custom, dan scoreboard otomatis dari **OCR**. |
+| 🔍 | **OCR Gameplay** | Membaca HUD MLBB langsung dari HDMI capture / webcam / layar: kill, gold, turret, lord, timer. Tanpa OBS, berjalan di browser (Tesseract.js). |
+| 📡 | **Output vMix** | Hasil OCR tersedia sebagai JSON untuk **vMix Data Sources** (`/ocr/vmix.json`). |
+| 🏆 | **Postgame & MVP** | Statistik pasca-pertandingan, tampilan MVP, dan build/item hero. |
+| 📅 | **Schedule & Lineup** | Jadwal pertandingan, lineup pemain, dan undian/drawing grup. |
+| 🔔 | **Notifikasi & Event** | Notifikasi on-air dan event notification (first blood, savage, dll). |
+| 🌐 | **Multi-PC (LAN)** | Satu server, banyak operator. Semua halaman tersinkron realtime lewat WebSocket. |
+
+## 📸 Tampilan
+
+| Draft | Postdraft |
+|---|---|
+| ![Draft](public/Assets/screenshots/display.html.png) | ![Postdraft](public/Assets/screenshots/postdraft2.html.png) |
+| **Scoreboard OCR** | **OCR Control** |
+| ![Scoreboard OCR](public/Assets/screenshots/scoreboardcostumocr.html.png) | ![OCR Control](public/Assets/screenshots/ocrcontrol.html.png) |
+| **Postgame** | **MVP** |
+| ![Postgame](public/Assets/screenshots/postgame.html.png) | ![MVP](public/Assets/screenshots/mvpdisplay.html.png) |
+
+> Screenshot semua halaman ada di [`public/Assets/screenshots`](public/Assets/screenshots).
+
+## 🚀 Instalasi
+
+**Kebutuhan:** Windows 10/11 dan [Node.js](https://nodejs.org) 18 atau lebih baru.
+
+```bash
+git clone https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools.git
+cd ARPRO-MLBB-Overlaytool-OCR-Tools
+npm install
+```
+
+> **Font:** lisensi font *Big Noodle Titling* (Sentinel Type) tidak mengizinkan file font diunggah ulang. Unduh gratis dari situs Sentinel Type / dafont, lalu taruh `big_noodle_titling.ttf` dan `big_noodle_titling_oblique.ttf` di `public/Assets/Font/` (dan salin `big_noodle_titling.ttf` ke `public/Assets/costum/Theme/`).
+
+### Menjalankan
+
+- **Cara mudah:** klik dua kali **`ARPROESPORTTOOLS.BAT`**. IP LAN terdeteksi otomatis, lalu server jalan dan Command Center terbuka di browser.
+  - Kalau IP yang terdeteksi salah (VPN/VMware), pakai **`ARPROESPORTTOOLS_FIXIP.bat`**.
+- **Manual:**
+  ```bash
+  npm start
+  ```
+  Lalu buka `http://localhost:3000/hub.html`.
+
+Jangan tutup jendela server selama siaran berlangsung.
+
+## 🖥️ Halaman
+
+Semua halaman bisa dibuka dari **Command Center** (`/hub.html`).
+
+| Jenis | Halaman |
+|---|---|
+| **Control** (operator) | `control.html`, `controlban6.html`, `costumoverlaycontrol.html`, `drawcontrol.html`, `notifcontrol.html`, `postgamecontrol.html`, `schedulecontrol.html`, `ocrcontrol.html` |
+| **Display** (Browser Source / vMix) | `display.html`, `display2.html`, `displaycostum.html` (+ versi `ban6`), `postdraft*.html`, `scoreboard*.html`, `previousdraft.html`, `notifdisplay.html`, `builds.html`, `globalban.html`, `lineupdisplay.html`, `ingamedisplay.html`, `eventdisplay.html` |
+| **Utility** | `postgame.html`, `mvpdisplay.html`, `scheduledisplay.html`, `drawdisplay*.html`, `drawfinal.html` |
+
+Untuk OBS: tambahkan **Browser Source** dengan URL `http://IP-SERVER:3000/<halaman>.html`, ukuran 1920×1080.
+
+## 🔍 OCR Gameplay
+
+![Cara Pakai OCR](Cara%20Pakai%20OCR%20Baru.png)
+
+1. Buka `http://localhost:3000/ocrcontrol.html` **di PC server**. Kamera/capture hanya diizinkan browser di `localhost`, jadi halaman ini akan otomatis dialihkan ke sana.
+2. Pilih sumber video: HDMI capture, webcam, atau layar.
+3. Atur kotak HUD (kill, gold, turret, lord, timer) di atas pratinjau, lalu klik **Simpan** profil posisi.
+4. Tekan **START**. Hasilnya langsung dipakai oleh `scoreboardocr.html` dan `scoreboardcostumocr.html`.
+
+### Endpoint Data OCR
+
+| Endpoint | Fungsi |
+|---|---|
+| `GET /ocr/MLBB.json` | Data OCR terbaru. Membalas 404 kalau OCR tidak berjalan lebih dari 15 detik. |
+| `GET /ocr/vmix.json` | Khusus **vMix**: selalu 200, kolom selalu lengkap, nilai terakhir dipertahankan, plus kolom `status` (`LIVE` / `STALE` / `OFF`). |
+
+### Integrasi vMix
+
+1. vMix → **Settings → Data Sources → Add → JSON**
+2. URL: `http://IP-SERVER:3000/ocr/vmix.json`
+3. Set refresh interval sekecil mungkin (sekitar 1 detik).
+4. Hubungkan field title GT ke kolom: `killscore1`, `killscore2`, `gold1`, `gold2`, `turret1`, `turret2`, `lord1`, `lord2`, `timer`.
+
+> Tips siaran: biarkan tab OCR Control tetap terbuka dan aktif (jangan di-minimize), dan pakai LAN kabel.
+
+## ⚙️ Konfigurasi (opsional)
+
+| File | Fungsi |
+|---|---|
+| `github_config.json` | Untuk fitur **Sync Asset dari GitHub**. Salin dari [`github_config.example.json`](github_config.example.json) lalu isi token sendiri. **Jangan pernah commit file ini.** |
+| `ssc_config.json` | Feed lineup eksternal (SSC). |
+| `public/database/*.json` | Data tim, draft, jadwal, tema, dll. Diubah lewat halaman control. |
+
+## 📁 Struktur Folder
+
+```
+├── server.js                 # Server Express + WebSocket (port 3000)
+├── ARPROESPORTTOOLS.BAT      # Launcher Windows
+├── public/
+│   ├── hub.html              # Command Center
+│   ├── *control.html         # Halaman operator
+│   ├── *display*.html        # Halaman overlay (on-air)
+│   ├── script/               # Logika front-end (draft, OCR engine, dll)
+│   ├── database/             # Data JSON
+│   ├── vendor/tesseract/     # Engine OCR (Tesseract.js)
+│   └── Assets/               # Hero, item, map, font, logo, voice line
+└── mock/                     # Data contoh untuk testing feed
+```
+
+## 📜 Lisensi & Kredit
+
+Kode sumber dirilis di bawah **[MIT License](LICENSE)**. © 2026 **CV. Arindra Production** & **ARPRO Esport**.
+
+- *Mobile Legends: Bang Bang* serta seluruh artwork hero, ikon, map, dan voice line adalah milik **Moonton**. Konten tersebut tidak termasuk dalam lisensi MIT dan disertakan hanya untuk keperluan tool broadcast non-komersial.
+- OCR memakai [Tesseract.js](https://github.com/naptha/tesseract.js) (Apache 2.0).
+- Proyek ini tidak berafiliasi dengan maupun didukung oleh Moonton.
+
+<div align="center">
+
+---
+
+**CV. Arindra Production** × **ARPRO Esport**
+
+*Made with 💜 for the Indonesian esports community*
+
+</div>

@@ -1,0 +1,308 @@
+/* eventnotif.css — notifikasi pemain (First Blood, Turtle/Lord Slain & Stolen) di atas layar game, 1920×1080.
+   Ref: "bahan re-engine/WhatsApp Video 2026-10-18 at 1.52.58 PM.mp4".
+   Dua mode: (1) GIF kosongan + elemen dinamis di posisi presisi, (2) template bawaan (CSS) bila GIF belum ada. */
+
+@font-face {
+    font-family: 'ENPixel';
+    src: url('Assets/Font/Silkscreen-Bold.ttf') format('truetype'); /* SIL OFL, lihat Silkscreen_OFL.txt */
+}
+
+@font-face {
+    font-family: 'ENNoodle';
+    src: url('Assets/Font/big_noodle_titling.ttf') format('truetype');
+}
+
+.en-stage {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 1920px;
+    height: 1080px;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 100;
+}
+
+/* =====================================================================
+   MODE 1 — GIF KOSONGAN + ELEMEN DINAMIS (absolute, % terhadap box GIF)
+   ===================================================================== */
+.en-gif {
+    position: absolute;
+    visibility: hidden;
+}
+
+.en-gif.on { visibility: visible; }
+
+.en-gif-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* lapisan dinamis — z-index di atas GIF; foto di bawah teks agar bingkai GIF tidak tertutup teks */
+.en-slot {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.en-gif.dyn .en-slot { opacity: 1; transform: none; }
+
+.en-slot.photo { z-index: 2; overflow: hidden; transform: scale(1.08); }
+.en-slot.photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; }
+.en-slot.photo img.logo-fallback { object-fit: contain; padding: 12%; }
+.en-slot.team_logo { z-index: 3; transform: translateY(-8px); }
+.en-slot.role { z-index: 3; transform: translateY(8px); }
+.en-slot.team_logo img, .en-slot.role img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.en-slot.role img { filter: brightness(0) invert(1); }
+
+.en-slot.nickname {
+    z-index: 4;
+    font-family: 'ENNoodle', 'Big Noodle Titling', sans-serif;
+    letter-spacing: 1.5px;
+    line-height: 1;
+    white-space: nowrap;
+    transform: translateY(6px);
+}
+
+.en-slot.nickname span { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* kalibrasi (?calib=event): kotak bantu tiap elemen */
+.en-calib .en-gif { outline: 2px dashed #ffe600; }
+.en-calib .en-slot { outline: 2px solid #00ffa2; background: rgba(0, 255, 162, 0.12); }
+.en-calib .en-slot::after {
+    content: attr(data-name);
+    position: absolute;
+    left: 0;
+    top: -18px;
+    font: 700 12px/1 'Segoe UI', sans-serif;
+    color: #00ffa2;
+    background: #000;
+    padding: 2px 4px;
+}
+
+/* =====================================================================
+   MODE 2 — TEMPLATE BAWAAN (mengikuti video referensi)
+   Biru: [strip logo/role][foto + label nickname][panel judul]   Merah: dicerminkan (direction: rtl)
+   ===================================================================== */
+.en-card {
+    --team: #1b5cff;
+    --team-dark: #0a2a8c;
+    --title-a: #2f8cff;
+    --title-b: #7a5cff;
+    --title-c: #c46bff;
+    position: absolute;
+    width: 760px;
+    height: 330px;
+    transform-origin: 50% 0;
+    visibility: hidden;
+}
+
+.en-card.on { visibility: visible; }
+
+.en-card.red {
+    --team: #e3263b;
+    --team-dark: #7a0b1d;
+    --title-a: #ff3d5a;
+    --title-b: #ff7a3d;
+    --title-c: #ff4fa3;
+    direction: rtl; /* posisi inline-start/end otomatis tercermin */
+}
+
+/* posisi logis (inset-inline-start) ikut arah elemennya sendiri → hanya teks yang dikembalikan ke ltr */
+.en-line, .en-tag span { direction: ltr; unicode-bidi: isolate; }
+
+/* semburan cahaya di belakang bingkai foto */
+.en-burst {
+    position: absolute;
+    inset-inline-start: 40px;
+    top: -60px;
+    width: 340px;
+    height: 340px;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255, 238, 160, 0.85) 0deg 4deg, transparent 4deg 22deg);
+    -webkit-mask: radial-gradient(circle, transparent 28%, #000 30%, #000 52%, transparent 70%);
+    mask: radial-gradient(circle, transparent 28%, #000 30%, #000 52%, transparent 70%);
+    opacity: 0;
+}
+
+/* strip tim: logo tim + logo role */
+.en-strip {
+    position: absolute;
+    inset-inline-start: 22px;
+    top: 34px;
+    width: 76px;
+    height: 206px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 40%),
+        linear-gradient(180deg, var(--team) 0%, var(--team-dark) 100%);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.en-strip .en-logo { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); }
+.en-strip .en-role { width: 44px; height: 44px; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35)); }
+.en-strip .en-role[src=""] { visibility: hidden; }
+
+/* bingkai foto (perisai putih bercahaya emas) */
+.en-frame {
+    position: absolute;
+    inset-inline-start: 92px;
+    top: 22px;
+    width: 236px;
+    height: 230px;
+    padding: 7px;
+    background: linear-gradient(160deg, #fff7e0, #ffffff 40%, #ffe9a8);
+    border-radius: 6px;
+    box-shadow: 0 0 0 2px rgba(255, 214, 102, 0.9), 0 0 26px rgba(255, 214, 102, 0.75), 0 10px 26px rgba(0, 0, 0, 0.35);
+    z-index: 3;
+}
+
+.en-photo {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 3px;
+    background:
+        radial-gradient(120% 90% at 20% 10%, rgba(255, 255, 255, 0.35), transparent 50%),
+        linear-gradient(140deg, #ff9a5a 0%, #ff5f7e 38%, #b46cff 72%, var(--team) 100%);
+}
+
+.en-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 10%;
+}
+
+.en-photo img.logo-fallback { object-fit: contain; padding: 18%; background: var(--team); }
+
+/* kilau menyapu di foto */
+.en-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.55) 48%, transparent 60%);
+    transform: translateX(-120%);
+}
+
+.en-card.shine .en-photo::after { animation: enShine 1s ease-out forwards; }
+@keyframes enShine { to { transform: translateX(120%); } }
+
+/* label nickname berbentuk perisai di bawah foto */
+.en-tag {
+    position: absolute;
+    inset-inline-start: 92px;
+    top: 248px;
+    width: 236px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #fff3d6 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 62%, 56% 84%, 50% 100%, 44% 84%, 0 62%);
+    filter: drop-shadow(0 0 10px rgba(255, 214, 102, 0.8));
+    z-index: 2;
+}
+
+.en-tag span {
+    font-family: 'ENNoodle', 'Big Noodle Titling', sans-serif;
+    font-size: 48px;
+    line-height: 1;
+    letter-spacing: 1.5px;
+    color: var(--team);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* panel judul: teks pixel besar dengan efek acak → tersusun */
+.en-title {
+    position: absolute;
+    inset-inline-start: 318px;
+    top: 34px;
+    width: 420px;
+    height: 196px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 18px 0 40px; /* sisi bingkai foto lebih lega (panel sedikit masuk ke belakang bingkai) */
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 243, 255, 0.98));
+    border-radius: 18px;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85), 0 0 24px rgba(160, 190, 255, 0.55), 0 10px 26px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    overflow: hidden;
+}
+
+.en-card.red .en-title { padding: 0 40px 0 18px; }
+
+.en-line {
+    font-family: 'ENPixel', 'Courier New', monospace;
+    font-size: 92px;
+    line-height: 0.98;
+    letter-spacing: 0;
+    white-space: nowrap;
+    color: var(--title-a); /* warna gradien per huruf diisi eventnotif.js (dari --title-a → --title-b → --title-c) */
+}
+
+.en-card.red .en-line { text-align: right; }
+
+.en-ch { display: inline-block; transition: filter 0.2s ease, opacity 0.2s ease; }
+.en-ch.scr { opacity: 0.55; }
+.en-ch.glitch { filter: blur(3px) drop-shadow(0 0 6px #7ab8ff); opacity: 0.8; }
+.en-card.red .en-ch.glitch { filter: blur(3px) drop-shadow(0 0 6px #ff8aa0); }
+.en-ch.sp { width: 0.5em; }
+
+/* chip sponsor "BY …" */
+.en-sponsor {
+    position: absolute;
+    inset-inline-start: 334px;
+    top: 238px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+}
+
+.en-sponsor b { font: 800 13px/1 'Segoe UI', sans-serif; color: #5a6275; letter-spacing: 1px; }
+.en-sponsor img { height: 32px; max-width: 150px; object-fit: contain; }
+.en-sponsor.none { display: none; }
+
+/* kilau bintang */
+.en-spark {
+    position: absolute;
+    width: var(--s, 30px);
+    height: var(--s, 30px);
+    background: #fffbe0;
+    clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+    filter: drop-shadow(0 0 8px rgba(255, 230, 120, 0.95));
+    opacity: 0;
+    z-index: 4;
+}
+
+.en-card.sparkle .en-spark { animation: enTwinkle 1.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+
+@keyframes enTwinkle {
+    0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+    45% { opacity: 1; transform: scale(1) rotate(25deg); }
+}

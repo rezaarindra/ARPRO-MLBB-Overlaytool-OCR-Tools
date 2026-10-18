@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Lineup Display</title>
+    <link rel="stylesheet" href="lineupdisplay.css">
+</head>
+<!-- Latar: ?bg=dark (bawaan), ?bg=transparent, ?bg=green. Tampil otomatis saat 10 hero terpilih; atur di Control Panel > Lineup Overlay -->
+<body>
+    <div class="lu-root" id="luRoot">
+        <header class="lu-header">
+            <div class="lu-team blue">
+                <div class="lu-logo"><img id="luLogoBlue" src="Assets/Other/nologo.png" alt=""></div>
+                <div class="lu-teaminfo">
+                    <div class="lu-teamname" id="luNameBlue"></div>
+                    <div class="lu-school" id="luSchoolBlue"></div>
+                </div>
+                <div class="lu-score" id="luScoreBlue">0</div>
+            </div>
+
+            <div class="lu-title">
+                <img src="Assets/Other/tourlogo.png" alt="" onerror="this.remove()">
+                <h1>STARTING LINEUP</h1>
+                <div class="lu-chips"><span id="luRound"></span><span id="luGame" class="lu-chip-accent"></span><span id="luStation"></span></div>
+                <div class="lu-map" id="luMap"></div>
+            </div>
+
+            <div class="lu-team red">
+                <div class="lu-logo"><img id="luLogoRed" src="Assets/Other/nologo.png" alt=""></div>
+                <div class="lu-teaminfo">
+                    <div class="lu-teamname" id="luNameRed"></div>
+                    <div class="lu-school" id="luSchoolRed"></div>
+                </div>
+                <div class="lu-score" id="luScoreRed">0</div>
+            </div>
+        </header>
+
+        <section class="lu-cards">
+            <div class="lu-group" id="luGroupBlue"></div>
+            <div class="lu-group" id="luGroupRed"></div>
+        </section>
+
+        <footer class="lu-sponsors" id="luSponsors">
+            <span class="lu-sponsors-label">SUPPORTED BY</span>
+            <div class="lu-sponsors-logos" id="luSponsorLogos"></div>
+        </footer>
+    </div>
+
+    <script src="script/hero-assets.js"></script>
+    <script src="script/lineupdisplay.js"></script>
+</body>
+</html>

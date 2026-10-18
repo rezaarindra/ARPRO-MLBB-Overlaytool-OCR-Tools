@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Player Notification</title>
+    <link rel="stylesheet" href="eventnotif.css">
+    <style>
+        html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+        body.bg-green { background: #00b140; }
+    </style>
+</head>
+<!-- Notifikasi pemain (First Blood, Turtle/Lord Slain & Stolen) — latar transparan untuk OBS / vMix.
+     Dipicu dari notifcontrol.html > PLAYER NOTIFICATION. Template & posisi: database/eventnotif.json
+     Bantuan: ?calib=turtle_slain (kotak bantu posisi + loop), ?test=first_blood&side=red (putar sekali), ?bg=green -->
+<body>
+    <script>
+        const bg = new URLSearchParams(location.search).get('bg');
+        if (bg) document.body.classList.add('bg-' + bg);
+    </script>
+    <script src="script/eventnotif.js"></script>
+</body>
+</html>

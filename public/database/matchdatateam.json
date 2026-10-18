@@ -1,0 +1,312 @@
+{
+  "game_duration": "40:20",
+  "game_number": "1",
+  "teamdata": {
+    "blueteam": {
+      "teamname": "GARUDA MUDA",
+      "score": "",
+      "logo": "/Assets/costum/ssc/4293974fac31bb2a.png",
+      "totalgold": 0,
+      "turret": 0,
+      "lord": 0,
+      "turtle": 0,
+      "playerlist": [
+        {
+          "name": "Kyy",
+          "lane": "none",
+          "hero": "Argus",
+          "banhero": "Xborg",
+          "level": "13",
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "Inspire",
+          "itemlist": [
+            "Azure Blade",
+            "Brute Force Breastplate",
+            "Dreadnaught Armor",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "BagzZ",
+          "lane": "none",
+          "hero": "",
+          "banhero": "Aamon",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "Enchanted Talisman",
+          "itemlist": [
+            "Azure Blade",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "Dmz",
+          "lane": "none",
+          "hero": "",
+          "banhero": "",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "Endless Battle",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "Jarr",
+          "lane": "none",
+          "hero": "",
+          "banhero": "",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "Blade Armor",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "Dreadnaught Armor",
+            "Concentrated Energy"
+          ]
+        },
+        {
+          "name": "Galeh",
+          "lane": "none",
+          "hero": "",
+          "banhero": "",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "Vampire Mallet",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        }
+      ]
+    },
+    "redteam": {
+      "teamname": "SINGA LAUT",
+      "score": "",
+      "logo": "/Assets/costum/ssc/195db05cb54c8cf4.png",
+      "totalgold": 0,
+      "turret": 0,
+      "lord": 0,
+      "turtle": 0,
+      "playerlist": [
+        {
+          "name": "Adtz",
+          "lane": "none",
+          "hero": "Aamon",
+          "banhero": "Jawhead",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "Bimss",
+          "lane": "none",
+          "hero": "Aldous",
+          "banhero": "Aamon",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "Cand",
+          "lane": "none",
+          "hero": "",
+          "banhero": "",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "Dewa Putra",
+          "lane": "none",
+          "hero": "",
+          "banhero": "",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        },
+        {
+          "name": "Ekoo",
+          "lane": "none",
+          "hero": "",
+          "banhero": "",
+          "level": 0,
+          "gold": 0,
+          "KDA": "0/0/0",
+          "spell": "",
+          "itemlist": [
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle",
+            "idle"
+          ]
+        }
+      ]
+    }
+  },
+  "winmatches": "red",
+  "ssc": {
+    "cabang": "Mobile Legends",
+    "babak": "Penyisihan · Round 1",
+    "meja": "Ruangan 1",
+    "status": "Sedang bertanding",
+    "roster": {
+      "blueteam": {
+        "school": "SMA Negeri 5 Surabaya",
+        "players": [
+          {
+            "label": "Kyy",
+            "name": "Rizky Pratama",
+            "nick": "Kyy",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/bbea29565ee6175c.png"
+          },
+          {
+            "label": "BagzZ",
+            "name": "Bagas Saputra",
+            "nick": "BagzZ",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/58bb5d6137943157.png"
+          },
+          {
+            "label": "Dmz",
+            "name": "Dimas Arya",
+            "nick": "Dmz",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/61a3ecc56a8e57b1.png"
+          },
+          {
+            "label": "Jarr",
+            "name": "Fajar Nugroho",
+            "nick": "Jarr",
+            "sub": false,
+            "foto": ""
+          },
+          {
+            "label": "Galeh",
+            "name": "Galih Ramadhan",
+            "nick": "Galeh",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/59c7c6a123f5ed51.png"
+          },
+          {
+            "label": "Hafz",
+            "name": "Hafidz Akbar",
+            "nick": "Hafz",
+            "sub": true,
+            "foto": "/Assets/costum/ssc/4c2e2b45e57f63e7.png"
+          }
+        ]
+      },
+      "redteam": {
+        "school": "SMK Telkom Malang",
+        "players": [
+          {
+            "label": "Adtz",
+            "name": "Aditya Wirawan",
+            "nick": "Adtz",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/53ac67f9bbc457d1.png"
+          },
+          {
+            "label": "Bimss",
+            "name": "Bima Sakti",
+            "nick": "Bimss",
+            "sub": false,
+            "foto": ""
+          },
+          {
+            "label": "Cand",
+            "name": "Candra Kirana",
+            "nick": "Cand",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/e40162fe198c48b3.png"
+          },
+          {
+            "label": "Dewa Putra",
+            "name": "Dewa Putra",
+            "nick": "",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/5f22086c821b0012.png"
+          },
+          {
+            "label": "Ekoo",
+            "name": "Eko Prasetyo",
+            "nick": "Ekoo",
+            "sub": false,
+            "foto": "/Assets/costum/ssc/005120192f44cf55.png"
+          },
+          {
+            "label": "Farr",
+            "name": "Farhan Maulana",
+            "nick": "Farr",
+            "sub": true,
+            "foto": ""
+          }
+        ]
+      }
+    },
+    "syncedAt": "2026-10-18T09:24:16.420Z"
+  }
+}

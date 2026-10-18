@@ -1,0 +1,55 @@
+{
+  "_petunjuk": [
+    "Template notifikasi pemain (eventdisplay.html / notifdisplay.html). Perubahan langsung terpakai tanpa restart server.",
+    "gif / gif_red: file GIF kosongan (tanpa nama/foto pemain) per event, mis. Assets/notification/gif/turtle_slain.gif. gif_red opsional (template khusus tim merah).",
+    "Bila file GIF belum ada, overlay memakai template animasi bawaan (CSS) yang mengikuti video referensi.",
+    "gif_layout: posisi GIF di layar 1920x1080 (box, px) dan posisi elemen dinamis di atas GIF (photo/nickname/role/team_logo) dalam PERSEN terhadap box GIF.",
+    "show_at / hide_at (ms sejak GIF mulai): kapan elemen dinamis muncul & hilang, disamakan dengan frame GIF. duration = panjang total animasi (ms).",
+    "Setel posisi dengan membuka eventdisplay.html?calib=turtle_slain (kotak bantu + loop).",
+    "card: posisi template bawaan — x = titik tengah horizontal kartu, y = tepi atas kartu, scale = ukuran.",
+    "sponsor: 'auto' = logo sponsor dari website SSC (bergantian), '' = tanpa chip sponsor, atau path gambar sendiri."
+  ],
+  "card": { "x": 960, "y": 250, "scale": 1.15 },
+  "sponsor": "auto",
+  "templates": {
+    "first_blood": {
+      "title": "FIRST BLOOD",
+      "gif": "Assets/notification/gif/first_blood.gif",
+      "gif_red": "",
+      "duration": 5200
+    },
+    "turtle_slain": {
+      "title": "TURTLE SLAIN",
+      "gif": "Assets/notification/gif/turtle_slain.gif",
+      "gif_red": "",
+      "duration": 5200
+    },
+    "turtle_stolen": {
+      "title": "TURTLE STOLEN",
+      "gif": "Assets/notification/gif/turtle_stolen.gif",
+      "gif_red": "",
+      "duration": 5200
+    },
+    "lord_slain": {
+      "title": "LORD SLAIN",
+      "gif": "Assets/notification/gif/lord_slain.gif",
+      "gif_red": "",
+      "duration": 5200
+    },
+    "lord_stolen": {
+      "title": "LORD STOLEN",
+      "gif": "Assets/notification/gif/lord_stolen.gif",
+      "gif_red": "",
+      "duration": 5200
+    }
+  },
+  "gif_layout": {
+    "box": { "x": 560, "y": 210, "w": 800, "h": 340 },
+    "team_logo": { "x": 3.5, "y": 10, "w": 8, "h": 19 },
+    "role": { "x": 4.5, "y": 50, "w": 6, "h": 14 },
+    "photo": { "x": 13, "y": 6, "w": 27, "h": 62 },
+    "nickname": { "x": 13, "y": 71, "w": 27, "h": 13, "size": 40, "color": "team" },
+    "show_at": 550,
+    "hide_at": 4500
+  }
+}

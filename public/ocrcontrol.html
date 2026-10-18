@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Control</title>
+    <link rel="stylesheet" href="ocrcontrol.css">
+</head>
+<!-- OCR gameplay MLBB tanpa OBS: sumber langsung dari HDMI capture / webcam / layar. Hasil → /ocr/MLBB.json (scoreboard OCR). -->
+<body>
+    <header class="oc-head">
+        <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="ARPRO ESPORT TOOLS">
+        <div class="oc-title">OCR CONTROL <span>HUD MLBB → SCOREBOARD</span></div>
+        <div class="oc-run">
+            <span class="oc-dot" id="ocDot"></span>
+            <span id="ocStatus">Belum berjalan</span>
+            <button id="ocStart" class="primary" disabled>START OCR</button>
+        </div>
+    </header>
+
+    <div class="oc-warn" id="ocWarn" hidden></div>
+
+    <main class="oc-main">
+        <section class="oc-stage">
+            <div class="oc-canvas-wrap" id="ocWrap">
+                <canvas id="ocView" width="1920" height="1080"></canvas>
+                <div class="oc-empty" id="ocEmpty">Pilih sumber gambar di panel kanan, lalu klik <b>HUBUNGKAN</b>.</div>
+            </div>
+            <div class="oc-hint">Geser kotak untuk memindahkan · tarik sudut kanan-bawah untuk mengubah ukuran · kotak harus memuat <b>angkanya saja</b> (tanpa ikon).</div>
+
+            <table class="oc-table">
+                <thead><tr><th></th><th>Data</th><th>Tipe</th><th>Gambar yang dibaca mesin</th><th>Hasil</th><th>Kecerahan teks</th><th>Teks gelap</th></tr></thead>
+                <tbody id="ocRows"></tbody>
+            </table>
+        </section>
+
+        <aside class="oc-side">
+            <div class="oc-card">
+                <h3>1 · SUMBER GAMBAR</h3>
+                <select id="ocSource"></select>
+                <input type="file" id="ocFile" accept="image/*,video/*" hidden>
+                <div class="oc-row">
+                    <button id="ocRefresh">Refresh Perangkat</button>
+                    <button id="ocConnect" class="primary">HUBUNGKAN</button>
+                </div>
+                <div class="oc-meta" id="ocSrcInfo">—</div>
+            </div>
+
+            <div class="oc-card">
+                <h3>2 · LURUSKAN GAMBAR</h3>
+                <p class="oc-small">Bila sumber punya bingkai hitam / bukan 16:9, potong agar gambar game memenuhi 1920×1080.</p>
+                <div class="oc-grid4">
+                    <label>X <input type="number" id="cropX" value="0"></label>
+                    <label>Y <input type="number" id="cropY" value="0"></label>
+                    <label>Lebar <input type="number" id="cropW" value="0"></label>
+                    <label>Tinggi <input type="number" id="cropH" value="0"></label>
+                </div>
+                <div class="oc-row">
+                    <button id="ocAutoCrop">Auto (buang bingkai hitam)</button>
+                    <button id="ocResetCrop">Penuh</button>
+                </div>
+            </div>
+
+            <div class="oc-card">
+                <h3>3 · MESIN OCR</h3>
+                <div class="oc-grid2">
+                    <label>Interval baca
+                        <select id="ocInterval"><option value="0" selected>Secepatnya (realtime)</option><option value="250">0,25 detik</option><option value="500">0,5 detik</option><option value="1000">1 detik (hemat CPU)</option></select>
+                    </label>
+                    <label>Thread
+                        <select id="ocThreads"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+                    </label>
+                </div>
+                <div class="oc-meta" id="ocPerf">—</div>
+            </div>
+
+            <div class="oc-card">
+                <h3>4 · PROFIL POSISI</h3>
+                <div class="oc-row">
+                    <button id="ocSave" class="primary">SIMPAN</button>
+                    <button id="ocDefault">Posisi Bawaan</button>
+                </div>
+                <div class="oc-row">
+                    <button id="ocExport">Export JSON</button>
+                    <button id="ocImport">Import JSON</button>
+                </div>
+                <input type="file" id="ocImportFile" accept=".json,application/json" hidden>
+                <div class="oc-meta" id="ocProfileInfo">—</div>
+            </div>
+
+            <div class="oc-card">
+                <h3>OUTPUT</h3>
+                <p class="oc-small">Dibaca otomatis oleh <b>scoreboardocr.html</b> &amp; <b>scoreboardcostumocr.html</b>.</p>
+                <pre class="oc-json" id="ocJson">{}</pre>
+                <a href="/ocr/MLBB.json" target="_blank" class="oc-link">/ocr/MLBB.json ↗</a>
+                <p class="oc-small">vMix Data Sources (JSON): <b>http://IP-SERVER:3000/ocr/vmix.json</b></p>
+                <a href="/ocr/vmix.json" target="_blank" class="oc-link">/ocr/vmix.json ↗</a>
+            </div>
+        </aside>
+    </main>
+
+    <script src="vendor/tesseract/tesseract.min.js"></script>
+    <script src="script/ocr-engine.js"></script>
+    <script src="script/ocrcontrol.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "feedUrl": "http://localhost:3000/mock-ssc/feed.php?t=mock",
+  "game": "ML",
+  "station": "Ruangan 1",
+  "homeSide": "blue",
+  "lock": false,
+  "interval": 1000
+}
