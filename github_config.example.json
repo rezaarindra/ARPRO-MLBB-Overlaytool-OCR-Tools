@@ -1,6 +1,6 @@
 {
-  "owner": "GITHUB_USERNAME",
-  "repo": "ASSET_REPO_NAME",
+  "owner": "rezaarindra",
+  "repo": "ARPRO-MLBB-Overlaytool-OCR-Tools",
   "branch": "main",
-  "token": "PUT_YOUR_GITHUB_TOKEN_HERE"
+  "token": ""
 }

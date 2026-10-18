@@ -1,0 +1,17 @@
+{
+  "version": "5.0.0",
+  "note": "Files/folders downloaded by Command Center > UPDATE > SYNC WITH GITHUB. Only changed files are downloaded. Do not list match data (matchdatateam, matchdraft, schedule, theme, etc.) or it will be overwritten during an event.",
+  "files": [
+    "public/Assets/HeroPick",
+    "public/Assets/HeroFull",
+    "public/Assets/Itemandspell",
+    "public/Assets/VoiceLines",
+    "public/Assets/lane",
+    "public/Assets/map",
+    "public/Assets/nationalflag",
+    "public/Assets/notification",
+    "public/Assets/player",
+    "public/database/herolist.json",
+    "public/database/items.json"
+  ]
+}

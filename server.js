@@ -264,24 +264,30 @@ wss.on('close', function close() { clearInterval(interval); });
 // --- GITHUB ASSET UPDATER (WITH PROGRESS & STRUCTURAL PLACEMENT) ---
 app.post('/api/sync-github', async (req, res) => {
     try {
-        const configPath = path.join(__dirname, 'github_config.json');
-        
+        // github_config.json (lokal, boleh berisi token) → bila tidak ada, pakai github_config.example.json (repo resmi, tanpa token)
+        let configPath = path.join(__dirname, 'github_config.json');
+        if (!fsSync.existsSync(configPath)) configPath = path.join(__dirname, 'github_config.example.json');
+
         if (!fsSync.existsSync(configPath)) {
             return res.status(400).json({ message: 'github_config.json not found on server.' });
         }
 
         const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
-        const { owner, repo, branch, token } = config;
+        const { owner, repo, branch = 'main' } = config;
+        // token hanya perlu untuk repo private; repo publik cukup tanpa token
+        const token = (config.token || '').trim();
+        const auth = token && !/^PUT_YOUR/i.test(token) ? { 'Authorization': `Bearer ${token}` } : {};
 
         const apiHeaders = {
-            'Authorization': `Bearer ${token}`,
+            ...auth,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'ArproEsportTools-Updater'
         };
 
         const rawHeaders = {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github.v3.raw'
+            ...auth,
+            'Accept': 'application/vnd.github.v3.raw',
+            'User-Agent': 'ArproEsportTools-Updater'
         };
 
         const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
@@ -302,7 +308,9 @@ app.post('/api/sync-github', async (req, res) => {
         if (!treeResponse.ok) throw new Error('Failed to read repository structure from GitHub API');
         
         const treeData = await treeResponse.json();
-        const allRepoFiles = treeData.tree.filter(item => item.type === 'blob').map(item => item.path);
+        const blobs = treeData.tree.filter(item => item.type === 'blob');
+        const allRepoFiles = blobs.map(item => item.path);
+        const repoSha = new Map(blobs.map(item => [item.path, item.sha]));
 
         let filesToDownload = new Set();
 
@@ -317,12 +325,23 @@ app.post('/api/sync-github', async (req, res) => {
             }
         }
 
+        // Lewati file yang isinya sudah sama dengan di GitHub (bandingkan git blob SHA) → hanya unduh yang berubah
+        const root = path.resolve(__dirname);
+        const gitBlobSha = (buf) => crypto.createHash('sha1').update(`blob ${buf.length}\0`).update(buf).digest('hex');
+        for (const filePath of [...filesToDownload]) {
+            const local = path.resolve(root, filePath);
+            if (!local.startsWith(root + path.sep)) { filesToDownload.delete(filePath); continue; }
+            try {
+                if (gitBlobSha(await fs.readFile(local)) === repoSha.get(filePath)) filesToDownload.delete(filePath);
+            } catch (e) { /* file belum ada → unduh */ }
+        }
+
         let updatedCount = 0;
         let errors = [];
         const totalFiles = filesToDownload.size;
 
         if (totalFiles === 0) {
-            return res.json({ message: "No files matched the update target.", version: manifest.version });
+            return res.json({ message: "Already up to date. No files changed.", version: manifest.version });
         }
 
         // 4. Download and map exactly to the local directory structure
