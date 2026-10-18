@@ -230,7 +230,7 @@ function renderBans(players, startFrameId) {
 
 // Fungsi Fetch Data dengan Pengecekan Perubahan (Dirty Check)
 function checkDataUpdate() {
-    fetch("database/matchdatateam.json?t=" + new Date().getTime())
+    fetch("/api/matchdata?t=" + new Date().getTime())
       .then(response => {
         if (!response.ok) throw new Error(`Gagal memuat JSON: ${response.status}`);
         return response.json();

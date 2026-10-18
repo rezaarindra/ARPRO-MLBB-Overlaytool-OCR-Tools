@@ -16,6 +16,11 @@ const os = require('os');
 const crypto = require('crypto');
 const multer = require('multer');
 
+// File JSON yang disimpan Notepad / PowerShell bisa diawali BOM → JSON.parse gagal diam-diam dan data/config tidak terbaca.
+// Buang BOM di semua pembacaan JSON.
+const parseJson = JSON.parse;
+JSON.parse = (text, reviver) => parseJson(typeof text === 'string' && text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text, reviver);
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -52,6 +57,15 @@ class AsyncQueue {
         });
         return this.queue;
     }
+}
+
+// Tulis ke file sementara lalu rename → file asli tidak pernah setengah tertulis (aman bila PC mati / server crash saat menyimpan).
+// Bila rename ditolak Windows (file sedang dikunci antivirus / dibaca), tulis langsung seperti biasa.
+async function writeFileSafe(filePath, data) {
+    const tmp = `${filePath}.tmp`;
+    await fs.writeFile(tmp, data);
+    try { await fs.rename(tmp, filePath); }
+    catch (e) { await fs.writeFile(filePath, data); fs.unlink(tmp).catch(() => {}); }
 }
 const fileQueue = new AsyncQueue();
 
@@ -171,7 +185,7 @@ function pruneMissingSscFiles() {
     }
     if (changed) {
         console.log('>> Rujukan logo/foto SSC yang file-nya hilang dibersihkan.');
-        fileQueue.enqueue(() => fs.writeFile(matchDataPath, JSON.stringify(md, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(matchDataPath, JSON.stringify(md, null, 2)));
     }
 }
 loadCache();
@@ -222,7 +236,7 @@ function saveMatchData(data) {
     broadcast({ type: 'matchdata_update', data: cache.matchdata });
     broadcast({ type: 'update', data: { matchdata: cache.matchdata } });
     const payload = JSON.stringify(cache.matchdata, null, 2);
-    fileQueue.enqueue(() => fs.writeFile(matchDataPath, payload));
+    fileQueue.enqueue(() => writeFileSafe(matchDataPath, payload));
 }
 
 // ==========================================
@@ -413,7 +427,7 @@ app.post('/api/matchdraft', (req, res) => {
         recordPicks(cache.matchdraft.draftdata);
         
         const payload = JSON.stringify(cache.matchdraft, null, 2);
-        fileQueue.enqueue(() => fs.writeFile(draftDataPath, payload));
+        fileQueue.enqueue(() => writeFileSafe(draftDataPath, payload));
         res.json({ message: 'Draft data saved' });
     } catch (error) { res.status(500).json({ message: 'Error saving draft' }); }
 });
@@ -426,7 +440,7 @@ app.post('/api/theme', (req, res) => {
         broadcast({ type: 'theme_update', data: cache.theme });
         
         const payload = JSON.stringify(cache.theme, null, 2);
-        fileQueue.enqueue(() => fs.writeFile(themePath, payload));
+        fileQueue.enqueue(() => writeFileSafe(themePath, payload));
         res.json({ message: 'Theme saved' });
     } catch (error) { res.status(500).json({ message: 'Error saving theme' }); }
 });
@@ -437,7 +451,7 @@ app.post('/api/theme-reset', (req, res) => {
         broadcast({ type: 'theme_update', data: cache.theme });
         
         const payload = JSON.stringify(cache.theme, null, 2);
-        fileQueue.enqueue(() => fs.writeFile(themePath, payload));
+        fileQueue.enqueue(() => writeFileSafe(themePath, payload));
         res.json({ message: 'Theme Reset to Default', theme: cache.theme });
     } catch (error) { res.status(500).json({ message: 'Error resetting theme' }); }
 });
@@ -465,7 +479,7 @@ app.post('/api/upload-asset', uploadUnified.single('file'), (req, res) => {
         broadcast({ type: 'theme_update', data: cache.theme });
         
         const payload = JSON.stringify(cache.theme, null, 2);
-        fileQueue.enqueue(() => fs.writeFile(themePath, payload));
+        fileQueue.enqueue(() => writeFileSafe(themePath, payload));
         
         res.json({ message: 'Asset uploaded successfully', filename: req.file.originalname, updatedTheme: cache.theme });
     } catch (error) {
@@ -479,7 +493,7 @@ app.get('/api/flags', async (req, res) => {
     try {
         const files = await fs.readdir(flagDir);
         const imageFiles = files.filter(file => /\.(png|jpg|jpeg|webp)$/i.test(file));
-        fileQueue.enqueue(() => fs.writeFile(flagJsonPath, JSON.stringify(imageFiles, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(flagJsonPath, JSON.stringify(imageFiles, null, 2)));
         res.json(imageFiles);
     } catch (error) { res.json([]); }
 });
@@ -489,7 +503,7 @@ app.post('/api/upload-flag', uploadFlag.single('file'), async (req, res) => {
     try {
         const files = await fs.readdir(flagDir);
         const imageFiles = files.filter(file => /\.(png|jpg|jpeg|webp)$/i.test(file));
-        fileQueue.enqueue(() => fs.writeFile(flagJsonPath, JSON.stringify(imageFiles, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(flagJsonPath, JSON.stringify(imageFiles, null, 2)));
         res.json({ message: 'Flag uploaded successfully', filename: req.file.originalname, list: imageFiles });
     } catch (error) { res.status(500).json({ message: 'Error uploading flag' }); }
 });
@@ -504,7 +518,7 @@ app.post('/api/schedule', (req, res) => {
     try {
         cache.schedule = req.body;
         broadcast({ type: 'schedule_update', data: cache.schedule });
-        fileQueue.enqueue(() => fs.writeFile(schedulePath, JSON.stringify(cache.schedule, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(schedulePath, JSON.stringify(cache.schedule, null, 2)));
         res.json({ message: 'Schedule saved' });
     } catch (error) { res.status(500).json({ message: 'Error' }); }
 });
@@ -514,7 +528,7 @@ app.post('/api/mapdraw', (req, res) => {
     try {
         cache.mapdraw = req.body;
         broadcast({ type: 'mapdraw_update', data: cache.mapdraw.drawdata });
-        fileQueue.enqueue(() => fs.writeFile(mapDrawPath, JSON.stringify(cache.mapdraw, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(mapDrawPath, JSON.stringify(cache.mapdraw, null, 2)));
         res.json({ message: 'Map saved' });
     } catch (error) { res.status(500).json({ message: 'Error' }); }
 });
@@ -524,7 +538,7 @@ app.post('/api/mvp', (req, res) => {
     try {
         cache.mvp = req.body;
         broadcast({ type: 'mvp_update', data: cache.mvp.mvp });
-        fileQueue.enqueue(() => fs.writeFile(mvpDataPath, JSON.stringify(cache.mvp, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(mvpDataPath, JSON.stringify(cache.mvp, null, 2)));
         res.json({ message: 'MVP saved' });
     } catch (error) { res.status(500).json({ message: 'Error' }); }
 });
@@ -533,7 +547,7 @@ app.post('/api/notification', (req, res) => {
     try {
         const payload = { currentVideo: req.body.videoId, timestamp: Date.now() };
         broadcast({ type: 'notification_trigger', videoId: req.body.videoId });
-        fileQueue.enqueue(() => fs.writeFile(notifPath, JSON.stringify(payload, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(notifPath, JSON.stringify(payload, null, 2)));
         res.json({ message: 'Notification triggered' });
     } catch (error) { res.status(500).json({ message: 'Error' }); }
 });
@@ -556,7 +570,7 @@ app.post('/api/save-match-record', async (req, res) => {
 
 app.post('/api/archive-draft', (req, res) => {
     try {
-        fileQueue.enqueue(() => fs.writeFile(prevDraftPath, JSON.stringify(cache.matchdraft, null, 2)));
+        fileQueue.enqueue(() => writeFileSafe(prevDraftPath, JSON.stringify(cache.matchdraft, null, 2)));
         broadcast({ type: 'analyzer_update' });
         res.json({ message: 'Draft archived (Queued)' });
     } catch (error) { res.status(500).json({ message: 'Error archiving draft' }); }
@@ -599,7 +613,7 @@ const heroKey = (src) => decodeURIComponent(String(src || '').split('?')[0].spli
 
 function savePickStats() {
     const payload = JSON.stringify(pickStats, null, 2);
-    fileQueue.enqueue(() => fs.writeFile(pickStatsPath, payload));
+    fileQueue.enqueue(() => writeFileSafe(pickStatsPath, payload));
     broadcast({ type: 'pickstats_update' });
 }
 
@@ -784,7 +798,7 @@ app.get('/api/ocr/profile', async (req, res) => {
     try { res.json(JSON.parse(await fs.readFile(ocrProfilePath, 'utf8'))); } catch (e) { res.json(null); }
 });
 app.post('/api/ocr/profile', async (req, res) => {
-    await fileQueue.enqueue(() => fs.writeFile(ocrProfilePath, JSON.stringify(req.body || {}, null, 2)));
+    await fileQueue.enqueue(() => writeFileSafe(ocrProfilePath, JSON.stringify(req.body || {}, null, 2)));
     res.json({ ok: true });
 });
 
@@ -798,7 +812,7 @@ app.post('/api/match-format', (req, res) => {
     const bo = parseInt(req.body && req.body.bo, 10);
     if (![0, 1, 3, 5, 7].includes(bo)) return res.status(400).json({ message: 'bo harus 0, 1, 3, 5, atau 7' });
     matchFormat = { bo };
-    fileQueue.enqueue(() => fs.writeFile(matchFormatPath, JSON.stringify(matchFormat, null, 2)));
+    fileQueue.enqueue(() => writeFileSafe(matchFormatPath, JSON.stringify(matchFormat, null, 2)));
     broadcast({ type: 'matchformat_update', data: matchFormat });
     res.json(matchFormat);
 });
@@ -1038,7 +1052,7 @@ app.post('/api/ssc/config', async (req, res) => {
 
     const sourceChanged = ['feedUrl', 'game', 'station', 'homeSide'].some(k => next[k] !== sscConfig[k]);
     sscConfig = next;
-    await fileQueue.enqueue(() => fs.writeFile(sscConfigPath, JSON.stringify(sscConfig, null, 2)));
+    await fileQueue.enqueue(() => writeFileSafe(sscConfigPath, JSON.stringify(sscConfig, null, 2)));
     if (sourceChanged) { sscState.rev = null; sscState.signature = null; sscState.lineup = null; }
     if (!sscConfig.enabled) sscState.status = 'idle';
     sscBroadcast(true);
@@ -1120,7 +1134,7 @@ app.post('/api/ssc/assign', async (req, res) => {
 
         if (!sscConfig.lock) {
             sscConfig.lock = true;
-            await fileQueue.enqueue(() => fs.writeFile(sscConfigPath, JSON.stringify(sscConfig, null, 2)));
+            await fileQueue.enqueue(() => writeFileSafe(sscConfigPath, JSON.stringify(sscConfig, null, 2)));
             if (sscConfig.enabled) sscState.status = 'locked';
         }
         sscBroadcast(true);

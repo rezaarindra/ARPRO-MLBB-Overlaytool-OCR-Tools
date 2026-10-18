@@ -241,7 +241,7 @@
 
     async function fetchCurrentData() {
         try {
-            const res = await fetch('/database/matchdatateam.json');
+            const res = await fetch('/api/matchdata', { cache: 'no-store' });
             const json = await res.json();
             currentDraft = json; 
             

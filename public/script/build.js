@@ -5,7 +5,7 @@
  */
 function fetchData() {
     // Mengambil data dari file JSON yang memuat struktur teamdata
-    fetch('/database/matchdatateam.json')
+    fetch('/api/matchdata', { cache: 'no-store' })
         .then(response => response.json())
         .then(data => {
             // --- LOGIKA BLUE TEAM ---

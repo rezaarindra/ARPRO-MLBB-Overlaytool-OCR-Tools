@@ -9,7 +9,7 @@
         async function checkForUpdates() {
             try {
                 // 1. Cek file JSON dengan timestamp anti-cache
-                const response = await fetch('database/matchdatateam.json?t=' + new Date().getTime());
+                const response = await fetch('/api/matchdata?t=' + new Date().getTime());
                 if (!response.ok) return;
                 
                 const data = await response.json();
