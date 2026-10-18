@@ -89,6 +89,32 @@
             </div>
 
             <div class="oc-card">
+                <h3>5 · OTOMASI &amp; GOLD</h3>
+                <div class="oa-status" id="oaStatus">Menunggu data OCR…</div>
+                <div class="oa-hints" id="oaHints"></div>
+                <label class="oa-check"><input type="checkbox" id="oaFirstBlood"> First Blood otomatis</label>
+                <label class="oa-check"><input type="checkbox" id="oaLord"> Lord Slain otomatis (dari angka lord)</label>
+                <label class="oa-check"><input type="checkbox" id="oaSpawn"> Turtle / Lord Spawn otomatis</label>
+                <label class="oa-check"><input type="checkbox" id="oaHint"> Saran multikill (klik untuk tayang)</label>
+                <div class="oc-grid2">
+                    <label>Turtle pertama <input id="oaTurtleFirst" placeholder="2:00"></label>
+                    <label>Respawn turtle <input id="oaTurtleRespawn" placeholder="2:00"></label>
+                    <label>Lord pertama <input id="oaLordFirst" placeholder="8:00"></label>
+                    <label>Respawn lord <input id="oaLordRespawn" placeholder="2:00"></label>
+                    <label>Peringatan (detik) <input type="number" id="oaWarn" min="5" max="120"></label>
+                    <label>Jendela multikill (detik) <input type="number" id="oaWindow" min="3" max="30"></label>
+                </div>
+                <p class="oc-small oa-note">Timer respawn turtle dimulai saat operator menekan <b>Blue/Red Turtle Slain</b> di Notif Control (turtle tidak terbaca OCR).</p>
+                <div class="oc-row">
+                    <button id="oaSave" class="primary">SIMPAN OTOMASI</button>
+                    <button id="oaReset">RESET GAME</button>
+                </div>
+                <div class="oc-meta" id="oaLog"></div>
+                <a href="/goldlead.html" target="_blank" class="oc-link">/goldlead.html ↗</a>
+                <a href="/goldgraph.html" target="_blank" class="oc-link">/goldgraph.html ↗</a>
+            </div>
+
+            <div class="oc-card">
                 <h3>OUTPUT</h3>
                 <p class="oc-small">Dibaca otomatis oleh <b>scoreboardocr.html</b> &amp; <b>scoreboardcostumocr.html</b>.</p>
                 <pre class="oc-json" id="ocJson">{}</pre>
@@ -102,5 +128,6 @@
     <script src="vendor/tesseract/tesseract.min.js"></script>
     <script src="script/ocr-engine.js"></script>
     <script src="script/ocrcontrol.js"></script>
+    <script src="script/ocrauto.js"></script>
 </body>
 </html>

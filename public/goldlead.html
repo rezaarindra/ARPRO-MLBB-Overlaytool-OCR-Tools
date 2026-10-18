@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Gold Lead</title>
+    <style>
+        @font-face { font-family: 'myfonts'; src: url('Assets/Font/big_noodle_titling.ttf') format('truetype'); }
+        :root { --blue: #00d2ff; --red: #ff2a2a; --bg: rgba(10, 10, 14, 0.92); --line: rgba(255, 255, 255, 0.14); --gold: #ffcf4a; }
+        html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; font-family: 'myfonts', Impact, 'Arial Narrow', sans-serif; color: #fff; }
+        body.bg-green { background: #00b140; }
+
+        .gl { position: absolute; left: var(--x, 960px); top: var(--y, 104px); transform: translateX(-50%) scale(var(--s, 1)); transform-origin: top center;
+              display: flex; flex-direction: column; align-items: center; gap: 6px; transition: opacity .4s ease; }
+        .gl.off { opacity: 0; }
+
+        .gl-row { display: grid; grid-template-columns: 170px 300px 170px; align-items: stretch; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0, 0, 0, .45); }
+        .gl-team { display: flex; align-items: center; gap: 10px; padding: 6px 12px; min-width: 0; }
+        .gl-team span { font-size: 18px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
+        .gl-team b { font-size: 26px; font-weight: normal; color: var(--gold); letter-spacing: 1px; }
+        .gl-team.blue { border-left: 4px solid var(--blue); }
+        .gl-team.red { border-right: 4px solid var(--red); justify-content: flex-end; }
+
+        .gl-center { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 12px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+        .gl-lead { text-align: center; font-size: 24px; letter-spacing: 2px; line-height: 1; transition: color .3s; }
+        .gl-lead.blue { color: var(--blue); } .gl-lead.red { color: var(--red); }
+        .gl-bar { position: relative; height: 8px; background: rgba(255, 255, 255, .08); }
+        .gl-bar .fill { position: absolute; top: 0; bottom: 0; width: 0; transition: width .6s ease, left .6s ease, background .3s; }
+        .gl-bar .mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #fff; }
+
+        .gl-obj { display: flex; gap: 6px; }
+        .gl-obj:empty { display: none; }
+        .chip { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 6px; background: var(--bg); border: 1px solid var(--line); font-size: 20px; letter-spacing: 1px; }
+        .chip img { width: 24px; height: 24px; object-fit: contain; }
+        .chip em { font-style: normal; color: var(--gold); min-width: 44px; text-align: right; }
+        .chip.warn { border-color: var(--gold); animation: pulse 1s ease-in-out infinite; }
+        .chip.alive em { color: #4ade80; }
+        @keyframes pulse { 50% { box-shadow: 0 0 14px rgba(255, 207, 74, .7); } }
+    </style>
+</head>
+<!-- Selisih gold & timer Turtle/Lord dari OCR gameplay (OCR Control harus berjalan). Latar transparan untuk OBS / vMix.
+     Opsi URL: ?x=960&y=104 (posisi tengah-atas, px) · &scale=1.2 · &objectives=0 (sembunyikan timer) · &bar=0 (hanya timer) · &bg=green -->
+<body>
+    <div class="gl off" id="gl">
+        <div class="gl-row" id="row">
+            <div class="gl-team blue"><span id="n1">BLUE</span><b id="g1">-</b></div>
+            <div class="gl-center">
+                <div class="gl-lead" id="lead">EVEN</div>
+                <div class="gl-bar"><div class="fill" id="fill"></div><i class="mid"></i></div>
+            </div>
+            <div class="gl-team red"><b id="g2">-</b><span id="n2">RED</span></div>
+        </div>
+        <div class="gl-obj" id="obj"></div>
+    </div>
+
+    <script>
+        const q = new URLSearchParams(location.search);
+        const el = (id) => document.getElementById(id);
+        const root = el('gl');
+        if (q.get('bg')) document.body.classList.add('bg-' + q.get('bg'));
+        if (q.get('x')) root.style.setProperty('--x', parseFloat(q.get('x')) + 'px');
+        if (q.get('y')) root.style.setProperty('--y', parseFloat(q.get('y')) + 'px');
+        if (q.get('scale')) root.style.setProperty('--s', parseFloat(q.get('scale')));
+        const showObj = q.get('objectives') !== '0';
+        if (q.get('bar') === '0') el('row').style.display = 'none';
+
+        const MAX_LEAD = 10000; // selisih 10K = bar penuh
+        const fmtGold = (v) => v >= 10000 ? (v / 1000).toFixed(1) + 'K' : v.toLocaleString('en-US');
+        const fmtLead = (v) => (v / 1000).toFixed(1) + 'K';
+        const fmtTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+        function render(d) {
+            root.classList.toggle('off', !d || !d.live || !d.gold);
+            if (!d || !d.gold) return;
+            el('g1').textContent = fmtGold(d.gold.g1);
+            el('g2').textContent = fmtGold(d.gold.g2);
+            const lead = d.lead, side = lead > 0 ? 'blue' : lead < 0 ? 'red' : '';
+            const lbl = el('lead');
+            lbl.className = 'gl-lead ' + side;
+            lbl.textContent = Math.abs(lead) < 100 ? 'EVEN' : (lead > 0 ? '◀ +' : '+') + fmtLead(Math.abs(lead)) + (lead < 0 ? ' ▶' : '');
+            const pct = Math.min(1, Math.abs(lead) / MAX_LEAD) * 50;
+            const fill = el('fill');
+            fill.style.width = pct + '%';
+            fill.style.left = lead >= 0 ? (50 - pct) + '%' : '50%';
+            fill.style.background = lead >= 0 ? 'var(--blue)' : 'var(--red)';
+
+            const obj = el('obj');
+            obj.innerHTML = !showObj ? '' : (d.objectives || []).map(o => `
+                <div class="chip ${o.alive ? 'alive' : o.warn ? 'warn' : ''}">
+                    <img src="Assets/Other/${o.id}.png" alt="">${o.label}<em>${o.alive ? 'UP' : fmtTime(o.remain)}</em>
+                </div>`).join('');
+        }
+
+        async function loadTeams() {
+            try {
+                const md = await (await fetch('/api/matchdata', { cache: 'no-store' })).json();
+                el('n1').textContent = md.teamdata.blueteam.teamname || 'BLUE';
+                el('n2').textContent = md.teamdata.redteam.teamname || 'RED';
+            } catch (e) {}
+        }
+        async function loadGame() {
+            try { render(await (await fetch('/api/ocr/game', { cache: 'no-store' })).json()); } catch (e) {}
+        }
+
+        function connect() {
+            const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+            ws.onopen = () => { loadTeams(); loadGame(); };
+            ws.onmessage = (ev) => {
+                const m = JSON.parse(ev.data);
+                if (m.type === 'ocr_game') render(m.data);
+                else if (m.type === 'ocr_game_reset') loadGame();
+                else if (m.type === 'matchdata_update' || m.type === 'update') loadTeams();
+            };
+            ws.onclose = () => setTimeout(connect, 2000);
+        }
+        connect();
+        // OCR berhenti → server tidak mengirim apa-apa; cek berkala supaya overlay ikut sembunyi
+        setInterval(loadGame, 5000);
+    </script>
+</body>
+</html>

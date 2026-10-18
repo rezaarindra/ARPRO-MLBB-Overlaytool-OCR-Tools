@@ -547,6 +547,11 @@ app.post('/api/notification', (req, res) => {
     try {
         const payload = { currentVideo: req.body.videoId, timestamp: Date.now() };
         broadcast({ type: 'notification_trigger', videoId: req.body.videoId });
+        // Turtle tidak terbaca OCR → tombol Blue/Red Turtle Slain di Notif Control memulai timer respawn turtle.
+        // Lord Slain manual juga dipakai bila OCR belum menangkap kenaikan angka lord.
+        if (['videoPlayer2', 'videoPlayer3'].includes(req.body.videoId) && ocrGame.lastT != null) ocrGame.turtleKilledAt = ocrGame.lastT;
+        if (['videoPlayer5', 'videoPlayer6'].includes(req.body.videoId) && ocrGame.lastT != null
+            && (ocrGame.lordKilledAt == null || ocrGame.lastT - ocrGame.lordKilledAt > 15)) ocrGame.lordKilledAt = ocrGame.lastT;
         fileQueue.enqueue(() => writeFileSafe(notifPath, JSON.stringify(payload, null, 2)));
         res.json({ message: 'Notification triggered' });
     } catch (error) { res.status(500).json({ message: 'Error' }); }
@@ -791,6 +796,7 @@ app.post('/api/ocr/data', (req, res) => {
     const changed = JSON.stringify(out) !== JSON.stringify(ocrState.data);
     ocrState = { data: out, at: Date.now() };
     Object.assign(ocrVmixLast, out);
+    ocrAnalyze(out);
     if (changed) broadcast({ type: 'ocr_update', data: out }); // scoreboard OCR langsung diperbarui (tanpa menunggu polling)
     res.json({ ok: true });
 });
@@ -800,6 +806,164 @@ app.get('/api/ocr/profile', async (req, res) => {
 app.post('/api/ocr/profile', async (req, res) => {
     await fileQueue.enqueue(() => writeFileSafe(ocrProfilePath, JSON.stringify(req.body || {}, null, 2)));
     res.json({ ok: true });
+});
+
+// --- OCR ANALITIK: gold lead + grafik gold, timer Turtle/Lord, notifikasi otomatis (first blood, lord slain, spawn) ---
+// Dihitung di server dari setiap data OCR, jadi tetap jalan walau overlay belum dibuka.
+// Sisi 1 = tim kiri HUD = tim biru, sisi 2 = tim kanan = tim merah.
+const ocrAutoPath = path.join(dbDir, 'ocrauto.json');
+const defaultOcrAuto = {
+    autoFirstBlood: true,      // video First Blood saat kill pertama game
+    autoLordSlain: true,       // video Blue/Red Lord Slain saat angka lord naik
+    autoObjectiveSpawn: true,  // video Turtle/Lord Spawn saat waktunya tiba
+    multikillHints: true,      // saran Double/Triple/Maniac/Savage di OCR Control (operator yang memutuskan)
+    turtleFirst: '2:00', turtleRespawn: '2:00', lordFirst: '8:00', lordRespawn: '2:00',
+    warnBefore: 30,            // detik: chip timer menyala sebelum spawn
+    multikillWindow: 10        // detik: kill satu tim dalam rentang ini dihitung beruntun
+};
+let ocrAuto = { ...defaultOcrAuto };
+try { ocrAuto = { ...defaultOcrAuto, ...JSON.parse(fsSync.readFileSync(ocrAutoPath, 'utf8')) }; } catch (e) {}
+
+const OCR_VIDEO = { turtleSpawn: 'videoPlayer1', lordSpawn: 'videoPlayer4', lord1: 'videoPlayer5', lord2: 'videoPlayer6', firstBlood: 'videoPlayer7' };
+const MULTIKILL = { 2: ['DOUBLE KILL', 'videoPlayer8'], 3: ['TRIPLE KILL', 'videoPlayer9'], 4: ['MANIAC', 'videoPlayer10'], 5: ['SAVAGE / WIPEOUT', 'videoPlayer11'] };
+const GOLD_STEP = 5; // detik antar titik grafik gold
+
+const mmss = (v) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(v == null ? '' : v).trim()); return m && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; };
+const goldNum = (v) => {
+    const s = String(v == null ? '' : v).trim();
+    const k = /^(\d+(?:\.\d)?)k$/i.exec(s);
+    if (k) return Math.round(parseFloat(k[1]) * 1000);
+    return /^\d+$/.test(s) ? +s : null;
+};
+
+function newOcrGame() {
+    return { maxT: 0, lastT: null, cur: null, gold: [], kills: { 1: null, 2: null }, lords: { 1: null, 2: null },
+        killLog: { 1: [], 2: [] }, fired: {}, turtleKilledAt: null, lordKilledAt: null, marks: [], hints: [], log: [] };
+}
+let ocrGame = newOcrGame();
+
+function ocrPlay(videoId, text) {
+    broadcast({ type: 'notification_trigger', videoId });
+    ocrGame.log.unshift({ at: Date.now(), text });
+    ocrGame.log.length = Math.min(ocrGame.log.length, 12);
+}
+
+// Jadwal Turtle / Lord pada detik game t
+function ocrObjectives(t) {
+    if (t == null) return [];
+    const g = ocrGame, sec = (v, d) => { const s = mmss(v); return s == null ? mmss(d) : s; };
+    const lordFirst = sec(ocrAuto.lordFirst, defaultOcrAuto.lordFirst);
+    const out = [];
+    const turtleNext = g.turtleKilledAt != null ? g.turtleKilledAt + sec(ocrAuto.turtleRespawn, defaultOcrAuto.turtleRespawn) : sec(ocrAuto.turtleFirst, defaultOcrAuto.turtleFirst);
+    if (t < lordFirst && turtleNext < lordFirst) out.push({ id: 'turtle', label: 'TURTLE', spawn: turtleNext, remain: Math.max(0, turtleNext - t) });
+    const lordNext = g.lordKilledAt != null ? g.lordKilledAt + sec(ocrAuto.lordRespawn, defaultOcrAuto.lordRespawn) : lordFirst;
+    out.push({ id: 'lord', label: 'LORD', spawn: lordNext, remain: Math.max(0, lordNext - t) });
+    return out.map(o => ({ ...o, alive: o.remain === 0, warn: o.remain > 0 && o.remain <= (+ocrAuto.warnBefore || 30) }));
+}
+
+function ocrAnalyze(d) {
+    const t = mmss(d.timer);
+    if (t != null && ocrGame.lastT != null && t < ocrGame.maxT - 20) {
+        ocrGame = newOcrGame();                                   // timer mundur jauh → game baru
+        broadcast({ type: 'ocr_game_reset' });
+    }
+    const g = ocrGame, prevT = g.lastT;
+    if (t != null) { g.lastT = t; g.maxT = Math.max(g.maxT, t); }
+
+    // 1. Gold: titik grafik tiap GOLD_STEP detik + nilai terkini
+    const g1 = goldNum(d.gold1), g2 = goldNum(d.gold2);
+    if (t != null && g1 != null && g2 != null) {
+        g.cur = { t, g1, g2 };
+        const last = g.gold[g.gold.length - 1];
+        if (!last || t - last.t >= GOLD_STEP) g.gold.push({ t, g1, g2 });
+    }
+
+    // 2. Kill: first blood otomatis, multikill sebagai saran untuk operator
+    const prevK = { ...g.kills };
+    for (const s of [1, 2]) { const k = parseInt(d['killscore' + s], 10); if (Number.isFinite(k)) g.kills[s] = k; }
+    for (const s of [1, 2]) {
+        const delta = prevK[s] == null || g.kills[s] == null ? 0 : g.kills[s] - prevK[s];
+        if (delta <= 0 || delta > 5) continue;
+        if (!g.fired.firstBlood && prevK[1] === 0 && prevK[2] === 0) {
+            g.fired.firstBlood = true;
+            g.marks.push({ t: g.lastT, side: s, kind: 'FB' });
+            if (ocrAuto.autoFirstBlood) ocrPlay(OCR_VIDEO.firstBlood, `FIRST BLOOD (${s === 1 ? 'biru' : 'merah'})`);
+        }
+        // jendela beruntun memakai waktu game (detik OCR); jam komputer hanya cadangan bila timer belum terbaca
+        const now = Date.now(), gameSec = g.lastT != null ? g.lastT : Math.floor(now / 1000), win = +ocrAuto.multikillWindow || 10;
+        for (let i = 0; i < delta; i++) g.killLog[s].push(gameSec);
+        g.killLog[s] = g.killLog[s].filter(x => x <= gameSec && gameSec - x <= win);
+        const n = Math.min(5, g.killLog[s].length);
+        if (ocrAuto.multikillHints && MULTIKILL[n]) {
+            g.hints = g.hints.filter(h => h.side !== s || now - h.at > win * 1000);  // naikkan saran yang sama (double → triple)
+            g.hints.unshift({ id: `${s}-${now}`, side: s, count: n, label: MULTIKILL[n][0], videoId: MULTIKILL[n][1], at: now });
+            g.hints.length = Math.min(g.hints.length, 6);
+        }
+    }
+
+    // 3. Lord: angka lord naik → notifikasi + mulai hitung respawn
+    for (const s of [1, 2]) {
+        const l = parseInt(d['lord' + s], 10);
+        if (!Number.isFinite(l)) continue;
+        const prev = g.lords[s];
+        g.lords[s] = l;
+        if (prev != null && l === prev + 1) {
+            g.lordKilledAt = g.lastT;
+            g.marks.push({ t: g.lastT, side: s, kind: 'LORD' });
+            if (ocrAuto.autoLordSlain) ocrPlay(OCR_VIDEO['lord' + s], `LORD SLAIN (${s === 1 ? 'biru' : 'merah'})`);
+        }
+    }
+
+    // 4. Spawn Turtle / Lord: putar video tepat saat waktunya (tidak menyusul bila OCR baru dinyalakan di tengah game)
+    if (t != null && prevT != null && t > prevT) {
+        for (const o of ocrObjectives(prevT)) {
+            const key = `${o.id}@${o.spawn}`;
+            if (!g.fired[key] && prevT < o.spawn && t >= o.spawn && t - o.spawn <= 5) {
+                g.fired[key] = true;
+                if (ocrAuto.autoObjectiveSpawn) ocrPlay(o.id === 'lord' ? OCR_VIDEO.lordSpawn : OCR_VIDEO.turtleSpawn, `${o.label} SPAWN`);
+            }
+        }
+    }
+    broadcast({ type: 'ocr_game', data: ocrGameSummary(false) });
+}
+
+function ocrGameSummary(withHistory) {
+    const g = ocrGame, now = Date.now();
+    const s = {
+        live: !!ocrState.data && now - ocrState.at <= 15000,
+        t: g.lastT, gold: g.cur, lead: g.cur ? g.cur.g1 - g.cur.g2 : null,
+        kills: g.kills, lords: g.lords, objectives: ocrObjectives(g.lastT), marks: g.marks,
+        hints: g.hints.filter(h => now - h.at < 30000), log: g.log
+    };
+    if (withHistory) s.history = g.cur && (!g.gold.length || g.gold[g.gold.length - 1].t < g.cur.t) ? [...g.gold, g.cur] : g.gold;
+    return s;
+}
+
+app.get('/api/ocr/game', (req, res) => { res.json(ocrGameSummary(true)); });
+app.post('/api/ocr/game/reset', (req, res) => {
+    ocrGame = newOcrGame();
+    broadcast({ type: 'ocr_game_reset' });
+    res.json({ ok: true });
+});
+app.get('/api/ocr/auto', (req, res) => { res.json({ config: ocrAuto, defaults: defaultOcrAuto }); });
+app.post('/api/ocr/auto', async (req, res) => {
+    const b = req.body || {}, next = { ...ocrAuto };
+    for (const k of ['autoFirstBlood', 'autoLordSlain', 'autoObjectiveSpawn', 'multikillHints']) if (typeof b[k] === 'boolean') next[k] = b[k];
+    for (const k of ['turtleFirst', 'turtleRespawn', 'lordFirst', 'lordRespawn']) {
+        if (b[k] == null) continue;
+        if (mmss(b[k]) == null) return res.status(400).json({ message: `${k} harus berformat m:ss, contoh 2:00` });
+        next[k] = String(b[k]).trim();
+    }
+    for (const [k, lo, hi] of [['warnBefore', 5, 120], ['multikillWindow', 3, 30]]) {
+        if (b[k] == null) continue;
+        const n = parseInt(b[k], 10);
+        if (!(n >= lo && n <= hi)) return res.status(400).json({ message: `${k} harus ${lo}-${hi} detik` });
+        next[k] = n;
+    }
+    ocrAuto = next;
+    await fileQueue.enqueue(() => writeFileSafe(ocrAutoPath, JSON.stringify(ocrAuto, null, 2)));
+    broadcast({ type: 'ocr_game', data: ocrGameSummary(false) });
+    res.json({ config: ocrAuto });
 });
 
 // --- FORMAT SERI (BO): skor overlay draft tampil sebagai garis kemenangan (ref. CLD / Arcadia) ---

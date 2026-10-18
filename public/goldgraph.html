@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Gold Graph</title>
+    <style>
+        @font-face { font-family: 'myfonts'; src: url('Assets/Font/big_noodle_titling.ttf') format('truetype'); }
+        :root { --blue: #00d2ff; --red: #ff2a2a; --bg: rgba(10, 10, 14, 0.94); --line: rgba(255, 255, 255, 0.14); --muted: rgba(255, 255, 255, 0.5); --gold: #ffcf4a; }
+        html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; font-family: 'myfonts', Impact, 'Arial Narrow', sans-serif; color: #fff; }
+        body.bg-green { background: #00b140; }
+
+        .gg { position: absolute; left: var(--x, 960px); top: var(--y, 540px); transform: translate(-50%, -50%) scale(var(--s, 1));
+              width: 1500px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 10px 40px rgba(0, 0, 0, .5); padding: 22px 30px 18px; box-sizing: border-box; }
+        .gg-head { display: flex; align-items: center; gap: 24px; margin-bottom: 10px; }
+        .gg-title { font-size: 44px; letter-spacing: 3px; line-height: 1; }
+        .gg-title small { display: block; font-size: 18px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+        .gg-teams { margin-left: auto; display: flex; gap: 22px; font-size: 26px; letter-spacing: 1px; }
+        .gg-teams i { display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: 1px; }
+        .gg-now { font-size: 40px; letter-spacing: 2px; min-width: 190px; text-align: right; }
+        .gg-now.blue { color: var(--blue); } .gg-now.red { color: var(--red); }
+        svg { display: block; width: 100%; height: auto; overflow: visible; }
+        svg text { font-family: 'myfonts', Impact, sans-serif; fill: var(--muted); font-size: 18px; letter-spacing: 1px; }
+        .gg-empty { text-align: center; color: var(--muted); font-size: 28px; padding: 120px 0; letter-spacing: 2px; }
+    </style>
+</head>
+<!-- Grafik selisih gold sepanjang game dari OCR gameplay (untuk replay / jeda / pasca-game). Latar transparan untuk OBS / vMix.
+     Opsi URL: ?x=960&y=540 (posisi tengah panel, px) · &scale=0.8 · &bg=green -->
+<body>
+    <div class="gg" id="gg">
+        <div class="gg-head">
+            <div class="gg-title">GOLD DIFFERENCE<small id="sub">MENUNGGU DATA OCR</small></div>
+            <div class="gg-teams"><span><i style="background:var(--blue)"></i><b id="n1">BLUE</b></span><span><i style="background:var(--red)"></i><b id="n2">RED</b></span></div>
+            <div class="gg-now" id="now"></div>
+        </div>
+        <div id="chart"></div>
+    </div>
+
+    <script>
+        const q = new URLSearchParams(location.search);
+        const el = (id) => document.getElementById(id);
+        if (q.get('bg')) document.body.classList.add('bg-' + q.get('bg'));
+        if (q.get('x')) el('gg').style.setProperty('--x', parseFloat(q.get('x')) + 'px');
+        if (q.get('y')) el('gg').style.setProperty('--y', parseFloat(q.get('y')) + 'px');
+        if (q.get('scale')) el('gg').style.setProperty('--s', parseFloat(q.get('scale')));
+
+        const W = 1440, H = 430, PL = 70, PR = 20, PT = 16, PB = 40;
+        const fmtK = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + (Math.abs(v) / 1000).toFixed(Math.abs(v) % 1000 ? 1 : 0) + 'K';
+        const fmtTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+        function draw(d) {
+            const pts = (d.history || []).map(p => ({ t: p.t, v: p.g1 - p.g2 }));
+            const now = el('now');
+            if (d.lead != null) {
+                now.className = 'gg-now ' + (d.lead > 0 ? 'blue' : d.lead < 0 ? 'red' : '');
+                now.textContent = Math.abs(d.lead) < 100 ? 'EVEN' : '+' + (Math.abs(d.lead) / 1000).toFixed(1) + 'K';
+            } else now.textContent = '';
+            el('sub').textContent = pts.length ? `MENIT ${fmtTime(pts[pts.length - 1].t)}` : 'MENUNGGU DATA OCR';
+            if (pts.length < 2) { el('chart').innerHTML = '<div class="gg-empty">GRAFIK MUNCUL SETELAH OCR MEMBACA GOLD KEDUA TIM</div>'; return; }
+
+            const t0 = pts[0].t, t1 = Math.max(pts[pts.length - 1].t, t0 + 60);
+            const peak = Math.max(1000, ...pts.map(p => Math.abs(p.v)));
+            const maxV = Math.ceil(peak / 2000) * 2000;
+            const x = (t) => PL + (t - t0) / (t1 - t0) * (W - PL - PR);
+            const y = (v) => PT + (maxV - v) / (2 * maxV) * (H - PT - PB);
+            const y0 = y(0);
+
+            let grid = '';
+            for (const v of [maxV, maxV / 2, 0, -maxV / 2, -maxV]) {
+                grid += `<line x1="${PL}" x2="${W - PR}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,${v === 0 ? .45 : .08})" stroke-width="${v === 0 ? 2 : 1}"/>`;
+                grid += `<text x="${PL - 12}" y="${y(v) + 6}" text-anchor="end">${v === 0 ? '0' : fmtK(v)}</text>`;
+            }
+            const span = t1 - t0, step = span <= 360 ? 60 : span <= 900 ? 120 : 300;
+            for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
+                grid += `<line x1="${x(t)}" x2="${x(t)}" y1="${PT}" y2="${H - PB}" stroke="rgba(255,255,255,.06)"/>`;
+                grid += `<text x="${x(t)}" y="${H - PB + 28}" text-anchor="middle">${fmtTime(t)}</text>`;
+            }
+
+            const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+            const area = `${line} L${x(pts[pts.length - 1].t).toFixed(1)},${y0} L${x(pts[0].t).toFixed(1)},${y0} Z`;
+            const marks = (d.marks || []).filter(m => m.t != null && m.t >= t0).map(m => {
+                const c = m.side === 1 ? 'var(--blue)' : 'var(--red)';
+                return `<line x1="${x(m.t)}" x2="${x(m.t)}" y1="${PT}" y2="${H - PB}" stroke="${c}" stroke-dasharray="4 5" stroke-width="2" opacity=".7"/>
+                        <text x="${x(m.t)}" y="${PT + 4}" text-anchor="middle" style="fill:${c}">${m.kind}</text>`;
+            }).join('');
+            const last = pts[pts.length - 1];
+
+            el('chart').innerHTML = `
+                <svg viewBox="0 0 ${W} ${H}">
+                    <defs>
+                        <clipPath id="up"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath>
+                        <clipPath id="down"><rect x="0" y="${y0}" width="${W}" height="${H - y0}"/></clipPath>
+                        <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00d2ff" stop-opacity=".55"/><stop offset="1" stop-color="#00d2ff" stop-opacity=".05"/></linearGradient>
+                        <linearGradient id="gr" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff2a2a" stop-opacity=".55"/><stop offset="1" stop-color="#ff2a2a" stop-opacity=".05"/></linearGradient>
+                    </defs>
+                    ${grid}
+                    <path d="${area}" fill="url(#gb)" clip-path="url(#up)"/>
+                    <path d="${area}" fill="url(#gr)" clip-path="url(#down)"/>
+                    <path d="${line}" fill="none" stroke="#00d2ff" stroke-width="3" clip-path="url(#up)" stroke-linejoin="round"/>
+                    <path d="${line}" fill="none" stroke="#ff2a2a" stroke-width="3" clip-path="url(#down)" stroke-linejoin="round"/>
+                    ${marks}
+                    <circle cx="${x(last.t)}" cy="${y(last.v)}" r="6" fill="${last.v >= 0 ? '#00d2ff' : '#ff2a2a'}" stroke="#fff" stroke-width="2"/>
+                </svg>`;
+        }
+
+        async function loadTeams() {
+            try {
+                const md = await (await fetch('/api/matchdata', { cache: 'no-store' })).json();
+                el('n1').textContent = md.teamdata.blueteam.teamname || 'BLUE';
+                el('n2').textContent = md.teamdata.redteam.teamname || 'RED';
+            } catch (e) {}
+        }
+        let busy = false;
+        async function loadGame() {
+            if (busy) return;
+            busy = true;
+            try { draw(await (await fetch('/api/ocr/game', { cache: 'no-store' })).json()); } catch (e) {}
+            busy = false;
+        }
+
+        function connect() {
+            const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+            ws.onopen = () => { loadTeams(); loadGame(); };
+            ws.onmessage = (ev) => {
+                const m = JSON.parse(ev.data);
+                if (m.type === 'ocr_game_reset') loadGame();
+                else if (m.type === 'matchdata_update' || m.type === 'update') loadTeams();
+            };
+            ws.onclose = () => setTimeout(connect, 2000);
+        }
+        connect();
+        setInterval(loadGame, 2000);
+    </script>
+</body>
+</html>

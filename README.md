@@ -27,6 +27,9 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 📊 | **Scoreboard** | Scoreboard manual, scoreboard custom, dan scoreboard otomatis dari **OCR**. |
 | 🔍 | **OCR Gameplay** | Membaca HUD MLBB langsung dari HDMI capture / webcam / layar: kill, gold, turret, lord, timer. Tanpa OBS, berjalan di browser (Tesseract.js). |
 | 📡 | **Output vMix** | Hasil OCR tersedia sebagai JSON untuk **vMix Data Sources** (`/ocr/vmix.json`). |
+| 💰 | **Gold Lead & Grafik Gold** | Bar selisih gold realtime dan grafik selisih gold sepanjang game (ala MPL), langsung dari OCR. |
+| ⏱️ | **Timer Turtle & Lord** | Hitung mundur spawn objektif dari timer game. Video Turtle/Lord Spawn diputar otomatis. |
+| ⚡ | **Notifikasi Otomatis** | First Blood & Lord Slain otomatis dari OCR, plus saran Double/Triple/Maniac/Savage yang tinggal diklik operator. |
 | 🏆 | **Postgame & MVP** | Statistik pasca-pertandingan, tampilan MVP, dan build/item hero. |
 | 📅 | **Schedule & Lineup** | Jadwal pertandingan, lineup pemain, dan undian/drawing grup. |
 | 🔔 | **Notifikasi & Event** | Notifikasi on-air dan event notification (first blood, savage, dll). |
@@ -89,12 +92,32 @@ Untuk OBS: tambahkan **Browser Source** dengan URL `http://IP-SERVER:3000/<halam
 3. Atur kotak HUD (kill, gold, turret, lord, timer) di atas pratinjau, lalu klik **Simpan** profil posisi.
 4. Tekan **START**. Hasilnya langsung dipakai oleh `scoreboardocr.html` dan `scoreboardcostumocr.html`.
 
+### Gold Lead, Timer Objektif & Notifikasi Otomatis
+
+Selama OCR berjalan, server otomatis menghitung selisih gold, jadwal Turtle/Lord, dan mendeteksi kill/lord.
+
+| Overlay | Isi | Opsi URL |
+|---|---|---|
+| `goldlead.html` | Bar selisih gold + chip timer Turtle/Lord (menyala menjelang spawn) | `?x=960&y=104` posisi · `&scale=1.2` · `&objectives=0` · `&bar=0` |
+| `goldgraph.html` | Grafik selisih gold sepanjang game + penanda First Blood & Lord | `?x=960&y=540` · `&scale=0.8` |
+
+Atur di **OCR Control → 5 · Otomasi & Gold**:
+- **First Blood otomatis**: kill pertama game → video First Blood.
+- **Lord Slain otomatis**: angka lord di HUD naik → video Blue/Red Lord Slain + timer respawn Lord.
+- **Turtle / Lord Spawn otomatis**: video spawn diputar tepat waktunya (default Turtle 2:00, Lord 8:00, respawn 2:00; bisa diubah sesuai patch).
+- **Saran multikill**: kill beruntun satu tim dalam jendela waktu → muncul tombol **TAYANG** (operator yang memutuskan, karena OCR tidak tahu pemain mana yang membunuh).
+- Turtle tidak terbaca dari HUD: tekan **Blue/Red Turtle Slain** di Notif Control untuk memulai timer respawn turtle.
+- Data game di-reset otomatis saat timer game kembali ke awal (game baru), atau manual lewat tombol **RESET GAME**.
+
+Video notifikasi tampil di `notifdisplay.html`, jadi pastikan halaman itu terpasang di OBS/vMix.
+
 ### Endpoint Data OCR
 
 | Endpoint | Fungsi |
 |---|---|
 | `GET /ocr/MLBB.json` | Data OCR terbaru. Membalas 404 kalau OCR tidak berjalan lebih dari 15 detik. |
 | `GET /ocr/vmix.json` | Khusus **vMix**: selalu 200, kolom selalu lengkap, nilai terakhir dipertahankan, plus kolom `status` (`LIVE` / `STALE` / `OFF`). |
+| `GET /api/ocr/game` | Analitik game: gold terkini & riwayat grafik, selisih gold, jadwal Turtle/Lord, penanda, saran multikill. |
 
 ### Integrasi vMix
 
