@@ -38,6 +38,9 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 🪪 | **Kartu Profil** | Profil pemain / tim (KDA, MVP, win rate, hero pool, roster) yang dipilih operator. |
 | 🔁 | **Series Recap** | Rekap tiap game dalam BO: pick, pemenang, durasi, MVP, kill, grafik gold. |
 | 🏅 | **Rekor & Milestone** | Popup otomatis: kill terbanyak, game tercepat/terlama, perfect game, MVP ke-N, kemenangan pertama. |
+| 🎙️ | **Caster Dashboard** | Layar kedua untuk caster: talking points otomatis (H2H, streak, match point, hero andalan, ban yang menarget pemain, rekor), statistik 10 pemain, gold & timer live. |
+| 📱 | **Social Card** | Kartu PNG 1080×1080 / 1350 / 1920 sekali klik: hasil series, hasil game, MVP, klasemen, top pemain, hero meta. |
+| 🎬 | **VOD Timeline** | Event siaran tercatat otomatis dengan jam rekam → chapter YouTube, marker DaVinci Resolve (EDL), CSV. |
 | 🎛️ | **Stream Deck / Companion** | Satu URL per tombol: notifikasi, MVP, lineup, skor, pemenang, simpan hasil game. |
 | 🏆 | **Postgame & MVP** | Statistik pasca-pertandingan, tampilan MVP, dan build/item hero. |
 | 📅 | **Schedule & Lineup** | Jadwal pertandingan, lineup pemain, dan undian/drawing grup. |
@@ -170,6 +173,12 @@ http://IP-SERVER:3000/api/companion/score/blue/up
 http://IP-SERVER:3000/api/companion/mvp-show?side=red&slot=2
 http://IP-SERVER:3000/api/companion/save-result
 ```
+
+## 🎬 VOD Timeline & Chapter YouTube
+
+1. Buka **`vodtimeline.html`**, tekan **MULAI REKAM** bersamaan dengan Start Recording / Go Live (terlambat? isi offset, mis. `12:30`).
+2. Selama siaran, event tercatat sendiri: draft dimulai, game dimulai (timer OCR), notifikasi video/pemain, multikill, hasil game, milestone. Tandai highlight manual dengan tombol **H** atau Stream Deck `/api/companion/vod-mark?label=SAVAGE`.
+3. Selesai siaran: **SALIN CHAPTER** → tempel ke deskripsi YouTube, atau unduh **EDL** (DaVinci Resolve › Timelines › Import › Timeline Markers from EDL) / **CSV**.
 
 ## ⚙️ Konfigurasi (opsional)
 

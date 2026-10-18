@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Card Generator</title>
+    <link rel="stylesheet" href="ocrcontrol.css">
+    <style>
+        .sc-main { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 18px; padding: 16px 22px 30px; align-items: start; }
+        .sc-side { display: flex; flex-direction: column; gap: 14px; }
+        .sc-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .sc-field[hidden] { display: none; }
+        .sc-field input, .sc-field select { width: 100%; text-transform: none; letter-spacing: 0; }
+        .sc-field input[type=color] { height: 38px; padding: 2px; }
+        .sc-field input[type=file] { font-size: 12px; }
+        .sc-tpl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+        .sc-tpl button.on, .sc-size button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .sc-size { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+        .sc-size button small { display: block; font-size: 10px; opacity: .7; font-weight: 600; }
+        .sc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .sc-actions button { padding: 12px; font-size: 13px; }
+        .sc-msg { font-size: 12px; min-height: 16px; margin-top: 8px; color: var(--muted); }
+        .sc-msg.ok { color: var(--ok); } .sc-msg.err { color: var(--bad); }
+        .sc-stage { position: sticky; top: 12px; display: flex; justify-content: center; align-items: flex-start; background: repeating-conic-gradient(#14161b 0% 25%, #101216 0% 50%) 0 0 / 24px 24px; border: 1px solid var(--line); padding: 16px; min-height: 400px; }
+        .sc-stage canvas { max-width: 100%; max-height: calc(100vh - 150px); box-shadow: 0 10px 40px rgba(0, 0, 0, .6); }
+        .sc-clear { padding: 4px 8px; font-size: 10px; margin-top: 4px; align-self: flex-start; }
+        @media (max-width: 900px) { .sc-main { grid-template-columns: 1fr; } .sc-stage { position: static; } }
+    </style>
+</head>
+<!-- Generator kartu media sosial: PNG 1080 px dari arsip turnamen (Tournament Control), siap unggah ke IG / TikTok / X. -->
+<body>
+    <header class="oc-head">
+        <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="ARPRO ESPORT TOOLS">
+        <div class="oc-title">SOCIAL CARD <span>KARTU MEDIA SOSIAL · PNG 1080</span></div>
+        <div class="oc-run"><span id="scCount">0 game tersimpan</span></div>
+    </header>
+
+    <main class="sc-main">
+        <div class="sc-side">
+            <div class="oc-card">
+                <h3>1 · TEMPLATE</h3>
+                <div class="sc-tpl" id="scTpl">
+                    <button data-tpl="series" class="on">Hasil Series</button>
+                    <button data-tpl="game">Hasil Game</button>
+                    <button data-tpl="mvp">MVP</button>
+                    <button data-tpl="standings">Klasemen</button>
+                    <button data-tpl="top">Top Pemain</button>
+                    <button data-tpl="hero">Hero Meta</button>
+                </div>
+                <div class="sc-size" id="scSize">
+                    <button data-h="1080" class="on">Feed<small>1080×1080</small></button>
+                    <button data-h="1350">Portrait<small>1080×1350</small></button>
+                    <button data-h="1920">Story<small>1080×1920</small></button>
+                </div>
+                <label class="sc-field" data-for="series">Series <select id="scSeries"></select></label>
+                <label class="sc-field" data-for="game mvp">Game <select id="scGame"></select></label>
+                <label class="sc-field" data-for="top">Kategori
+                    <select id="scMetric">
+                        <option value="kda">KDA tertinggi</option>
+                        <option value="k">Kill terbanyak</option>
+                        <option value="mvp">MVP terbanyak</option>
+                        <option value="winRate">Win rate</option>
+                        <option value="avgGold">Gold rata-rata</option>
+                    </select>
+                </label>
+                <label class="sc-field" data-for="standings">Grup <select id="scGroup"><option value="">Semua tim</option></select></label>
+            </div>
+
+            <div class="oc-card">
+                <h3>2 · TEKS &amp; GAYA</h3>
+                <label class="sc-field">Judul (kosong = otomatis) <input id="scTitle" maxlength="40"></label>
+                <label class="sc-field">Sub judul <input id="scSub" maxlength="60" placeholder="contoh: WEEK 2 · DAY 1"></label>
+                <label class="sc-field">Teks footer <input id="scFoot" maxlength="60" placeholder="contoh: #ARPROESPORT"></label>
+                <label class="sc-field">Warna aksen <input type="color" id="scAccent" value="#a855f7"></label>
+                <label class="sc-field">Logo (kosong = logo ARPRO) <input type="file" id="scLogo" accept="image/*"><button type="button" class="sc-clear" data-clear="logo">Hapus logo</button></label>
+                <label class="sc-field">Gambar latar (opsional) <input type="file" id="scBg" accept="image/*"><button type="button" class="sc-clear" data-clear="bg">Hapus latar</button></label>
+            </div>
+
+            <div class="oc-card">
+                <h3>3 · UNDUH</h3>
+                <div class="sc-actions">
+                    <button class="primary" id="scDownload">Unduh PNG</button>
+                    <button id="scCopy">Salin gambar</button>
+                </div>
+                <div class="sc-msg" id="scMsg"></div>
+            </div>
+        </div>
+
+        <div class="sc-stage"><canvas id="scCanvas" width="1080" height="1080"></canvas></div>
+    </main>
+
+    <script src="script/tournament-common.js"></script>
+    <script src="script/socialcard.js"></script>
+</body>
+</html>

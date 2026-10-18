@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOD Timeline</title>
+    <link rel="stylesheet" href="ocrcontrol.css">
+    <style>
+        .vt-main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; padding: 16px 22px 40px; align-items: start; }
+        .vt-rec { font: 30px/1 'Noodle', sans-serif; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .vt-rec small { font: 600 11px 'Segoe UI', sans-serif; color: var(--muted); letter-spacing: 1.5px; }
+        .vt-dot { width: 14px; height: 14px; border-radius: 50%; background: #555; }
+        .vt-dot.on { background: #ff2a2a; box-shadow: 0 0 12px #ff2a2a; animation: ocPulse 1.2s infinite; }
+        .vt-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .vt-field input, .vt-field select { width: 100%; text-transform: none; letter-spacing: 0; }
+        .vt-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .vt-row > * { flex: 1; }
+        .vt-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
+        .vt-quick button { padding: 6px 4px; font-size: 11px; }
+        .vt-big { padding: 12px; font-size: 14px; }
+        .vt-msg { font-size: 12px; min-height: 16px; margin-top: 6px; color: var(--muted); }
+        .vt-msg.ok { color: var(--ok); } .vt-msg.err { color: var(--bad); }
+        .vt-filter { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .vt-filter button { padding: 4px 9px; font-size: 11px; }
+        .vt-filter button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+        table.vt { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.vt th { text-align: left; font-size: 11px; letter-spacing: 1px; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--card); z-index: 1; }
+        table.vt td { padding: 5px 8px; border-bottom: 1px solid rgba(255, 255, 255, .05); vertical-align: middle; }
+        table.vt tr.ch td { background: rgba(168, 85, 247, .12); }
+        table.vt tr.out td { opacity: .4; }
+        table.vt td.tc { font: 15px Consolas, monospace; white-space: nowrap; }
+        table.vt td.clk { font: 12px Consolas, monospace; color: var(--muted); white-space: nowrap; }
+        table.vt input.lbl { width: 100%; padding: 4px 6px; background: transparent; border-color: transparent; }
+        table.vt input.lbl:hover, table.vt input.lbl:focus { border-color: var(--line); background: #1f2229; }
+        table.vt input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+        table.vt button { padding: 3px 7px; font-size: 11px; }
+        .vt-nudge { white-space: nowrap; }
+        .vt-kind { display: inline-block; min-width: 76px; text-align: center; font: 700 10px 'Segoe UI', sans-serif; letter-spacing: 1px; padding: 3px 6px; background: #262a33; color: var(--muted); }
+        .vt-kind.draft { background: #1d4ed8; color: #fff; } .vt-kind.game { background: #15803d; color: #fff; } .vt-kind.result { background: #ca8a04; color: #111; }
+        .vt-kind.notif, .vt-kind.ocr { background: #b91c1c; color: #fff; } .vt-kind.multikill { background: #db2777; color: #fff; } .vt-kind.event { background: #7c3aed; color: #fff; }
+        .vt-kind.milestone { background: #0e7490; color: #fff; } .vt-kind.manual { background: #e5e5e5; color: #111; }
+        .vt-scroll { max-height: calc(100vh - 230px); overflow: auto; }
+        .vt-empty { color: var(--muted); padding: 20px; text-align: center; }
+        textarea.vt-yt { width: 100%; min-height: 200px; font: 13px Consolas, monospace; color: var(--text); background: #0f1115; border: 1px solid var(--line); padding: 8px; resize: vertical; }
+        .vt-warn { font-size: 12px; color: #ffd590; margin: 6px 0; }
+        .vt-warn:empty { display: none; }
+        .vt-exp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        @media (max-width: 1100px) { .vt-main { grid-template-columns: 1fr; } .vt-scroll { max-height: none; } }
+    </style>
+</head>
+<!-- VOD Timeline: event siaran tercatat otomatis dengan jam → chapter YouTube & marker editor (DaVinci Resolve EDL / CSV). -->
+<body>
+    <header class="oc-head">
+        <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="ARPRO ESPORT TOOLS">
+        <div class="oc-title">VOD TIMELINE <span>CHAPTER YOUTUBE · MARKER EDITOR</span></div>
+        <div class="oc-run"><div class="vt-rec"><span class="vt-dot" id="vtDot"></span><div><small id="vtState">REKAMAN BELUM DIMULAI</small><div id="vtElapsed">--:--</div></div></div></div>
+    </header>
+
+    <main class="vt-main">
+        <div class="oc-card">
+            <h3>TIMELINE</h3>
+            <p class="oc-small">Tercatat otomatis: <b>draft dimulai</b>, <b>game dimulai</b> (timer OCR), notifikasi video &amp; pemain, multikill, <b>hasil game</b>, milestone. Centang <b>CHAPTER</b> untuk masuk daftar chapter YouTube. Label bisa diedit langsung.</p>
+            <div class="vt-filter" id="vtFilter"></div>
+            <div class="vt-scroll">
+                <table class="vt">
+                    <thead><tr><th>WAKTU VOD</th><th>JAM</th><th>JENIS</th><th>LABEL</th><th>CHAPTER</th><th>GESER</th><th></th></tr></thead>
+                    <tbody id="vtBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <aside class="oc-side">
+            <div class="oc-card">
+                <h3>1 · REKAMAN</h3>
+                <p class="oc-small">Tekan <b>MULAI REKAM</b> bersamaan dengan tombol Start Recording / Go Live di OBS / vMix. Terlambat? Isi berapa lama rekaman sudah berjalan.</p>
+                <label class="vt-field">Rekaman sudah berjalan (opsional, m:ss / h:mm:ss) <input id="vtOffset" placeholder="0:00"></label>
+                <div class="vt-row">
+                    <button class="primary vt-big" id="vtStart">MULAI REKAM</button>
+                    <button class="vt-big" id="vtStop">STOP</button>
+                </div>
+                <div class="oc-meta" id="vtInfo"></div>
+            </div>
+
+            <div class="oc-card">
+                <h3>2 · TANDAI MANUAL</h3>
+                <label class="vt-field">Label <input id="vtLabel" maxlength="100" placeholder="contoh: Savage Anaz / Analyst desk"></label>
+                <div class="vt-row">
+                    <button class="primary" id="vtMark">HIGHLIGHT <small>(H)</small></button>
+                    <button id="vtChapter">CHAPTER BARU</button>
+                </div>
+                <div class="vt-quick" id="vtQuick">
+                    <button>OPENING</button><button>ANALYST DESK</button><button>BREAK</button>
+                    <button>INTERVIEW</button><button>MVP</button><button>CLOSING</button>
+                </div>
+                <div class="vt-msg" id="vtMsg"></div>
+            </div>
+
+            <div class="oc-card">
+                <h3>3 · CHAPTER YOUTUBE</h3>
+                <label class="vt-field">Label chapter pertama (0:00) <input id="vtIntro" placeholder="Pembukaan" maxlength="60"></label>
+                <div class="vt-warn" id="vtWarn"></div>
+                <textarea class="vt-yt" id="vtYt" readonly></textarea>
+                <div class="vt-row" style="margin-top: 8px;">
+                    <button class="primary" id="vtCopy">SALIN CHAPTER</button>
+                    <button id="vtYtDl">UNDUH .TXT</button>
+                </div>
+                <p class="oc-small">Tempel di deskripsi video YouTube. Aturan YouTube: mulai 0:00, minimal 3 chapter, jarak minimal 10 detik (chapter yang terlalu rapat digabung otomatis).</p>
+            </div>
+
+            <div class="oc-card">
+                <h3>4 · MARKER EDITOR</h3>
+                <div class="oc-grid2">
+                    <label class="vt-field">FPS timeline <select id="vtFps"><option>24</option><option>25</option><option selected>30</option><option>50</option><option>60</option></select></label>
+                    <label class="vt-field">Timecode awal <select id="vtBase"><option value="1" selected>01:00:00:00</option><option value="0">00:00:00:00</option></select></label>
+                </div>
+                <div class="vt-exp">
+                    <button id="vtEdl">EDL (DAVINCI)</button>
+                    <button id="vtCsv">CSV (EXCEL)</button>
+                    <button id="vtTxt">DAFTAR LENGKAP .TXT</button>
+                    <button class="danger" id="vtClear">HAPUS SEMUA</button>
+                </div>
+                <p class="oc-small" style="margin-top: 8px;">DaVinci Resolve: klik kanan timeline › <b>Timelines › Import › Timeline Markers from EDL</b>. Warna marker mengikuti jenis event.</p>
+            </div>
+        </aside>
+    </main>
+
+    <script src="script/vodtimeline.js"></script>
+</body>
+</html>

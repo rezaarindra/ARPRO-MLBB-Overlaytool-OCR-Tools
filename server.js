@@ -422,7 +422,10 @@ app.post('/api/matchdata', (req, res) => {
 app.get('/api/matchdraft', (req, res) => { res.json(cache.matchdraft); });
 app.post('/api/matchdraft', (req, res) => {
     try {
+        const filledBefore = draftFilled(cache.matchdraft);
         cache.matchdraft = req.body;
+        // draft baru dimulai (hero pertama masuk setelah draft kosong) → chapter VOD otomatis
+        if (filledBefore === 0 && draftFilled(cache.matchdraft) > 0) vodLog(`DRAFT ${vodMatchLabel()}`, 'draft', { chapter: true });
         broadcast({ type: 'draftdata_update', data: cache.matchdraft.draftdata });
         recordPicks(cache.matchdraft.draftdata);
         
@@ -547,6 +550,7 @@ app.post('/api/notification', (req, res) => {
     try {
         const payload = { currentVideo: req.body.videoId, timestamp: Date.now() };
         broadcast({ type: 'notification_trigger', videoId: req.body.videoId });
+        if (VIDEO_LABEL[req.body.videoId]) vodLog(VIDEO_LABEL[req.body.videoId], 'notif');
         // Turtle tidak terbaca OCR → tombol Blue/Red Turtle Slain di Notif Control memulai timer respawn turtle.
         // Lord Slain manual juga dipakai bila OCR belum menangkap kenaikan angka lord.
         if (['videoPlayer2', 'videoPlayer3'].includes(req.body.videoId) && ocrGame.lastT != null) ocrGame.turtleKilledAt = ocrGame.lastT;
@@ -851,6 +855,8 @@ app.post('/api/tournament/game', (req, res) => {
     tournament.games.push(g);
     tournament.milestones = [...(tournament.milestones || []), ...milestones].slice(-50);
     saveTournament();
+    vodLog(`POST-GAME${g.game ? ' ' + g.game : ''} · ${g.winner === 'blue' ? g.blue.name : g.red.name} menang (${g.duration || '-'})`, 'result', { chapter: true });
+    milestones.forEach(m => vodLog(`${m.title}: ${m.player || m.team} · ${m.text}`, 'milestone'));
     if (milestones.length && tournament.autoMilestones !== false) broadcast({ type: 'milestone', data: milestones });
     res.json({ updated: false, milestones: milestones.length, message: `Tersimpan: ${g.blue.name} vs ${g.red.name}${g.game ? ' · game ' + g.game : ''} (${g.winner === 'blue' ? g.blue.name : g.red.name} menang).`, total: tournament.games.length });
 });
@@ -894,12 +900,22 @@ app.post('/api/tournament/reset', (req, res) => {
 });
 
 // --- SERIES RECAP: game-game dalam series dua tim (default: tim biru vs merah yang sedang main), tim A selalu di kiri ---
-app.get('/api/tournament/series/current', (req, res) => {
+app.get('/api/tournament/series/current', (req, res) => { res.json(currentSeries(req.query.a, req.query.b, req.query.id)); });
+// detail lengkap satu game (kartu media sosial)
+app.get('/api/tournament/game/:id', (req, res) => {
+    const g = tournament.games.find(x => x.id === req.params.id);
+    if (!g) return res.status(404).json({ message: 'Game tidak ditemukan.' });
+    res.json({ ...g, goldHistory: undefined });
+});
+
+// id = id series dari /api/tournament/stats (tanpa id: series terakhir kedua tim)
+function currentSeries(qa, qb, sid) {
     const td = (cache.matchdata && cache.matchdata.teamdata) || {};
-    const a = tName(req.query.a || (td.blueteam || {}).teamname), b = tName(req.query.b || (td.redteam || {}).teamname);
+    let a = tName(qa || (td.blueteam || {}).teamname), b = tName(qb || (td.redteam || {}).teamname);
     const key = [tKey(a), tKey(b)].sort().join(' vs ');
-    const list = tournamentSeries().filter(s => [tKey(s.a), tKey(s.b)].sort().join(' vs ') === key);
+    const list = tournamentSeries().filter(s => sid ? s.id === sid : [tKey(s.a), tKey(s.b)].sort().join(' vs ') === key);
     const s = list[list.length - 1];
+    if (sid && s) { a = s.a; b = s.b; }
     const byId = new Map(tournament.games.map(g => [g.id, g]));
     const games = s ? s.games.map(id => byId.get(id)).filter(Boolean).map(g => {
         const aSide = tKey(g.blue.name) === tKey(a) ? 'blue' : 'red', bSide = aSide === 'blue' ? 'red' : 'blue';
@@ -914,9 +930,9 @@ app.get('/api/tournament/series/current', (req, res) => {
         };
     }) : [];
     const winsA = games.filter(g => tKey(g.winner) === tKey(a)).length;
-    res.json({ a, b, aLogo: (td.blueteam || {}).logo || '', bLogo: (td.redteam || {}).logo || '', bo: s ? s.bo : (matchFormat.bo || 3),
-        winsA, winsB: games.length - winsA, done: s ? s.done : false, winner: s ? s.winner : '', games });
-});
+    return { a, b, aLogo: (td.blueteam || {}).logo || '', bLogo: (td.redteam || {}).logo || '', bo: s ? s.bo : (matchFormat.bo || 3),
+        winsA, winsB: games.length - winsA, done: s ? s.done : false, winner: s ? s.winner : '', games };
+}
 
 // --- KARTU PROFIL PEMAIN / TIM: dipilih operator di Tournament Control, tampil di profile.html ---
 let profileCard = { show: false, type: 'player', name: '' };
@@ -979,6 +995,295 @@ app.post('/api/tournament/milestone/show', (req, res) => {
 });
 
 // ==========================================
+// CASTER DASHBOARD (casterdashboard.html): bahan bicara caster untuk match yang sedang tampil
+// ==========================================
+// H2H, form & streak tim, posisi series, statistik pemain + hero andalan, catatan draft, rekor turnamen.
+const heroLoose = (s) => tName(s).toLowerCase().replace(/[^a-z0-9]/g, '').replace(/(.)\1+/g, '$1');
+const fileBase = (s) => tName(s).split('?')[0].split('/').pop().replace(/\.[a-z]+$/i, '');
+const herolistPath = path.join(dbDir, 'herolist.json');
+
+// "Assets/HeroPick/xborg.png" / "xborg" / "X.Borg" → "X.Borg" (nama dari herolist)
+function heroResolver() {
+    let list = [];
+    try { list = JSON.parse(fsSync.readFileSync(herolistPath, 'utf8')); } catch (e) {}
+    const map = new Map();
+    for (const h of list) for (const k of [heroLoose(h.name), heroLoose(fileBase(h.img))]) if (k && !map.has(k)) map.set(k, h.name);
+    return (v) => { const s = tHero(fileBase(v)); return s ? map.get(heroLoose(s)) || s : ''; };
+}
+
+function teamForm(name) {
+    const k = tKey(name);
+    const res = [...tournament.games].sort((a, b) => a.at.localeCompare(b.at))
+        .filter(g => tKey(g.blue.name) === k || tKey(g.red.name) === k)
+        .map(g => tKey(g.winner === 'blue' ? g.blue.name : g.red.name) === k ? 'W' : 'L');
+    let n = 0;
+    const last = res[res.length - 1];
+    for (let i = res.length - 1; i >= 0 && res[i] === last; i--) n++;
+    return { last5: res.slice(-5), streak: last ? { type: last, n } : null };
+}
+
+function casterData() {
+    const md = cache.matchdata || {}, td = md.teamdata || {};
+    const st = tournamentStats(), hero = heroResolver(), series = currentSeries();
+    const heroStat = (h) => st.heroes.find(x => heroLoose(x.hero) === heroLoose(h)) || null;
+    const allPlayers = tournament.games.flatMap(gamePlayers);
+    const fmtGold = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+
+    const side = (key) => {
+        const t = td[key] || {}, name = tName(t.teamname);
+        const stats = st.teams.find(x => tKey(x.name) === tKey(name)) || null;
+        const players = (t.playerlist || []).slice(0, 5).map(p => {
+            const ps = st.players.find(x => tKey(x.name) === tKey(p.name)), cur = hero(p.hero);
+            const onHero = ps && cur ? ps.pool.find(x => heroLoose(x.hero) === heroLoose(cur)) : null;
+            const killsTotal = ps ? ps.k : 0;
+            return {
+                name: tName(p.name), lane: p.lane && p.lane !== 'none' ? p.lane : (ps && ps.lane) || '', hero: cur, ban: hero(p.banhero),
+                games: ps ? ps.games : 0, wins: ps ? ps.wins : 0, winRate: ps ? ps.winRate : 0, mvp: ps ? ps.mvp : 0,
+                kda: ps ? ps.kda : 0, avg: ps && ps.games ? [ps.k, ps.d, ps.a].map(v => +(v / ps.games).toFixed(1)) : [0, 0, 0],
+                avgGold: ps ? ps.avgGold : 0, killsTotal, nextKillMark: (Math.floor(killsTotal / 50) + 1) * 50,
+                pool: ps ? ps.pool.slice(0, 3) : [], onHero: onHero ? { games: onHero.games, wins: onHero.wins } : null
+            };
+        });
+        return { name, logo: t.logo || '', score: t.score || '0', stats, form: teamForm(name), players };
+    };
+    const blue = side('blueteam'), red = side('redteam');
+
+    // head-to-head semua game kedua tim
+    const pk = [tKey(blue.name), tKey(red.name)].sort().join(' vs ');
+    const meet = tournament.games.filter(g => pairKey(g) === pk);
+    const winsOf = (n) => meet.filter(g => tKey(g.winner === 'blue' ? g.blue.name : g.red.name) === tKey(n)).length;
+    const h2h = { games: meet.length, blue: winsOf(blue.name), red: winsOf(red.name) };
+
+    // rekor turnamen
+    const killRec = allPlayers.slice().sort((a, b) => b.k - a.k)[0] || null;
+    const timed = tournament.games.filter(g => durSec(g.duration)).sort((a, b) => durSec(a.duration) - durSec(b.duration));
+    const mvpLead = st.players.slice().sort((a, b) => b.mvp - a.mvp)[0];
+    const records = {
+        kills: killRec && killRec.k ? { k: killRec.k, player: killRec.name, team: killRec.team, hero: killRec.hero } : null,
+        fastest: timed[0] ? { duration: timed[0].duration, winner: timed[0].winner === 'blue' ? timed[0].blue.name : timed[0].red.name, vs: `${timed[0].blue.name} vs ${timed[0].red.name}` } : null,
+        longest: timed.length > 1 ? { duration: timed[timed.length - 1].duration, vs: `${timed[timed.length - 1].blue.name} vs ${timed[timed.length - 1].red.name}` } : null,
+        mvp: mvpLead && mvpLead.mvp ? { player: mvpLead.name, team: mvpLead.team, mvp: mvpLead.mvp } : null
+    };
+
+    // --- talking points ---
+    const tp = [], add = (tag, text, sideName) => tp.push({ tag, text, side: sideName || '' });
+    const need = winsNeeded(series.bo);
+    if (blue.name && red.name) {
+        // skor series: skor overlay (control panel) bila sudah diisi, selain itu dari arsip turnamen
+        const sb = parseInt(blue.score, 10) || 0, sr = parseInt(red.score, 10) || 0, manual = sb + sr > 0;
+        if (manual) Object.assign(series, { a: blue.name, b: red.name, winsA: sb, winsB: sr, done: Math.max(sb, sr) >= need, games: [1] });
+        if (series.games.length && !series.done) {
+            const [wa, wb] = [series.winsA, series.winsB];
+            if (wa === need - 1 && wb === need - 1) add('SERIES', `GAME PENENTUAN! ${series.a} dan ${series.b} sama-sama ${wa} kemenangan di BO${series.bo}.`);
+            else for (const [n, w, o] of [[series.a, wa, wb], [series.b, wb, wa]]) if (w === need - 1) add('SERIES', `${n} MATCH POINT: satu kemenangan lagi untuk menutup series BO${series.bo} (skor ${w}-${o}).`, n);
+            if (wa !== wb && Math.max(wa, wb) < need - 1) add('SERIES', `${wa > wb ? series.a : series.b} unggul ${Math.max(wa, wb)}-${Math.min(wa, wb)} di series ini.`);
+        }
+        if (!h2h.games) add('H2H', `Pertemuan pertama ${blue.name} vs ${red.name} di turnamen ini.`);
+        else {
+            add('H2H', `Head-to-head: ${blue.name} ${h2h.blue} - ${h2h.red} ${red.name} dari ${h2h.games} game.`);
+            for (const [a, b, wa, wb] of [[blue.name, red.name, h2h.blue, h2h.red], [red.name, blue.name, h2h.red, h2h.blue]])
+                if (wa === 0 && wb >= 2) add('H2H', `${a} belum pernah menang melawan ${b} (0-${wb}).`, a);
+        }
+    }
+    for (const t of [blue, red]) {
+        if (!t.name) continue;
+        const s = t.form.streak, x = t.stats;
+        if (s && s.n >= 2) add('FORM', s.type === 'W' ? `${t.name} sedang on fire: menang ${s.n} game beruntun.` : `${t.name} kalah ${s.n} game beruntun, butuh kebangkitan.`, t.name);
+        if (x && x.games) {
+            add('TIM', `${t.name}: series ${x.seriesWins}-${x.seriesLosses}, game ${x.gameWins}-${x.gameLosses} (win rate ${Math.round(x.winRate * 100)}%)${x.avgDuration ? `, rata-rata durasi ${Math.floor(x.avgDuration / 60)}:${String(x.avgDuration % 60).padStart(2, '0')}` : ''}.`, t.name);
+            if (x.heroes[0] && x.heroes[0].count >= 2) add('TIM', `Hero favorit ${t.name}: ${x.heroes.slice(0, 3).map(h => `${h.hero} (${h.count}x)`).join(', ')}.`, t.name);
+        } else add('TIM', `${t.name} belum punya game tersimpan di turnamen ini.`, t.name);
+        const key = t.players.filter(p => p.games).sort((a, b) => b.kda - a.kda)[0];
+        if (key) add('PEMAIN', `Pemain kunci ${t.name}: ${key.name}, KDA ${key.kda.toFixed(1)} · rata-rata ${key.avg.join('/')}${key.mvp ? ` · ${key.mvp}x MVP` : ''}.`, t.name);
+        for (const p of t.players) {
+            const left = p.nextKillMark - p.killsTotal;
+            if (p.killsTotal && left <= 8) add('MILESTONE', `${p.name} butuh ${left} kill lagi untuk ${p.nextKillMark} kill di turnamen ini (sekarang ${p.killsTotal}).`, t.name);
+            if (records.kills && p.games && p.killsTotal && records.kills.player !== p.name && p.avg[0] >= records.kills.k * 0.6)
+                add('REKOR', `${p.name} rata-rata ${p.avg[0]} kill/game, rekor turnamen ${records.kills.k} kill (${records.kills.player}) bisa terancam.`, t.name);
+        }
+    }
+    // draft: hero andalan, hero baru, ban yang menarget pemain lawan
+    for (const [t, o] of [[blue, red], [red, blue]]) {
+        for (const p of t.players) {
+            if (!p.hero) continue;
+            const hs = heroStat(p.hero);
+            if (!hs || !hs.picks) { if (tournament.games.length >= 2) add('DRAFT', `${p.hero} (${p.name}, ${t.name}) baru pertama kali dipick di turnamen ini.`, t.name); }
+            else if (hs.picks >= 3 && hs.winRate >= 0.7) add('DRAFT', `${p.hero} punya win rate ${Math.round(hs.winRate * 100)}% dari ${hs.picks} pick di turnamen ini.`, t.name);
+            else if (hs.picks >= 3 && hs.winRate <= 0.3) add('DRAFT', `${p.hero} baru menang ${hs.wins} dari ${hs.picks} pick di turnamen ini.`, t.name);
+            if (p.onHero && p.onHero.games >= 2) add('DRAFT', `${p.name} kembali ke ${p.hero}: ${p.onHero.games} game, menang ${p.onHero.wins}.`, t.name);
+        }
+        for (const b of new Set(t.players.map(p => p.ban).filter(Boolean))) {
+            const target = o.players.find(p => p.pool[0] && heroLoose(p.pool[0].hero) === heroLoose(b) && p.pool[0].games >= 2);
+            if (target) add('DRAFT', `${t.name} mem-ban ${b}, hero andalan ${target.name} (${o.name}, ${target.pool[0].games} game).`, t.name);
+        }
+    }
+    if (records.kills) add('REKOR', `Rekor kill satu game: ${records.kills.k} kill oleh ${records.kills.player}${records.kills.hero ? ` (${records.kills.hero})` : ''}.`);
+    if (records.fastest && timed.length >= 2) add('REKOR', `Game tercepat turnamen: ${records.fastest.duration} (${records.fastest.vs}, ${records.fastest.winner} menang).`);
+    if (records.mvp && records.mvp.mvp >= 2) add('REKOR', `MVP terbanyak: ${records.mvp.player} (${records.mvp.team}) dengan ${records.mvp.mvp} MVP.`);
+    const live = ocrGameSummary(false);
+    if (live.live && live.lead != null && live.t != null)
+        add('LIVE', live.lead === 0 ? `Gold imbang di menit ${Math.floor(live.t / 60)}.` : `${live.lead > 0 ? blue.name : red.name} unggul ${fmtGold(Math.abs(live.lead))} gold di menit ${Math.floor(live.t / 60)}.`);
+
+    return { tournament: tournament.name, game: md.game_number || '', bo: series.bo, totalGames: tournament.games.length,
+        series: { winsA: series.winsA, winsB: series.winsB, a: series.a, b: series.b, done: series.done, games: series.games.length },
+        blue, red, h2h, records, live, talkingPoints: tp };
+}
+
+app.get('/api/caster', (req, res) => { res.json(casterData()); });
+
+// ==========================================
+// VOD TIMELINE (vodtimeline.html): semua event siaran dicatat dengan jam → chapter YouTube & marker editor
+// ==========================================
+// Event otomatis: draft mulai, game mulai (timer OCR), notifikasi video/pemain, multikill, hasil game, milestone.
+// Waktu rekaman dihitung dari startAt (tombol MULAI REKAM, bisa diberi offset bila rekaman sudah berjalan).
+const vodPath = path.join(dbDir, 'vod.json');
+let vod = { startAt: null, stopAt: null, events: [] };
+try { vod = { ...vod, ...JSON.parse(fsSync.readFileSync(vodPath, 'utf8')) }; } catch (e) {}
+const VIDEO_LABEL = {
+    videoPlayer1: 'TURTLE SPAWN', videoPlayer2: 'BLUE TURTLE SLAIN', videoPlayer3: 'RED TURTLE SLAIN',
+    videoPlayer4: 'LORD SPAWN', videoPlayer5: 'BLUE LORD SLAIN', videoPlayer6: 'RED LORD SLAIN',
+    videoPlayer7: 'FIRST BLOOD', videoPlayer8: 'DOUBLE KILL', videoPlayer9: 'TRIPLE KILL',
+    videoPlayer10: 'MANIAC', videoPlayer11: 'SAVAGE', videoPlayer12: 'WIPE OUT'
+};
+const VOD_KINDS = ['draft', 'game', 'result', 'notif', 'ocr', 'multikill', 'event', 'milestone', 'manual'];
+let vodSaveTimer = null;
+
+function saveVod() {
+    clearTimeout(vodSaveTimer);
+    vodSaveTimer = setTimeout(() => { const p = JSON.stringify(vod, null, 2); fileQueue.enqueue(() => writeFileSafe(vodPath, p)); }, 300);
+    broadcast({ type: 'vod_update' });
+}
+
+const draftFilled = (d) => { const x = (d && d.draftdata) || {}; return ['blueside', 'redside'].reduce((n, s) => n + ['ban', 'pick'].reduce((m, k) => m + ((x[s] || {})[k] || []).filter(h => h && tHero(fileBase(h.hero))).length, 0), 0); };
+
+function vodMatchLabel() {
+    const md = cache.matchdata || {}, td = md.teamdata || {};
+    const a = tName((td.blueteam || {}).teamname), b = tName((td.redteam || {}).teamname);
+    return `GAME${md.game_number ? ' ' + md.game_number : ''}${a || b ? ` · ${a || 'BIRU'} vs ${b || 'MERAH'}` : ''}`;
+}
+
+function vodLog(label, kind, opts = {}) {
+    const at = Math.round(opts.at || Date.now());
+    // multikill beruntun (double → triple → maniac) cukup satu marker, labelnya naik
+    if (kind === 'multikill' && opts.side) {
+        const prev = [...vod.events].reverse().find(e => e.kind === 'multikill' && e.side === opts.side);
+        if (prev && at - prev.at <= ((opts.window || 10) + 5) * 1000) { prev.label = label; saveVod(); return prev; }
+    }
+    // chapter game ganda (OCR di-reset di tengah game yang sama) diabaikan
+    if (kind === 'game' && vod.events.some(e => e.kind === 'game' && Math.abs(e.at - at) < 30000)) return null;
+    const e = { id: crypto.randomBytes(4).toString('hex'), at, kind: VOD_KINDS.includes(kind) ? kind : 'manual', label: tName(label).slice(0, 100) || 'MARKER', chapter: !!opts.chapter };
+    if (opts.side) e.side = opts.side;
+    vod.events.push(e);
+    vod.events.sort((a, b) => a.at - b.at);
+    if (vod.events.length > 2000) vod.events.splice(0, vod.events.length - 2000);
+    saveVod();
+    return e;
+}
+
+// "1:02:03" / "12:30" / "90" → detik
+const parseDur = (v) => {
+    const s = String(v == null ? '' : v).trim();
+    if (/^\d+$/.test(s)) return +s;
+    const m = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec(s);
+    return m ? (+m[1] || 0) * 3600 + +m[2] * 60 + +m[3] : null;
+};
+const hms = (sec, long) => {
+    const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60, p = (n) => String(n).padStart(2, '0');
+    return long ? `${h}:${p(m)}:${p(s)}` : `${Math.floor(sec / 60)}:${p(s)}`;
+};
+const vodInRange = () => vod.startAt ? vod.events.filter(e => e.at >= vod.startAt && (!vod.stopAt || e.at <= vod.stopAt)) : [];
+const vodSec = (e) => Math.floor((e.at - vod.startAt) / 1000);
+const vodLong = () => vod.startAt && ((vod.stopAt || Date.now()) - vod.startAt) >= 3600 * 1000;
+
+// aturan YouTube: chapter pertama 0:00, minimal 3 chapter, jarak antar chapter minimal 10 detik
+function vodYoutube(intro) {
+    const out = [];
+    for (const e of vodInRange().filter(x => x.chapter)) {
+        const c = { s: vodSec(e), label: e.label }, prev = out[out.length - 1];
+        if (prev && c.s - prev.s < 10) { prev.label = c.label; continue; }
+        out.push(c);
+    }
+    if (!out.length || out[0].s >= 10) out.unshift({ s: 0, label: tName(intro) || 'Pembukaan' });
+    else out[0].s = 0;
+    const warnings = [];
+    if (!vod.startAt) warnings.push('Rekaman belum dimulai: tekan MULAI REKAM (atau isi offset) agar waktu chapter benar.');
+    if (out.length < 3) warnings.push(`YouTube butuh minimal 3 chapter (sekarang ${out.length}).`);
+    const long = vodLong();
+    return { chapters: out, warnings, text: out.map(c => `${hms(c.s, long)} ${c.label}`).join('\n') };
+}
+
+const EDL_COLOR = { draft: 'ResolveColorBlue', game: 'ResolveColorGreen', result: 'ResolveColorYellow', notif: 'ResolveColorRed', ocr: 'ResolveColorRed',
+    multikill: 'ResolveColorPink', event: 'ResolveColorPurple', milestone: 'ResolveColorCyan', manual: 'ResolveColorCream' };
+
+function vodExport(format, opts) {
+    const list = vodInRange(), long = vodLong();
+    const clock = (at) => new Date(at).toLocaleTimeString('en-GB', { hour12: false });
+    if (format === 'csv') {
+        const q = (s) => `"${String(s).replace(/"/g, '""')}"`;
+        return ['timecode,seconds,type,chapter,label,clock', ...list.map(e => [hms(vodSec(e), true), vodSec(e), e.kind, e.chapter ? 1 : 0, q(e.label), clock(e.at)].join(','))].join('\r\n');
+    }
+    if (format === 'edl') {
+        // marker DaVinci Resolve: Timeline › Import › Timeline Markers from EDL
+        const fps = [24, 25, 30, 50, 60].includes(+opts.fps) ? +opts.fps : 30, base = Math.max(0, parseInt(opts.base, 10) || 0);
+        const tc = (sec, plus) => { const f = (base * 3600 + sec) * fps + (plus || 0), p = (n) => String(n).padStart(2, '0');
+            return `${p(Math.floor(f / (3600 * fps)))}:${p(Math.floor(f / (60 * fps)) % 60)}:${p(Math.floor(f / fps) % 60)}:${p(f % fps)}`; };
+        return [`TITLE: ARPRO VOD MARKERS`, 'FCM: NON-DROP FRAME', '',
+            ...list.map((e, i) => `${String(i + 1).padStart(3, '0')}  001      V     C        ${tc(vodSec(e))} ${tc(vodSec(e), 1)} ${tc(vodSec(e))} ${tc(vodSec(e), 1)}  \n |C:${EDL_COLOR[e.kind] || 'ResolveColorBlue'} |M:${e.label.replace(/\|/g, '/')} |D:1\n`)].join('\r\n');
+    }
+    if (format === 'txt') return list.map(e => `${hms(vodSec(e), long)} ${e.chapter ? '[CHAPTER] ' : ''}${e.label}`).join('\n');
+    return vodYoutube(opts.intro).text;
+}
+
+app.get('/api/vod', (req, res) => {
+    res.json({ startAt: vod.startAt, stopAt: vod.stopAt, recording: !!vod.startAt && !vod.stopAt, now: Date.now(), events: vod.events, youtube: vodYoutube(req.query.intro) });
+});
+app.get('/api/vod/export', (req, res) => {
+    const format = ['youtube', 'csv', 'edl', 'txt'].includes(req.query.format) ? req.query.format : 'youtube';
+    const body = vodExport(format, req.query);
+    res.type(format === 'csv' ? 'text/csv' : 'text/plain; charset=utf-8');
+    if (req.query.download) res.attachment(`vod-${format === 'youtube' ? 'chapters' : 'markers'}-${new Date().toISOString().slice(0, 10)}.${format === 'csv' ? 'csv' : format === 'edl' ? 'edl' : 'txt'}`);
+    res.send(body);
+});
+// body: { offset: "12:30" } → rekaman sudah berjalan 12 menit 30 detik
+app.post('/api/vod/start', (req, res) => {
+    const off = parseDur((req.body || {}).offset || 0);
+    if (off == null) return res.status(400).json({ message: 'Offset harus berformat m:ss atau h:mm:ss, contoh 12:30' });
+    vod.startAt = Date.now() - off * 1000;
+    vod.stopAt = null;
+    saveVod();
+    res.json({ startAt: vod.startAt });
+});
+app.post('/api/vod/stop', (req, res) => {
+    if (!vod.startAt) return res.status(400).json({ message: 'Rekaman belum dimulai.' });
+    vod.stopAt = Date.now();
+    saveVod();
+    res.json({ stopAt: vod.stopAt });
+});
+app.post('/api/vod/mark', (req, res) => {
+    const b = req.body || {};
+    res.json(vodLog(b.label || 'HIGHLIGHT', 'manual', { chapter: b.chapter === true || b.chapter === '1' || b.chapter === 'true' }));
+});
+// edit satu event: label, chapter on/off, geser waktu (detik, +/-), atau hapus
+app.post('/api/vod/event', (req, res) => {
+    const b = req.body || {}, e = vod.events.find(x => x.id === b.id);
+    if (!e) return res.status(404).json({ message: 'Event tidak ditemukan.' });
+    if (b.delete) vod.events = vod.events.filter(x => x !== e);
+    else {
+        if (typeof b.label === 'string' && tName(b.label)) e.label = tName(b.label).slice(0, 100);
+        if (typeof b.chapter === 'boolean') e.chapter = b.chapter;
+        if (Number.isFinite(+b.shift) && +b.shift) { e.at += Math.round(+b.shift * 1000); vod.events.sort((x, y) => x.at - y.at); }
+    }
+    saveVod();
+    res.json({ ok: true });
+});
+app.post('/api/vod/clear', (req, res) => {
+    if ((req.body || {}).confirm !== 'CLEAR') return res.status(400).json({ message: 'Konfirmasi dengan { "confirm": "CLEAR" }' });
+    vod = { startAt: null, stopAt: null, events: [] };
+    saveVod();
+    res.json({ ok: true });
+});
+
+// ==========================================
 // STREAM DECK / BITFOCUS COMPANION: satu URL per tombol (GET atau POST, tanpa body)
 // ==========================================
 // Contoh: http://IP-SERVER:3000/api/companion/notif/firstblood · daftar lengkap di companion.html / GET /api/companion
@@ -997,7 +1302,11 @@ const COMPANION_ACTIONS = {
     'save-result': ['Simpan hasil game ke turnamen', '/api/tournament/game', () => ({})],
     'profile-hide': ['Sembunyikan kartu profil', '/api/profile-card', () => ({ show: false })],
     'profile-show': ['Tampilkan kartu profil', '/api/profile-card', (q) => ({ show: true, ...(q.type ? { type: q.type } : {}), ...(q.name ? { name: q.name } : {}) })],
-    'ocr-reset': ['Reset data game OCR (gold / timer)', '/api/ocr/game/reset', () => ({})]
+    'ocr-reset': ['Reset data game OCR (gold / timer)', '/api/ocr/game/reset', () => ({})],
+    'vod-mark': ['Tandai highlight di timeline VOD (?label=...)', '/api/vod/mark', (q) => ({ label: q.label || 'HIGHLIGHT' })],
+    'vod-chapter': ['Chapter baru di timeline VOD (?label=...)', '/api/vod/mark', (q) => ({ label: q.label || 'CHAPTER', chapter: true })],
+    'vod-start': ['Mulai hitung waktu rekaman VOD', '/api/vod/start', (q) => ({ offset: q.offset || 0 })],
+    'vod-stop': ['Stop hitung waktu rekaman VOD', '/api/vod/stop', () => ({})]
 };
 
 app.get('/api/companion', (req, res) => {
@@ -1140,6 +1449,7 @@ app.post('/api/eventnotif', async (req, res) => {
             at: new Date().toISOString()
         };
     }
+    if (!b.replay) vodLog(`${payload.title || String(payload.event).toUpperCase()} · ${payload.player.nickname} (${payload.team.name})`, 'event');
     eventNotifLast = payload;
     broadcast({ type: 'event_notif', data: payload });
     res.json(payload);
@@ -1224,6 +1534,7 @@ let ocrGame = newOcrGame();
 
 function ocrPlay(videoId, text) {
     broadcast({ type: 'notification_trigger', videoId });
+    vodLog(text, 'ocr');
     ocrGame.log.unshift({ at: Date.now(), text });
     ocrGame.log.length = Math.min(ocrGame.log.length, 12);
 }
@@ -1249,6 +1560,8 @@ function ocrAnalyze(d) {
     }
     const g = ocrGame, prevT = g.lastT;
     if (t != null) { g.lastT = t; g.maxT = Math.max(g.maxT, t); }
+    // timer game pertama kali terbaca → chapter VOD di detik 0:00 game (dihitung mundur dari timer)
+    if (t != null && !g.fired.vodStart) { g.fired.vodStart = true; vodLog(vodMatchLabel(), 'game', { chapter: true, at: Date.now() - t * 1000 }); }
 
     // 1. Gold: titik grafik tiap GOLD_STEP detik + nilai terkini
     const g1 = goldNum(d.gold1), g2 = goldNum(d.gold2);
@@ -1268,6 +1581,7 @@ function ocrAnalyze(d) {
             g.fired.firstBlood = true;
             g.marks.push({ t: g.lastT, side: s, kind: 'FB' });
             if (ocrAuto.autoFirstBlood) ocrPlay(OCR_VIDEO.firstBlood, `FIRST BLOOD (${s === 1 ? 'biru' : 'merah'})`);
+            else vodLog(`FIRST BLOOD (${s === 1 ? 'biru' : 'merah'})`, 'ocr');
         }
         // jendela beruntun memakai waktu game (detik OCR); jam komputer hanya cadangan bila timer belum terbaca
         const now = Date.now(), gameSec = g.lastT != null ? g.lastT : Math.floor(now / 1000), win = +ocrAuto.multikillWindow || 10;
@@ -1278,6 +1592,7 @@ function ocrAnalyze(d) {
             g.hints = g.hints.filter(h => h.side !== s || now - h.at > win * 1000);  // naikkan saran yang sama (double → triple)
             g.hints.unshift({ id: `${s}-${now}`, side: s, count: n, label: MULTIKILL[n][0], videoId: MULTIKILL[n][1], at: now });
             g.hints.length = Math.min(g.hints.length, 6);
+            vodLog(`${MULTIKILL[n][0]} (${s === 1 ? 'biru' : 'merah'})`, 'multikill', { side: s, window: win });
         }
     }
 
@@ -1291,6 +1606,7 @@ function ocrAnalyze(d) {
             g.lordKilledAt = g.lastT;
             g.marks.push({ t: g.lastT, side: s, kind: 'LORD' });
             if (ocrAuto.autoLordSlain) ocrPlay(OCR_VIDEO['lord' + s], `LORD SLAIN (${s === 1 ? 'biru' : 'merah'})`);
+            else vodLog(`LORD SLAIN (${s === 1 ? 'biru' : 'merah'})`, 'ocr');
         }
     }
 

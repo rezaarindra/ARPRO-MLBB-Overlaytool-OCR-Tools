@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caster Dashboard</title>
+    <link rel="stylesheet" href="ocrcontrol.css">
+    <style>
+        :root { --blue: #00b4ff; --red: #ff3b55; --gold: #ffcf4a; }
+        body { font-size: 15px; }
+        .cd-main { padding: 14px 18px 30px; display: flex; flex-direction: column; gap: 14px; }
+        .oc-head .oc-run { font: 22px 'Noodle', sans-serif; letter-spacing: 1px; gap: 18px; }
+        .oc-head .oc-run small { font: 600 11px 'Segoe UI', sans-serif; color: var(--muted); letter-spacing: 1.5px; display: block; }
+
+        /* ---------- baris atas: tim biru · series/live · tim merah ---------- */
+        .cd-top { display: grid; grid-template-columns: 1fr 440px 1fr; gap: 14px; }
+        .cd-team { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--blue); }
+        .cd-team.red { border-top-color: var(--red); grid-template-columns: 1fr 96px; text-align: right; }
+        .cd-team.red .cd-logo { order: 2; }
+        .cd-logo { width: 96px; height: 96px; object-fit: contain; background: #0f1115; padding: 6px; }
+        .cd-tname { font: 44px/1 'Noodle', sans-serif; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cd-team.blue .cd-tname { color: var(--blue); } .cd-team.red .cd-tname { color: var(--red); }
+        .cd-rec { margin-top: 6px; font-size: 14px; color: var(--muted); }
+        .cd-rec b { color: var(--text); }
+        .cd-form { display: flex; gap: 5px; margin-top: 8px; align-items: center; }
+        .cd-team.red .cd-form { justify-content: flex-end; }
+        .cd-form i { width: 26px; height: 26px; display: grid; place-items: center; font: normal 700 13px 'Segoe UI', sans-serif; }
+        .cd-form i.W { background: rgba(0, 255, 140, .18); color: var(--ok); border: 1px solid var(--ok); }
+        .cd-form i.L { background: rgba(255, 77, 94, .15); color: var(--bad); border: 1px solid var(--bad); }
+        .cd-form span { font-size: 12px; color: var(--muted); margin: 0 6px; }
+
+        .cd-center { background: var(--card); border: 1px solid var(--line); padding: 12px 16px; text-align: center; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+        .cd-score { font: 76px/0.9 'Noodle', sans-serif; letter-spacing: 4px; }
+        .cd-score .b { color: var(--blue); } .cd-score .r { color: var(--red); } .cd-score .d { color: var(--muted); font-size: .6em; vertical-align: middle; margin: 0 10px; }
+        .cd-sub { font-size: 12px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+        .cd-live { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px 10px; align-items: center; padding: 8px 10px; background: #0f1115; border: 1px solid var(--line); }
+        .cd-live[hidden] { display: none; }
+        .cd-live .k { font: 34px/1 'Noodle', sans-serif; } .cd-live .k.b { color: var(--blue); text-align: left; } .cd-live .k.r { color: var(--red); text-align: right; }
+        .cd-live .t { font: 30px/1 'Noodle', sans-serif; letter-spacing: 1px; }
+        .cd-lead { grid-column: 1 / -1; font-weight: 700; font-size: 14px; }
+        .cd-obj { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+        .cd-obj span { padding: 3px 8px; border: 1px solid var(--line); font-size: 12px; font-weight: 700; }
+        .cd-obj span.warn { border-color: var(--gold); color: var(--gold); } .cd-obj span.alive { border-color: var(--ok); color: var(--ok); }
+
+        /* ---------- baris tengah: pemain biru · pemain merah · talking points ---------- */
+        .cd-mid { display: grid; grid-template-columns: 1fr 1fr 520px; gap: 14px; align-items: start; }
+        .cd-players { display: flex; flex-direction: column; gap: 8px; }
+        .cd-p { display: grid; grid-template-columns: 74px 64px 1fr; gap: 12px; align-items: center; padding: 8px 10px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--blue); }
+        .cd-players.red .cd-p { border-left-color: var(--red); }
+        .cd-ph { width: 74px; height: 74px; background: #0f1115; overflow: hidden; display: grid; place-items: center; font: 30px 'Noodle', sans-serif; color: var(--muted); }
+        .cd-ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; }
+        .cd-hero { width: 64px; height: 64px; object-fit: cover; border: 1px solid var(--line); background: #0f1115; }
+        .cd-hero.none { opacity: .15; }
+        .cd-pn { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+        .cd-pn b { font: 28px/1 'Noodle', sans-serif; letter-spacing: 1px; }
+        .cd-pn em { font-style: normal; font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+        .cd-pn .hn { color: var(--gold); font-weight: 700; font-size: 13px; }
+        .cd-stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--muted); }
+        .cd-stats b { color: var(--text); font-size: 15px; }
+        .cd-pool { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .cd-pool span { display: flex; align-items: center; gap: 5px; padding: 2px 7px 2px 2px; background: #0f1115; border: 1px solid var(--line); font-size: 12px; }
+        .cd-pool span.cur { border-color: var(--gold); color: var(--gold); }
+        .cd-pool img { width: 22px; height: 22px; object-fit: cover; }
+        .cd-new { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+        .cd-tp { background: var(--card); border: 1px solid var(--line); padding: 12px 14px; position: sticky; top: 10px; max-height: calc(100vh - 20px); display: flex; flex-direction: column; }
+        .cd-tp h3 { margin: 0 0 8px; }
+        .cd-filter { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .cd-filter button { padding: 4px 9px; font-size: 11px; }
+        .cd-filter button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .cd-list { overflow: auto; display: flex; flex-direction: column; gap: 7px; padding-right: 4px; }
+        .cd-item { display: grid; grid-template-columns: 84px 1fr; gap: 10px; padding: 9px 10px; background: #0f1115; border: 1px solid var(--line); cursor: pointer; font-size: 15px; line-height: 1.35; }
+        .cd-item:hover { border-color: var(--accent); }
+        .cd-item.used { opacity: .35; text-decoration: line-through; }
+        .cd-item.blue { border-left: 3px solid var(--blue); } .cd-item.red { border-left: 3px solid var(--red); }
+        .cd-tag { font: 700 10px 'Segoe UI', sans-serif; letter-spacing: 1.2px; padding: 3px 0; text-align: center; align-self: start; background: #262a33; color: var(--muted); }
+        .cd-tag.SERIES { background: var(--gold); color: #111; } .cd-tag.H2H { background: #7c3aed; color: #fff; } .cd-tag.FORM { background: #ea580c; color: #fff; }
+        .cd-tag.DRAFT { background: #0e7490; color: #fff; } .cd-tag.REKOR, .cd-tag.MILESTONE { background: #be123c; color: #fff; } .cd-tag.LIVE { background: var(--ok); color: #111; }
+        .cd-empty { color: var(--muted); font-size: 13px; padding: 10px; }
+        .cd-rec-box { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+        .cd-rec-box b { color: var(--text); }
+
+        @media (max-width: 1500px) { .cd-mid { grid-template-columns: 1fr 1fr; } .cd-tp { grid-column: 1 / -1; position: static; max-height: none; } }
+        @media (max-width: 1000px) { .cd-top, .cd-mid { grid-template-columns: 1fr; } .cd-team.red { grid-template-columns: 96px 1fr; text-align: left; } .cd-team.red .cd-logo { order: 0; } .cd-team.red .cd-form { justify-content: flex-start; } }
+    </style>
+</head>
+<!-- Caster Dashboard: layar kedua untuk caster. Semua angka dari arsip turnamen (Tournament Control) + match yang sedang tampil + OCR. -->
+<body>
+    <header class="oc-head">
+        <img src="Assets/Other/OVERLAYTOOLLOGO.png" alt="ARPRO ESPORT TOOLS">
+        <div class="oc-title">CASTER DASHBOARD <span id="cdTour">TALKING POINTS · STATISTIK</span></div>
+        <div class="oc-run">
+            <div><small>GAME</small><span id="cdGame">-</span></div>
+            <div><small>FORMAT</small><span id="cdBo">-</span></div>
+            <div><small>JAM</small><span id="cdClock">--:--</span></div>
+        </div>
+    </header>
+
+    <main class="cd-main">
+        <section class="cd-top">
+            <div class="cd-team blue" id="cdBlue"></div>
+            <div class="cd-center">
+                <div class="cd-sub">SERIES</div>
+                <div class="cd-score"><span class="b" id="cdSa">0</span><span class="d">-</span><span class="r" id="cdSb">0</span></div>
+                <div class="cd-sub" id="cdH2h">HEAD-TO-HEAD: -</div>
+                <div class="cd-live" id="cdLive" hidden>
+                    <span class="k b" id="cdKb">0</span><span class="t" id="cdTime">0:00</span><span class="k r" id="cdKr">0</span>
+                    <div class="cd-lead" id="cdLead"></div>
+                    <div class="cd-obj" id="cdObj"></div>
+                </div>
+            </div>
+            <div class="cd-team red" id="cdRed"></div>
+        </section>
+
+        <section class="cd-mid">
+            <div class="cd-players blue" id="cdPb"></div>
+            <div class="cd-players red" id="cdPr"></div>
+            <aside class="cd-tp">
+                <h3>TALKING POINTS</h3>
+                <div class="cd-filter" id="cdFilter"></div>
+                <div class="cd-list" id="cdList"></div>
+                <div class="cd-rec-box" id="cdRecords"></div>
+            </aside>
+        </section>
+    </main>
+
+    <script src="script/tournament-common.js"></script>
+    <script src="script/casterdashboard.js"></script>
+</body>
+</html>

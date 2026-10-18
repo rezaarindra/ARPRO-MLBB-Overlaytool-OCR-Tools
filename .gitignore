@@ -29,3 +29,6 @@ desktop.ini
 
 # Original full-size player photos (backup, too big for overlays)
 _original_player_photos/
+
+# VOD timeline log (per siaran)
+public/database/vod.json
