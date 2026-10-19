@@ -83,6 +83,7 @@
         const l = (d.log || [])[0];
         $('#oxLog').textContent = l ? `otomatis: ${l.text} · ${new Date(l.at).toLocaleTimeString('id-ID', { hour12: false })}` : '';
 
+        if (d.turtle) renderTurtle(d.turtle);
         if (d.auto) {
             auto = d.auto;
             bar.querySelectorAll('[data-auto]').forEach(b => b.classList.toggle('on', !!auto[b.dataset.auto]));
@@ -109,6 +110,20 @@
             </div>`;
         }).join('');
     }
+
+    // turtle kiri / kanan (turtle1 / turtle2 di vmix.json): − / + hanya mengubah angka, tidak menayangkan animasi
+    function renderTurtle(t) {
+        $('#oxT1').textContent = t[1];
+        $('#oxT2').textContent = t[2];
+    }
+    bar.querySelectorAll('[data-turtle]').forEach(b => b.addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/turtle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: +b.dataset.turtle, delta: +b.dataset.d }) });
+            const out = await res.json();
+            if (!res.ok) throw new Error(out.message || 'Gagal mengubah turtle');
+            renderTurtle(out);
+        } catch (err) { flash(err.message, true); }
+    }));
 
     const dismiss = (id) => {
         dismissed.add(id);
@@ -160,7 +175,7 @@
         if (dingOn) setTimeout(ding, 50);
     });
     $('#oxReset').addEventListener('click', async () => {
-        if (!confirm('Reset data game (grafik gold, timer Turtle/Lord, first blood, saran multikill)?\nBiasanya otomatis saat timer game kembali ke 0.')) return;
+        if (!confirm('Reset data game (grafik gold, timer Turtle/Lord, first blood, saran multikill, turtle kiri/kanan)?\nBiasanya otomatis saat timer game kembali ke 0.')) return;
         try { await fetch('/api/ocr/game/reset', { method: 'POST' }); flash('GAME DIRESET'); } catch (e) { flash('Server tidak merespons', true); }
         load();
     });
@@ -180,6 +195,7 @@
             let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
             if (m.type === 'ocr_game') render(m.data);
             else if (m.type === 'ocr_game_reset') load();
+            else if (m.type === 'turtle_update') renderTurtle(m.data);
         };
         ws.onclose = () => setTimeout(connect, 2000);
     }

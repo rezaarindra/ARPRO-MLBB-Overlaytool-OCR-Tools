@@ -52,7 +52,13 @@
 
 .ox-bar.stale .ox-cell, .ox-bar.stale .ox-obj { opacity: 0.45; }
 
-.ox-sp { flex: 1; }
+.ox-turtle { display: flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1px solid var(--border-color-opaque); white-space: nowrap; }
+.ox-turtle small { font-size: 0.95em; opacity: 0.55; margin-right: 2px; }
+.ox-turtle em { font-style: normal; font-size: 0.95em; margin-left: 6px; }
+.ox-turtle b { font-weight: normal; font-size: 1.45em; min-width: 1.1em; text-align: center; }
+.ox-bar .ox-turtle button { padding: 0 9px; font-size: 1.2em; line-height: 1.4; }
+
+.ox-ctl { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .ox-tog { display: flex; gap: 6px; flex-wrap: wrap; }
 .ox-tog button, #oxDing { opacity: 0.6; }
 .ox-tog button::before, #oxDing::before { content: '○ '; }

@@ -33,6 +33,7 @@ _original_player_photos/
 # VOD timeline log (per siaran)
 public/database/vod.json
 public/database/pause.json
+public/database/turtle.json
 public/database/lang.json
 
 # salinan foto & logo dari SSC2027.id (dibuat otomatis oleh server)

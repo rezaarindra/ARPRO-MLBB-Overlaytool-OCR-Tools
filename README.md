@@ -131,7 +131,7 @@ Video notifikasi tampil di `notifdisplay.html`, jadi pastikan halaman itu terpas
 | Endpoint | Fungsi |
 |---|---|
 | `GET /ocr/MLBB.json` | Data OCR terbaru. Membalas 404 kalau OCR tidak berjalan lebih dari 15 detik. |
-| `GET /ocr/vmix.json` | Khusus **vMix**: selalu 200, kolom selalu lengkap, nilai terakhir dipertahankan, plus kolom `status` (`LIVE` / `STALE` / `OFF`). |
+| `GET /ocr/vmix.json` | Khusus **vMix**: selalu 200, kolom selalu lengkap, nilai terakhir dipertahankan, plus kolom `turtle1` / `turtle2` (turtle tim kiri / kanan, bertambah dari tombol Turtle Slain/Stolen di Notif Control, bisa dikoreksi − / + di strip LIVE OCR tanpa animasi) dan `status` (`LIVE` / `STALE` / `OFF`). |
 | `GET /api/ocr/game` | Analitik game: gold terkini & riwayat grafik, selisih gold, jadwal Turtle/Lord, penanda, saran multikill. |
 
 ### Integrasi vMix

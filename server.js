@@ -554,6 +554,8 @@ app.post('/api/notification', (req, res) => {
         // Turtle tidak terbaca OCR → tombol Blue/Red Turtle Slain di Notif Control memulai timer respawn turtle.
         // Lord Slain manual juga dipakai bila OCR belum menangkap kenaikan angka lord.
         if (['videoPlayer2', 'videoPlayer3'].includes(req.body.videoId) && ocrGame.lastT != null) ocrGame.turtleKilledAt = ocrGame.lastT;
+        if (req.body.videoId === 'videoPlayer2') turtleCount(1);   // BLUE TURTLE SLAIN → turtle kiri +1
+        if (req.body.videoId === 'videoPlayer3') turtleCount(2);   // RED TURTLE SLAIN → turtle kanan +1
         if (['videoPlayer5', 'videoPlayer6'].includes(req.body.videoId) && ocrGame.lastT != null
             && (ocrGame.lordKilledAt == null || ocrGame.lastT - ocrGame.lordKilledAt > 15)) ocrGame.lordKilledAt = ocrGame.lastT;
         fileQueue.enqueue(() => writeFileSafe(notifPath, JSON.stringify(payload, null, 2)));
@@ -1689,6 +1691,11 @@ app.post('/api/eventnotif', async (req, res) => {
         };
     }
     if (!b.replay) vodLog(`${payload.title || String(payload.event).toUpperCase()} · ${payload.player.nickname} (${payload.team.name})`, 'event');
+    // TURTLE SLAIN / STOLEN → turtle tim pemain yang dipilih +1 (replay tidak dihitung) & timer respawn turtle mulai
+    if (!b.replay && /^turtle_(slain|stolen)$/.test(payload.event)) {
+        turtleCount(payload.side === 'blue' ? 1 : 2);
+        if (ocrGame.lastT != null) ocrGame.turtleKilledAt = ocrGame.lastT;
+    }
     eventNotifLast = payload;
     broadcast({ type: 'event_notif', data: payload });
     res.json(payload);
@@ -1712,6 +1719,8 @@ app.get('/ocr/vmix.json', (req, res) => {
     const age = ocrState.data ? Date.now() - ocrState.at : null;
     const row = {};
     for (const k of OCR_VMIX_FIELDS) row[k] = ocrVmixLast[k] != null ? ocrVmixLast[k] : '';
+    row.turtle1 = String(turtleScore[1]);   // turtle tim kiri (biru) — dari tombol Turtle Slain/Stolen di Notif Control
+    row.turtle2 = String(turtleScore[2]);   // turtle tim kanan (merah)
     for (const [k, v] of Object.entries(ocrVmixLast)) if (!(k in row)) row[k] = v;
     row.status = age == null ? 'OFF' : (age > 15000 ? 'STALE' : 'LIVE');
     res.set('Cache-Control', 'no-store');
@@ -1737,6 +1746,59 @@ app.get('/api/ocr/profile', async (req, res) => {
 app.post('/api/ocr/profile', async (req, res) => {
     await fileQueue.enqueue(() => writeFileSafe(ocrProfilePath, JSON.stringify(req.body || {}, null, 2)));
     res.json({ ok: true });
+});
+
+// --- TURTLE KIRI / KANAN (turtle1 / turtle2 di /ocr/vmix.json) ---
+// Turtle tidak terbaca OCR → dihitung dari tombol yang menayangkan animasi: Player Notification TURTLE SLAIN / STOLEN
+// (tim pemain yang dipilih), Video Notification BLUE / RED TURTLE SLAIN & Stream Deck (biru = kiri, merah = kanan).
+// Dua tayangan dalam TURTLE_FIX_MS = koreksi salah pilih tim (poin pindah), bukan turtle baru.
+// Panel edit (strip LIVE OCR) hanya mengubah angka tanpa animasi. Kembali 0 saat game baru / RESET GAME.
+const turtlePath = path.join(dbDir, 'turtle.json');
+const TURTLE_FIX_MS = 20000;
+let turtleScore = { 1: 0, 2: 0, last: null };
+try { const t = JSON.parse(fsSync.readFileSync(turtlePath, 'utf8')); turtleScore = { 1: +t[1] || 0, 2: +t[2] || 0, last: null }; } catch (e) {}
+function turtleSave() {
+    const data = { 1: turtleScore[1], 2: turtleScore[2] };
+    fileQueue.enqueue(() => writeFileSafe(turtlePath, JSON.stringify(data, null, 2)));
+    broadcast({ type: 'turtle_update', data });
+    // overlay scoreboard bawaan (teamdata.*.turtle) ikut angka yang sama
+    const md = cache.matchdata;
+    if (md && md.teamdata && md.teamdata.blueteam && md.teamdata.redteam
+        && (+md.teamdata.blueteam.turtle !== data[1] || +md.teamdata.redteam.turtle !== data[2])) {
+        const next = JSON.parse(JSON.stringify(md));
+        next.teamdata.blueteam.turtle = data[1];
+        next.teamdata.redteam.turtle = data[2];
+        saveMatchData(next);
+    }
+}
+function turtleCount(side) {
+    const now = Date.now(), last = turtleScore.last;
+    if (last && now - last.at < TURTLE_FIX_MS) {
+        if (last.side === side) return;                                   // tombol tim yang sama ditekan lagi
+        turtleScore[last.side] = Math.max(0, turtleScore[last.side] - 1);  // salah pilih tim → poin dipindah
+    }
+    turtleScore[side]++;
+    turtleScore.last = { side, at: now };
+    turtleSave();
+}
+function turtleReset() {
+    if (!turtleScore[1] && !turtleScore[2] && !turtleScore.last) return;
+    turtleScore = { 1: 0, 2: 0, last: null };
+    turtleSave();
+}
+app.get('/api/turtle', (req, res) => { res.json({ 1: turtleScore[1], 2: turtleScore[2] }); });
+// edit tanpa animasi: { side: 1|2, delta: 1|-1 } atau { side, value } atau { reset: true }
+app.post('/api/turtle', (req, res) => {
+    const b = req.body || {};
+    if (b.reset) { turtleScore = { 1: 0, 2: 0, last: null }; turtleSave(); return res.json({ 1: 0, 2: 0 }); }
+    const side = +b.side;
+    if (side !== 1 && side !== 2) return res.status(400).json({ message: 'side harus 1 (kiri) atau 2 (kanan)' });
+    const v = b.value != null ? parseInt(b.value, 10) : turtleScore[side] + (parseInt(b.delta, 10) || 0);
+    if (!Number.isFinite(v)) return res.status(400).json({ message: 'Angka tidak valid' });
+    turtleScore[side] = Math.max(0, Math.min(99, v));
+    turtleScore.last = null;   // setelah diedit, tayangan berikutnya selalu dihitung sebagai turtle baru
+    turtleSave();
+    res.json({ 1: turtleScore[1], 2: turtleScore[2] });
 });
 
 // --- OCR ANALITIK: gold lead + grafik gold, timer Turtle/Lord, notifikasi otomatis (first blood, lord slain, spawn) ---
@@ -1798,6 +1860,7 @@ function ocrAnalyze(d) {
     const t = mmss(d.timer);
     if (t != null && ocrGame.lastT != null && t < ocrGame.maxT - 20) {
         ocrGame = newOcrGame();                                   // timer mundur jauh → game baru
+        turtleReset();
         broadcast({ type: 'ocr_game_reset' });
     }
     const g = ocrGame, prevT = g.lastT;
@@ -1871,7 +1934,7 @@ function ocrGameSummary(withHistory) {
         live: !!ocrState.data && now - ocrState.at <= 15000,
         t: g.lastT, gold: g.cur, lead: g.cur ? g.cur.g1 - g.cur.g2 : null,
         kills: g.kills, lords: g.lords, objectives: ocrObjectives(g.lastT), marks: g.marks,
-        hints: g.hints.filter(h => now - h.at < 30000), log: g.log,
+        hints: g.hints.filter(h => now - h.at < 30000), log: g.log, turtle: { 1: turtleScore[1], 2: turtleScore[2] },
         // status saklar otomasi → OCR Control & strip LIVE OCR di Notif Control selalu sama
         auto: { autoFirstBlood: ocrAuto.autoFirstBlood, autoLordSlain: ocrAuto.autoLordSlain, autoObjectiveSpawn: ocrAuto.autoObjectiveSpawn, multikillHints: ocrAuto.multikillHints, fillPlayerGold: ocrAuto.fillPlayerGold }
     };
@@ -1946,6 +2009,7 @@ for (const side of ['kiri', 'kanan']) {
 app.get('/api/ocr/game', (req, res) => { res.json(ocrGameSummary(true)); });
 app.post('/api/ocr/game/reset', (req, res) => {
     ocrGame = newOcrGame();
+    turtleReset();
     broadcast({ type: 'ocr_game_reset' });
     res.json({ ok: true });
 });

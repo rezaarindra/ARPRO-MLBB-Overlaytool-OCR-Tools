@@ -110,10 +110,16 @@
             <span class="ox-cell"><small>WAKTU</small><b id="oxTime">–</b></span>
             <span class="ox-cell ox-gold"><small>GOLD</small><b id="oxGold">–</b></span>
             <span class="ox-obj" id="oxObj"></span>
-            <span class="ox-sp"></span>
-            <div class="ox-tog" id="oxTog"></div>
-            <button type="button" id="oxDing" title="Bunyi saat ada saran multikill">DING: ON</button>
-            <button type="button" id="oxReset" title="Reset data game OCR (grafik gold, timer objektif, first blood)">RESET GAME</button>
+            <span class="ox-turtle" title="Jumlah turtle di vMix (turtle1 / turtle2). Bertambah otomatis dari tombol Turtle Slain/Stolen. − / + hanya mengubah angka, tanpa animasi.">
+                <small>TURTLE</small>
+                <em class="b">KIRI</em><button type="button" data-turtle="1" data-d="-1">−</button><b id="oxT1">0</b><button type="button" data-turtle="1" data-d="1">+</button>
+                <em class="r">KANAN</em><button type="button" data-turtle="2" data-d="-1">−</button><b id="oxT2">0</b><button type="button" data-turtle="2" data-d="1">+</button>
+            </span>
+            <div class="ox-ctl">
+                <div class="ox-tog" id="oxTog"></div>
+                <button type="button" id="oxDing" title="Bunyi saat ada saran multikill">DING: ON</button>
+                <button type="button" id="oxReset" title="Reset data game OCR (grafik gold, timer objektif, first blood, turtle)">RESET GAME</button>
+            </div>
         </div>
         <div class="ox-hints" id="oxHints"></div>
         <div class="ox-foot"><span id="oxMsg"></span><span id="oxLog"></span></div>
