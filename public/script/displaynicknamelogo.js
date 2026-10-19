@@ -140,6 +140,18 @@ function setImage(id, base64Data, altText) {
     }
 }
 
+// Ukuran desain foto pemain = file lama 812×1080 (display / postdraft / postgame mengecilkannya dengan "scale").
+// Foto apa pun (website 720×960, Assets/player 1200×1600, dll.) dipaksa ke ukuran itu tanpa terpotong.
+// :where() = prioritas nol → halaman yang punya aturan sendiri (display2 / displaycostum: ".heropick img") tetap menang.
+const MUGSHOT_CSS = ':where(.name-image-box img.mugshot){width:812px;height:1080px;object-fit:contain;object-position:50% 100%;}';
+(function addMugshotCss() {
+    if (document.getElementById('mugshot-css')) return;
+    const st = document.createElement('style');
+    st.id = 'mugshot-css';
+    st.textContent = MUGSHOT_CSS;
+    (document.head || document.documentElement).prepend(st);
+})();
+
 // Urutan foto: foto dari website (bila ada) → Assets/player/<nickname>.png → Assets/player/noplayer.png
 function setMugshot(containerId, playerName, webPhoto) {
     const container = document.getElementById(containerId);
@@ -157,16 +169,11 @@ function setMugshot(containerId, playerName, webPhoto) {
 
     container.innerHTML = '';
     const img = document.createElement('img');
+    img.className = 'mugshot';
     let i = 0;
 
-    const load = () => {
-        // foto website 720×960 ditampilkan seukuran file lama (812×1080, rasio sama) agar posisi di overlay tidak berubah
-        const fromWeb = webPhoto && sources[i] === webPhoto;
-        img.style.width = fromWeb ? '812px' : '';
-        img.style.height = fromWeb ? '1080px' : '';
-        img.style.objectFit = fromWeb ? 'contain' : '';
-        img.src = sources[i];
-    };
+    // ukuran foto diatur CSS (lihat MUGSHOT_CSS), bukan inline, agar aturan tiap halaman (mis. .heropick img di display2) tetap berlaku
+    const load = () => { img.src = sources[i]; };
     img.onerror = function () {
         if (i < sources.length - 1) { i++; load(); } else { this.onerror = null; }
     };
