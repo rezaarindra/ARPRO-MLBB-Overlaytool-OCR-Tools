@@ -603,18 +603,16 @@ body {
 /*phasing*/
 
 .draft-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+/* kotak warna giliran ban / pick: tepat seukuran kotak induknya (dulu 1000×4000 px digeser keluar lalu dipotong induk) */
 .box { 
-    width: 1000px; 
-    height: 4000px; 
+    position: absolute;
+    inset: 0;
     display: flex; 
     align-items: center; 
     justify-content: center; 
     font-size: 18px; 
     font-weight: bold;
     transition: 0.3s; 
-    margin-left: -200px;
-    margin-top: -100px;
-    position: absolute;
 }
     
 .ban0 {display: flex; }
