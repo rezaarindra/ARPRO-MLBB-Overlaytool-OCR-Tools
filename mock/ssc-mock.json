@@ -287,7 +287,7 @@
       "nama": "Rizky Pratama",
       "nickname": "Kyy",
       "peran": "Kapten",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/layla.png",
+      "foto_url": "http://localhost:3000/Assets/player/Anaz.png",
       "ada_foto": "ya"
     },
     {
@@ -301,7 +301,7 @@
       "nama": "Bagas Saputra",
       "nickname": "BagzZ",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/zhuxin.png",
+      "foto_url": "http://localhost:3000/Assets/player/Favian.png",
       "ada_foto": "ya"
     },
     {
@@ -315,7 +315,7 @@
       "nama": "Dimas Arya",
       "nickname": "Dmz",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/harith.png",
+      "foto_url": "http://localhost:3000/Assets/player/Lunatic.png",
       "ada_foto": "ya"
     },
     {
@@ -343,7 +343,7 @@
       "nama": "Galih Ramadhan",
       "nickname": "Galeh",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/yve.png",
+      "foto_url": "http://localhost:3000/Assets/player/Pandu.png",
       "ada_foto": "ya"
     },
     {
@@ -357,7 +357,7 @@
       "nama": "Hafidz Akbar",
       "nickname": "Hafz",
       "peran": "Cadangan",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/franco.png",
+      "foto_url": "http://localhost:3000/Assets/player/Rifqi.png",
       "ada_foto": "ya"
     },
     {
@@ -371,7 +371,7 @@
       "nama": "Aditya Wirawan",
       "nickname": "Adtz",
       "peran": "Kapten",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/aulus.png",
+      "foto_url": "http://localhost:3000/Assets/player/Anaz.png",
       "ada_foto": "ya"
     },
     {
@@ -399,7 +399,7 @@
       "nama": "Candra Kirana",
       "nickname": "Cand",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/fanny.png",
+      "foto_url": "http://localhost:3000/Assets/player/Favian.png",
       "ada_foto": "ya"
     },
     {
@@ -413,7 +413,7 @@
       "nama": "Dewa Putra",
       "nickname": "Dewa Putra",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/gusion.png",
+      "foto_url": "http://localhost:3000/Assets/player/Lunatic.png",
       "ada_foto": "ya"
     },
     {
@@ -427,7 +427,7 @@
       "nama": "Eko Prasetyo",
       "nickname": "Ekoo",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/kagura.png",
+      "foto_url": "http://localhost:3000/Assets/player/Pandu.png",
       "ada_foto": "ya"
     },
     {
@@ -455,7 +455,7 @@
       "nama": "Kevin Halim",
       "nickname": "Kev",
       "peran": "Kapten",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/miya.png",
+      "foto_url": "http://localhost:3000/Assets/player/Rifqi.png",
       "ada_foto": "ya"
     },
     {
@@ -469,7 +469,7 @@
       "nama": "Leo Santoso",
       "nickname": "Leoo",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/nana.png",
+      "foto_url": "http://localhost:3000/Assets/player/Anaz.png",
       "ada_foto": "ya"
     },
     {
@@ -483,7 +483,7 @@
       "nama": "Michael Tan",
       "nickname": "Mike",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/ling.png",
+      "foto_url": "http://localhost:3000/Assets/player/Favian.png",
       "ada_foto": "ya"
     },
     {
@@ -511,7 +511,7 @@
       "nama": "Owen Gunawan",
       "nickname": "Owzz",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/zhuxin.png",
+      "foto_url": "http://localhost:3000/Assets/player/Lunatic.png",
       "ada_foto": "ya"
     },
     {
@@ -525,7 +525,7 @@
       "nama": "Putra Ramadhan",
       "nickname": "Putt",
       "peran": "Kapten",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/harith.png",
+      "foto_url": "http://localhost:3000/Assets/player/Pandu.png",
       "ada_foto": "ya"
     },
     {
@@ -539,7 +539,7 @@
       "nama": "Qori Alfian",
       "nickname": "Qor",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/chip.png",
+      "foto_url": "http://localhost:3000/Assets/player/Rifqi.png",
       "ada_foto": "ya"
     },
     {
@@ -567,7 +567,7 @@
       "nama": "Satria Wibowo",
       "nickname": "Satt",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/franco.png",
+      "foto_url": "http://localhost:3000/Assets/player/Anaz.png",
       "ada_foto": "ya"
     },
     {
@@ -581,7 +581,7 @@
       "nama": "Taufik Hidayat",
       "nickname": "Tauf",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/aulus.png",
+      "foto_url": "http://localhost:3000/Assets/player/Favian.png",
       "ada_foto": "ya"
     },
     {
@@ -595,7 +595,7 @@
       "nama": "Umar Faruq",
       "nickname": "Umr",
       "peran": "Cadangan",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/paquito.png",
+      "foto_url": "http://localhost:3000/Assets/player/Lunatic.png",
       "ada_foto": "ya"
     },
     {
@@ -623,7 +623,7 @@
       "nama": "Zaki Firmansyah",
       "nickname": "Zakk",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/gusion.png",
+      "foto_url": "http://localhost:3000/Assets/player/Pandu.png",
       "ada_foto": "ya"
     },
     {
@@ -637,7 +637,7 @@
       "nama": "Arif Budiman",
       "nickname": "Arif Budiman",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/kagura.png",
+      "foto_url": "http://localhost:3000/Assets/player/Rifqi.png",
       "ada_foto": "ya"
     },
     {
@@ -651,7 +651,7 @@
       "nama": "Bayu Prakoso",
       "nickname": "Bayy",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/lancelot.png",
+      "foto_url": "http://localhost:3000/Assets/player/Anaz.png",
       "ada_foto": "ya"
     },
     {
@@ -679,7 +679,7 @@
       "nama": "Doni Saputra",
       "nickname": "Donn",
       "peran": "Cadangan",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/nana.png",
+      "foto_url": "http://localhost:3000/Assets/player/Favian.png",
       "ada_foto": "ya"
     },
     {
@@ -693,7 +693,7 @@
       "nama": "Erik Gunawan",
       "nickname": "Rikk",
       "peran": "Kapten",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/ling.png",
+      "foto_url": "http://localhost:3000/Assets/player/Lunatic.png",
       "ada_foto": "ya"
     },
     {
@@ -707,7 +707,7 @@
       "nama": "Feri Irawan",
       "nickname": "Ferr",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/layla.png",
+      "foto_url": "http://localhost:3000/Assets/player/Pandu.png",
       "ada_foto": "ya"
     },
     {
@@ -735,7 +735,7 @@
       "nama": "Hendra Kusuma",
       "nickname": "Hndr",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/harith.png",
+      "foto_url": "http://localhost:3000/Assets/player/Rifqi.png",
       "ada_foto": "ya"
     },
     {
@@ -749,7 +749,7 @@
       "nama": "Indra Lesmana",
       "nickname": "Indr",
       "peran": "Kapten",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/chip.png",
+      "foto_url": "http://localhost:3000/Assets/player/Anaz.png",
       "ada_foto": "ya"
     },
     {
@@ -763,7 +763,7 @@
       "nama": "Joko Susilo",
       "nickname": "Jokz",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/yve.png",
+      "foto_url": "http://localhost:3000/Assets/player/Favian.png",
       "ada_foto": "ya"
     },
     {
@@ -791,7 +791,7 @@
       "nama": "Lutfi Hakim",
       "nickname": "Lutf",
       "peran": "Pemain",
-      "foto_url": "http://localhost:3000/Assets/HeroPick/aulus.png",
+      "foto_url": "http://localhost:3000/Assets/player/Lunatic.png",
       "ada_foto": "ya"
     }
   ],
