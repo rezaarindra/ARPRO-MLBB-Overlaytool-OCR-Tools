@@ -1430,6 +1430,53 @@ function draftAnalysis() {
     return { mode: draftAnalysisMode, complete: blue.count === 5 && red.count === 5, totalGames: games.length, blue, red };
 }
 
+// ==========================================
+// EFEK DRAFT (draft-fx.js di display / display2 / ban6): teks & warna giliran pick, kecepatan, lama splash
+// ==========================================
+const draftFxPath = path.join(dbDir, 'draftfx.json');
+const defaultDraftFx = { turnText: '', blue: '#1b5cff', red: '#e3263b', intensity: 0.55, speed: 1.6, splashHold: 1.7 };
+let draftFx = { ...defaultDraftFx };
+try { draftFx = { ...defaultDraftFx, ...JSON.parse(fsSync.readFileSync(draftFxPath, 'utf8')) }; } catch (e) {}
+app.get('/api/draftfx', (req, res) => { res.json({ config: draftFx, defaults: defaultDraftFx }); });
+app.post('/api/draftfx', (req, res) => {
+    const b = req.body || {}, next = { ...draftFx };
+    if (b.reset) Object.assign(next, defaultDraftFx);
+    if (typeof b.turnText === 'string') next.turnText = b.turnText.trim().slice(0, 12).toUpperCase();
+    for (const k of ['blue', 'red']) {
+        if (b[k] == null) continue;
+        if (!/^#[0-9a-f]{6}$/i.test(b[k])) return res.status(400).json({ message: `Warna ${k} harus format #RRGGBB` });
+        next[k] = b[k].toLowerCase();
+    }
+    for (const [k, lo, hi] of [['intensity', 0.1, 1], ['speed', 0.4, 5], ['splashHold', 0.6, 5]]) {
+        if (b[k] == null) continue;
+        const n = +b[k];
+        if (!(n >= lo && n <= hi)) return res.status(400).json({ message: `${k} harus ${lo}–${hi}` });
+        next[k] = Math.round(n * 100) / 100;
+    }
+    draftFx = next;
+    fileQueue.enqueue(() => writeFileSafe(draftFxPath, JSON.stringify(draftFx, null, 2)));
+    broadcast({ type: 'draftfx_update', data: draftFx });
+    res.json({ config: draftFx });
+});
+
+// --- POSISI SPLASH PER HERO (database/herofocus.json): titik fokus x / y (% gambar) + zoom, diatur di Broadcast Control ---
+const heroFocusPath = path.join(dbDir, 'herofocus.json');
+app.post('/api/herofocus', async (req, res) => {
+    const b = req.body || {}, key = String(b.key || '');
+    if (!/^[a-z0-9]{1,40}$/.test(key)) return res.status(400).json({ message: 'key hero tidak valid' });
+    let map = {};
+    try { map = JSON.parse(await fs.readFile(heroFocusPath, 'utf8')) || {}; } catch (e) {}
+    if (b.reset) delete map[key];
+    else {
+        const x = +b.x, y = +b.y, zoom = +b.zoom;
+        if (!(x >= 0 && x <= 100 && y >= 0 && y <= 100 && zoom >= 1 && zoom <= 3)) return res.status(400).json({ message: 'x / y 0–100, zoom 1–3' });
+        map[key] = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, zoom: Math.round(zoom * 100) / 100 };
+    }
+    await fileQueue.enqueue(() => writeFileSafe(heroFocusPath, JSON.stringify(map, null, 2)));
+    broadcast({ type: 'herofocus_update' });
+    res.json({ key, focus: map[key] || null });
+});
+
 app.get('/api/draft-analysis', (req, res) => { res.json(draftAnalysis()); });
 app.post('/api/draft-analysis/mode', (req, res) => {
     const m = (req.body || {}).mode;
@@ -1547,13 +1594,36 @@ const NOTIF_COLOR = { blue: '#1b5cff', red: '#e3263b' };
 let eventNotifSeq = 0;
 let eventNotifLast = null;
 
+// multikill: video webm notifikasi sebagai latar + kartu pemain (foto, hero, logo tim) di atasnya.
+// Ditambahkan otomatis bila belum ada di eventnotif.json; isi "video" bisa diganti file kosongan buatan sendiri.
+const EVENT_NOTIF_MULTIKILL = {
+    double_kill: { title: 'DOUBLE KILL', video: 'Assets/notification/doublekill.webm', duration: 4500 },
+    triple_kill: { title: 'TRIPLE KILL', video: 'Assets/notification/triplekill.webm', duration: 4500 },
+    maniac: { title: 'MANIAC', video: 'Assets/notification/maniac.webm', duration: 4500 },
+    savage: { title: 'SAVAGE', video: 'Assets/notification/savage.webm', duration: 4500 },
+    wipe_out: { title: 'WIPE OUT', video: 'Assets/notification/wipeout.webm', duration: 4500, team_focus: true }
+};
 async function eventNotifConfig() {
-    try { return JSON.parse((await fs.readFile(eventNotifPath, 'utf8')).replace(/^﻿/, '')); } catch (e) { return { templates: {} }; }
+    let cfg;
+    try { cfg = JSON.parse((await fs.readFile(eventNotifPath, 'utf8')).replace(/^﻿/, '')); } catch (e) { cfg = { templates: {} }; }
+    cfg.templates = { ...EVENT_NOTIF_MULTIKILL, ...(cfg.templates || {}) };
+    return cfg;
+}
+
+// nama hero → potret (Assets/HeroPick) dari herolist
+function heroImgOf(name) {
+    if (!name) return '';
+    try {
+        const list = JSON.parse(fsSync.readFileSync(herolistPath, 'utf8'));
+        const h = list.find(x => heroLoose(x.name) === heroLoose(name) || heroLoose(fileBase(x.img)) === heroLoose(name));
+        return h ? h.img : '';
+    } catch (e) { return ''; }
 }
 
 // "database" pemain untuk notifikasi: nickname, role + logo role, foto (website SSC → Assets/player/<nick>.png → kosong)
 function eventNotifPlayers() {
     const md = cache.matchdata || defaultMatchData;
+    const hero = heroResolver(); // hero yang sedang dipakai pemain (dari draft / control panel)
     const out = {};
     for (const side of ['blue', 'red']) {
         const key = side === 'blue' ? 'blueteam' : 'redteam';
@@ -1576,7 +1646,9 @@ function eventNotifPlayers() {
                     role: NOTIF_ROLE[role] ? role : '',
                     role_label: NOTIF_ROLE[role] || '',
                     role_logo_url: NOTIF_ROLE[role] ? `/Assets/lane/${role === 'jungle' ? 'junggle' : role}.png` : '',
-                    photo_url: (web && web.foto) || local
+                    photo_url: (web && web.foto) || local,
+                    hero: hero(p.hero),
+                    hero_img: heroImgOf(hero(p.hero))
                 };
             })
         };
@@ -1649,11 +1721,12 @@ app.get('/api/ocr/data', (req, res) => { res.json({ data: ocrState.data, age: oc
 app.post('/api/ocr/data', (req, res) => {
     const b = req.body || {};
     const out = {};
-    for (const [k, v] of Object.entries(b)) if (/^[a-z0-9_]{1,24}$/i.test(k)) out[k] = String(v == null ? '' : v).slice(0, 16);
+    for (const [k, v] of Object.entries(b)) if (/^[a-z0-9_]{1,24}$/i.test(k)) out[k] = String(v == null ? '' : v).slice(0, 32); // 32: kotak tipe teks (nickname)
     const changed = JSON.stringify(out) !== JSON.stringify(ocrState.data);
     ocrState = { data: out, at: Date.now() };
     Object.assign(ocrVmixLast, out);
     ocrAnalyze(out);
+    ocrPlayerGold(out);
     if (changed) broadcast({ type: 'ocr_update', data: out }); // scoreboard OCR langsung diperbarui (tanpa menunggu polling)
     res.json({ ok: true });
 });
@@ -1676,7 +1749,8 @@ const defaultOcrAuto = {
     multikillHints: true,      // saran Double/Triple/Maniac/Savage di OCR Control (operator yang memutuskan)
     turtleFirst: '2:00', turtleRespawn: '2:00', lordFirst: '8:00', lordRespawn: '2:00',
     warnBefore: 30,            // detik: chip timer menyala sebelum spawn
-    multikillWindow: 10        // detik: kill satu tim dalam rentang ini dihitung beruntun
+    multikillWindow: 10,       // detik: kill satu tim dalam rentang ini dihitung beruntun
+    fillPlayerGold: false      // kotak OCR gold_b1–b5 / gold_r1–r5 mengisi gold pemain di matchdata
 };
 let ocrAuto = { ...defaultOcrAuto };
 try { ocrAuto = { ...defaultOcrAuto, ...JSON.parse(fsSync.readFileSync(ocrAutoPath, 'utf8')) }; } catch (e) {}
@@ -1802,6 +1876,26 @@ function ocrGameSummary(withHistory) {
     return s;
 }
 
+// gold pemain dari kotak OCR gold_b1–gold_b5 (tim biru) / gold_r1–gold_r5 (tim merah) → matchdata, maks. tiap 3 detik
+let ocrGoldAt = 0;
+function ocrPlayerGold(d) {
+    if (!ocrAuto.fillPlayerGold || Date.now() - ocrGoldAt < 3000) return;
+    const md = cache.matchdata;
+    if (!md || !md.teamdata) return;
+    const next = JSON.parse(JSON.stringify(md));
+    let changed = false;
+    for (const [s, key] of [['b', 'blueteam'], ['r', 'redteam']]) {
+        const list = (next.teamdata[key] || {}).playerlist || [];
+        for (let i = 0; i < 5; i++) {
+            const g = goldNum(d[`gold_${s}${i + 1}`]);
+            if (g == null || !list[i] || +list[i].gold === g) continue;
+            list[i].gold = g;
+            changed = true;
+        }
+    }
+    if (changed) { ocrGoldAt = Date.now(); saveMatchData(next); }
+}
+
 app.get('/api/ocr/game', (req, res) => { res.json(ocrGameSummary(true)); });
 app.post('/api/ocr/game/reset', (req, res) => {
     ocrGame = newOcrGame();
@@ -1811,7 +1905,7 @@ app.post('/api/ocr/game/reset', (req, res) => {
 app.get('/api/ocr/auto', (req, res) => { res.json({ config: ocrAuto, defaults: defaultOcrAuto }); });
 app.post('/api/ocr/auto', async (req, res) => {
     const b = req.body || {}, next = { ...ocrAuto };
-    for (const k of ['autoFirstBlood', 'autoLordSlain', 'autoObjectiveSpawn', 'multikillHints']) if (typeof b[k] === 'boolean') next[k] = b[k];
+    for (const k of ['autoFirstBlood', 'autoLordSlain', 'autoObjectiveSpawn', 'multikillHints', 'fillPlayerGold']) if (typeof b[k] === 'boolean') next[k] = b[k];
     for (const k of ['turtleFirst', 'turtleRespawn', 'lordFirst', 'lordRespawn']) {
         if (b[k] == null) continue;
         if (mmss(b[k]) == null) return res.status(400).json({ message: `${k} harus berformat m:ss, contoh 2:00` });

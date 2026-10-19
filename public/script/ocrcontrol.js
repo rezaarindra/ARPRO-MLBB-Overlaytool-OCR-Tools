@@ -172,16 +172,29 @@
     });
 
     // ---------- Tabel kotak ----------
+    // 9 kotak bawaan (dipakai scoreboard & analitik server) namanya tetap; kotak tambahan (custom) bisa diganti nama & dihapus
+    const BUILTIN = new Set(E.DEFAULT_REGIONS.map(r => r.label));
+    const TYPES = [['number', 'Angka'], ['gold', 'Gold'], ['timer', 'Timer'], ['text', 'Teks']];
+    const cleanLabel = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 24);
+    function uniqueLabel(base, skip) {
+        let l = cleanLabel(base) || 'kotak', n = 1;
+        const taken = (x) => state.regions.some(r => r !== skip && r.label === x);
+        while (taken(l) || (BUILTIN.has(l) && (!skip || skip.label !== l))) l = `${cleanLabel(base) || 'kotak'}_${++n}`;
+        return l;
+    }
+    function forget(label) { delete state.results[label]; delete state.confirmed[label]; delete state.pending[label]; delete state.confirmedAt[label]; }
+
     function buildRows() {
         $('ocRows').innerHTML = state.regions.map((r, i) => `
             <tr data-i="${i}">
                 <td><span class="oc-swatch" style="background:${COLORS[i % COLORS.length]}"></span></td>
-                <td><span class="oc-label">${r.label}</span></td>
-                <td><select data-k="type"><option value="number">Angka</option><option value="gold">Gold</option><option value="timer">Timer</option></select></td>
+                <td>${BUILTIN.has(r.label) ? `<span class="oc-label">${r.label}</span>` : `<input class="oc-name" data-k="label" value="${r.label}" maxlength="24" title="Nama data (huruf kecil, angka, _)">`}</td>
+                <td><select data-k="type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></td>
                 <td><canvas class="oc-prev" width="10" height="10"></canvas></td>
                 <td><span class="oc-val stale">–</span><span class="oc-raw"></span></td>
                 <td><input type="range" data-k="bias" min="-60" max="60" step="2"> <small></small></td>
                 <td><input type="checkbox" data-k="invert"></td>
+                <td>${BUILTIN.has(r.label) ? '' : '<button class="oc-del" data-del title="Hapus kotak">✕</button>'}</td>
             </tr>`).join('');
         $('ocRows').querySelectorAll('tr').forEach(tr => {
             const r = state.regions[+tr.dataset.i];
@@ -197,13 +210,68 @@
         const tr = e.target.closest('tr'); if (!tr) return;
         const r = state.regions[+tr.dataset.i];
         const k = e.target.dataset.k;
-        if (k === 'type') r.type = e.target.value;
+        if (k === 'label') return; // diproses saat selesai mengetik (change)
+        if (k === 'type') { r.type = e.target.value; forget(r.label); }
         if (k === 'bias') { r.bias = +e.target.value; tr.querySelector('small').textContent = (r.bias > 0 ? '+' : '') + r.bias; }
         if (k === 'invert') r.invert = e.target.checked;
         delete state.pending[r.label];
         if (!state.running) previewOnly();
     });
-    $('ocRows').addEventListener('click', (e) => { const tr = e.target.closest('tr'); if (tr) { state.sel = +tr.dataset.i; markSel(); } });
+    $('ocRows').addEventListener('change', (e) => {
+        if (e.target.dataset.k !== 'label') return;
+        const r = state.regions[+e.target.closest('tr').dataset.i];
+        const next = uniqueLabel(e.target.value, r);
+        if (next !== r.label) { forget(r.label); r.label = next; }
+        e.target.value = r.label;
+        if (!state.running) previewOnly();
+    });
+    $('ocRows').addEventListener('click', (e) => {
+        const tr = e.target.closest('tr'); if (!tr) return;
+        if (e.target.closest('[data-del]')) {
+            const r = state.regions[+tr.dataset.i];
+            forget(r.label);
+            state.regions.splice(+tr.dataset.i, 1);
+            state.sel = Math.min(state.sel, state.regions.length - 1);
+            buildRows();
+            if (!state.running) previewOnly();
+            return;
+        }
+        state.sel = +tr.dataset.i; markSel();
+    });
+
+    // ---------- Tambah kotak ----------
+    function addRegion(r) {
+        const reg = { type: 'number', w: 90, h: 34, bias: 0, invert: false, ...r };
+        reg.label = uniqueLabel(reg.label || 'kotak');
+        reg.x = Math.max(0, Math.min(E.FRAME_W - reg.w, Math.round(reg.x != null ? reg.x : 915)));
+        reg.y = Math.max(0, Math.min(E.FRAME_H - reg.h, Math.round(reg.y != null ? reg.y : 520)));
+        state.regions.push(reg);
+        return reg;
+    }
+    $('ocAdd').addEventListener('click', () => {
+        const type = $('ocAddType').value;
+        const n = state.regions.filter(r => !BUILTIN.has(r.label)).length;
+        addRegion({ label: { gold: 'gold_player', number: 'angka', timer: 'timer_custom', text: 'teks' }[type], type, w: type === 'text' ? 180 : 90, x: 860 + (n % 5) * 24, y: 480 + (n % 5) * 24 });
+        state.sel = state.regions.length - 1;
+        buildRows();
+        if (!state.running) previewOnly();
+    });
+    // 10 kotak gold pemain: gold_b1–gold_b5 (tim biru, kiri) & gold_r1–gold_r5 (tim merah, kanan) — geser ke posisi gold di panel spectator
+    $('ocAddGold').addEventListener('click', () => {
+        let added = 0;
+        ['b', 'r'].forEach(side => {
+            for (let i = 1; i <= 5; i++) {
+                const label = `gold_${side}${i}`;
+                if (state.regions.some(r => r.label === label)) continue;
+                addRegion({ label, type: 'gold', w: 84, h: 30, x: side === 'b' ? 160 : 1676, y: 300 + (i - 1) * 96 });
+                added++;
+            }
+        });
+        state.sel = state.regions.length - 1;
+        buildRows();
+        if (!state.running) previewOnly();
+        $('ocProfileInfo').textContent = added ? `${added} kotak gold pemain ditambahkan. Geser ke posisi gold tiap pemain, lalu SIMPAN.` : 'Kotak gold pemain sudah ada.';
+    });
     function markSel() { $('ocRows').querySelectorAll('tr').forEach(tr => tr.classList.toggle('sel', +tr.dataset.i === state.sel)); }
 
     function renderRow(i) {
@@ -320,6 +388,7 @@
             const expect = o + sinceMs / 1000;               // timer game berjalan 1 detik / detik
             return n >= o && Math.abs(n - expect) <= 3;
         }
+        if (r.type === 'text') return true;                  // teks (nickname) boleh berubah kapan saja
         if (r.type === 'gold') {
             const d = goldNum(newV) - goldNum(oldV);
             return d >= -60 && d <= 1500 + sinceMs * 0.8;    // gold tim hanya naik (toleransi format "k")
@@ -421,8 +490,8 @@
         if (!p) return;
         if (Array.isArray(p.regions) && p.regions.length) {
             // terima juga profil FalseOCR (label/x/y/w/h/invertText)
-            state.regions = p.regions.map(r => ({
-                label: r.label, type: r.type === 'gold' || r.type === 'timer' || r.type === 'number' ? r.type : (/gold/i.test(r.label) ? 'gold' : /timer/i.test(r.label) ? 'timer' : 'number'),
+            state.regions = p.regions.filter(r => r && cleanLabel(r.label)).map(r => ({
+                label: cleanLabel(r.label), type: ['gold', 'timer', 'number', 'text'].includes(r.type) ? r.type : (/gold/i.test(r.label) ? 'gold' : /timer/i.test(r.label) ? 'timer' : 'number'),
                 x: +r.x, y: +r.y, w: +r.w, h: +r.h, bias: +r.bias || 0, invert: r.invert != null ? !!r.invert : r.invertText === false
             }));
         }

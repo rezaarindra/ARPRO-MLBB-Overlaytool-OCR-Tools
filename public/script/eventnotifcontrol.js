@@ -4,7 +4,7 @@
  * Released under the MIT License: https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools
  */
 // eventnotifcontrol.js — panel PLAYER NOTIFICATION di notifcontrol.html
-// Alur: pilih TURTLE / LORD → klik SLAIN atau STOLEN (atau FIRST BLOOD) → dropdown pemain Tim Biru & Tim Merah →
+// Alur: pilih TURTLE / LORD → klik SLAIN atau STOLEN (atau FIRST BLOOD / kill streak) → dropdown pemain Tim Biru & Tim Merah →
 // klik nickname → POST /api/eventnotif { event, side, slot } → overlay memutar animasi dengan foto, role & nickname pemain.
 // Data pemain (GET /api/eventnotif/players) = nickname & lane dari control panel + foto dari website SSC / Assets/player.
 
@@ -16,7 +16,8 @@
     const status = $('#pnStatus');
     const NAMES = {
         first_blood: 'FIRST BLOOD', turtle_slain: 'TURTLE SLAIN', turtle_stolen: 'TURTLE STOLEN',
-        lord_slain: 'LORD SLAIN', lord_stolen: 'LORD STOLEN'
+        lord_slain: 'LORD SLAIN', lord_stolen: 'LORD STOLEN',
+        double_kill: 'DOUBLE KILL', triple_kill: 'TRIPLE KILL', maniac: 'MANIAC', savage: 'SAVAGE', wipe_out: 'WIPE OUT'
     };
     let monster = 'turtle';
     let pending = null; // event yang sedang dipilihkan pemainnya
@@ -36,10 +37,13 @@
         monster = m;
         panel.querySelectorAll('[data-monster]').forEach(b => b.classList.toggle('on', b.dataset.monster === m));
         panel.querySelectorAll('.pn-action [data-obj]').forEach(el => { el.textContent = m.toUpperCase(); });
-        if (pending && pending !== 'first_blood') openDrop(pending.endsWith('stolen') ? `${m}_stolen` : `${m}_slain`);
+        if (pending && /^(turtle|lord)_/.test(pending)) openDrop(pending.endsWith('stolen') ? `${m}_stolen` : `${m}_slain`);
     }
 
-    function eventOf(action) {
+    // tombol objektif (data-action: slain / stolen / first_blood) atau kill streak (data-event langsung)
+    function eventOf(btn) {
+        if (btn.dataset.event) return btn.dataset.event;
+        const action = btn.dataset.action;
         return action === 'first_blood' ? 'first_blood' : `${monster}_${action}`;
     }
 
@@ -48,7 +52,7 @@
         const logo = team.logo_url || 'Assets/Other/nologo.png';
         const thumb = p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : `<img class="logo" src="${esc(logo)}" alt="">`;
         const role = p.role_logo_url ? `<img src="${esc(p.role_logo_url)}" alt="">` : '';
-        const meta = [p.role_label, p.photo_url ? '' : 'TANPA FOTO'].filter(Boolean).join(' · ');
+        const meta = [p.hero, p.role_label, p.photo_url ? '' : 'TANPA FOTO'].filter(Boolean).join(' · '); // hero yang sedang dipakai ikut tampil
         return `<button class="pn-player" data-side="${side}" data-slot="${p.slot}" ${p.nickname ? '' : 'disabled'}>
             <span class="pn-thumb">${thumb}</span>
             <span class="pn-role">${role}</span>
@@ -59,7 +63,7 @@
 
     async function openDrop(event) {
         pending = event;
-        panel.querySelectorAll('.pn-action').forEach(b => b.classList.toggle('on', eventOf(b.dataset.action) === event));
+        panel.querySelectorAll('.pn-action').forEach(b => b.classList.toggle('on', eventOf(b) === event));
         $('#pnDropEvent').textContent = NAMES[event] || event;
         drop.hidden = false;
         try {
@@ -109,7 +113,7 @@
     // ---------- Event ----------
     panel.querySelectorAll('[data-monster]').forEach(b => b.addEventListener('click', () => setMonster(b.dataset.monster)));
     panel.querySelectorAll('.pn-action').forEach(b => b.addEventListener('click', () => {
-        const ev = eventOf(b.dataset.action);
+        const ev = eventOf(b);
         if (pending === ev) closeDrop(); else openDrop(ev);
     }));
     $('#pnDropClose').addEventListener('click', closeDrop);

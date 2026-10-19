@@ -3,7 +3,7 @@
  * (c) 2026 CV. Arindra Production & ARPRO Esport
  * Released under the MIT License: https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools
  */
-// eventnotif.js — overlay notifikasi pemain (First Blood, Turtle/Lord Slain & Stolen)
+// eventnotif.js — overlay notifikasi pemain (First Blood, Turtle/Lord Slain & Stolen, Double Kill … Wipe Out)
 // Dimuat oleh eventdisplay.html dan notifdisplay.html. Dipicu dari notifcontrol.html (panel PLAYER NOTIFICATION)
 // lewat POST /api/eventnotif → WebSocket "event_notif" berisi data pemain yang sudah lengkap:
 //   { id, event, title, side, player: { nickname, role, role_label, role_logo_url, photo_url }, team: { name, logo_url, color } }
@@ -13,6 +13,9 @@
 //      logo role & logo tim ditempel di atasnya (absolute, posisi % dari "gif_layout") pada show_at..hide_at ms.
 //   2. Bila GIF belum ada → template bawaan (CSS) yang meniru video referensi: bingkai perisai muncul → foto terbuka →
 //      strip tim & panel judul melebar → teks pixel acak lalu tersusun → kilau → kartu menutup kembali.
+//   3. Template dengan "video" (multikill): video webm notifikasi diputar layar penuh, kartu pemain (foto, nickname,
+//      hero yang dipakai, logo tim) muncul di atasnya. "team_focus" (Wipe Out) menonjolkan logo & nama tim.
+//      Posisi kartu: "video_card" di eventnotif.json { x: tengah kartu, y: tepi atas, scale } — default di atas grafis video.
 // Bantuan: eventdisplay.html?calib=turtle_slain (kotak bantu + loop), ?test=first_blood&side=red (putar sekali).
 
 (function () {
@@ -36,6 +39,18 @@
             <div class="en-slot role" data-name="role"><img alt=""></div>
             <div class="en-slot nickname" data-name="nickname"><span></span></div>
         </div>
+        <div class="en-mk">
+            <video class="en-mk-video" playsinline preload="auto"></video>
+            <div class="en-mk-card">
+                <div class="en-mk-logo"><img alt=""></div>
+                <div class="en-mk-photo"><img alt=""></div>
+                <div class="en-mk-info">
+                    <div class="en-mk-title"></div>
+                    <div class="en-mk-name"><span></span></div>
+                    <div class="en-mk-sub"><img class="en-mk-hero" alt=""><span></span><img class="en-mk-role" alt=""></div>
+                </div>
+            </div>
+        </div>
         <div class="en-card">
             <div class="en-burst"></div>
             <div class="en-strip"><img class="en-logo" alt=""><img class="en-role" alt=""></div>
@@ -52,6 +67,9 @@
     const $ = (sel) => stage.querySelector(sel);
     const card = $('.en-card');
     const gif = $('.en-gif');
+    const mk = $('.en-mk');
+    const mkVideo = $('.en-mk-video');
+    const mkCard = $('.en-mk-card');
 
     function mount() {
         document.body.appendChild(stage);
@@ -292,6 +310,87 @@
         URL.revokeObjectURL(url);
     }
 
+    // ===================== MODE 3: VIDEO MULTIKILL + KARTU PEMAIN =====================
+    let soundOk = true; // Chrome biasa menolak video bersuara sebelum halaman diklik → putar tanpa suara
+    window.addEventListener('pointerdown', () => { soundOk = true; mkVideo.muted = false; });
+    async function startVideo(src) {
+        if (!src) return false;
+        mkVideo.src = src;
+        const loaded = await Promise.race([
+            new Promise(r => { mkVideo.onloadeddata = () => r(true); mkVideo.onerror = () => r(false); }),
+            sleep(2500).then(() => false)
+        ]);
+        if (!loaded) return false;
+        mkVideo.currentTime = 0;
+        mkVideo.style.visibility = '';
+        mkVideo.onended = () => { mkVideo.style.visibility = 'hidden'; }; // video selesai lebih dulu, kartu tetap tampil
+        mkVideo.muted = !soundOk;
+        try { await mkVideo.play(); }
+        catch (e) {
+            if (e.name !== 'NotAllowedError') return false;
+            soundOk = false; mkVideo.muted = true;
+            try { await mkVideo.play(); } catch (e2) { return false; }
+        }
+        return true;
+    }
+
+    function fillMk(p, tpl) {
+        const team = p.team || {}, pl = p.player || {};
+        const logo = team.logo_url || 'Assets/Other/nologo.png';
+        mkCard.classList.toggle('red', p.side === 'red');
+        mkCard.classList.toggle('team', !!tpl.team_focus);
+        mkCard.style.setProperty('--team', team.color || (p.side === 'red' ? '#e3263b' : '#1b5cff'));
+        mkCard.querySelector('.en-mk-logo img').src = logo;
+        const ph = mkCard.querySelector('.en-mk-photo img');
+        ph.classList.toggle('logo-fallback', !pl.photo_url);
+        ph.src = pl.photo_url || logo;
+        mkCard.querySelector('.en-mk-title').textContent = (p.title || tpl.title || '').toUpperCase();
+        const name = mkCard.querySelector('.en-mk-name span');
+        name.textContent = (tpl.team_focus ? team.name || pl.nickname : pl.nickname || '').toUpperCase();
+        const hero = mkCard.querySelector('.en-mk-hero');
+        hero.style.display = pl.hero_img ? '' : 'none';
+        if (pl.hero_img) hero.src = pl.hero_img;
+        const role = mkCard.querySelector('.en-mk-role');
+        role.style.display = pl.role_logo_url ? '' : 'none';
+        if (pl.role_logo_url) role.src = pl.role_logo_url;
+        mkCard.querySelector('.en-mk-sub span').textContent = (tpl.team_focus
+            ? [pl.nickname, pl.hero].filter(Boolean).join(' · ')
+            : [pl.hero, team.name].filter(Boolean).join(' · ')).toUpperCase();
+        const c = state.cfg.video_card || {};
+        Object.assign(mkCard.style, { left: `${(c.x || 960) - 470}px`, top: `${c.y != null ? c.y : 600}px`, transform: `scale(${c.scale || 1})` });
+        mk.classList.add('on');
+        fitText(name, tpl.team_focus ? 70 : 76, 30);
+    }
+
+    async function playVideoCard(p, tpl, run) {
+        fillMk(p, tpl);
+        const ok = await startVideo(tpl.video);
+        if (run !== state.runId) return;
+        const len = ok && Number.isFinite(mkVideo.duration) && mkVideo.duration > 1 ? mkVideo.duration * 1000 : 0;
+        const D = Math.max(2500, len, tpl.duration || 4500); // kartu minimal selama "duration" walau videonya lebih pendek
+        const showAt = tpl.show_at != null ? tpl.show_at : 450;
+        const hideAt = tpl.hide_at != null ? tpl.hide_at : D - 650;
+        const red = p.side === 'red';
+        const from = `translateX(${red ? 80 : -80}px)`;
+        const anims = [];
+        setTimeout(() => {
+            if (run !== state.runId) return;
+            mkCard.classList.add('in');
+            anims.push(mkCard.querySelector('.en-mk-info').animate([{ transform: from, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: EASE_OUT, fill: 'both' }));
+            anims.push(mkCard.querySelector('.en-mk-photo img').animate([{ transform: 'translateY(30%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 460, delay: 80, easing: EASE_OUT, fill: 'both' }));
+            anims.push(mkCard.querySelector('.en-mk-logo').animate([{ transform: 'scale(.4) rotate(-12deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, delay: 160, easing: EASE_POP, fill: 'both' }));
+        }, showAt);
+        setTimeout(() => { if (run === state.runId) mkCard.classList.remove('in'); }, hideAt);
+        await sleep(D);
+        if (run !== state.runId) return;
+        mkCard.classList.remove('in');
+        await sleep(250);
+        if (run !== state.runId) return;
+        mk.classList.remove('on');
+        mkVideo.pause();
+        anims.forEach(a => a.cancel());
+    }
+
     // ---------- Antrean ----------
     async function play(p) {
         const run = ++state.runId;
@@ -300,10 +399,11 @@
         const tpl = (cfg.templates || {})[p.event] || { title: p.title, duration: 5200 };
         if (!p.title) p.title = tpl.title;
         const src = (p.side === 'red' && tpl.gif_red) || tpl.gif;
-        const blob = await gifBlob(src);
+        const blob = tpl.video ? null : await gifBlob(src);
         if (run !== state.runId) return;
         try {
-            if (blob) await playGif(p, tpl, blob, run);
+            if (tpl.video) await playVideoCard(p, tpl, run);
+            else if (blob) await playGif(p, tpl, blob, run);
             else await playCard(p, tpl, run);
         } catch (e) {
             console.error('Event notif error:', e);
@@ -329,6 +429,9 @@
         stage.getAnimations({ subtree: true }).forEach(a => a.cancel());
         card.classList.remove('on', 'sparkle', 'shine');
         gif.classList.remove('on', 'dyn');
+        mk.classList.remove('on');
+        mkCard.classList.remove('in');
+        mkVideo.pause();
     }
 
     // ---------- Koneksi ----------

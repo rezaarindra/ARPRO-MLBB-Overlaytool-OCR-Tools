@@ -190,6 +190,14 @@ Buka **`broadcastcontrol.html`**:
 - **Analisis Draft**: overlay `draftanalysis.html` tampil sendiri saat 10 hero terpilih (mode AUTO), atau paksa TAMPILKAN / SEMBUNYIKAN. Atribut hero ada di `public/database/herometa.json` (role, damage P/M/X, nilai 0–3 untuk early, late, teamfight, poke, pick-off, push); sesuaikan dengan meta terbaru.
 - **Bahasa Overlay**: TEKS ASLI / INDONESIA / ENGLISH untuk semua overlay turnamen, draft, pause, analisis draft, dan milestone.
 
+## 🔎 OCR: kotak tambahan & gold pemain
+
+Di **OCR Control** pilih jenis (**Gold / Angka / Teks / Timer**) lalu **+ TAMBAH KOTAK**, atau **+ SET GOLD 10 PEMAIN** untuk `gold_b1`–`gold_b5` & `gold_r1`–`gold_r5`. Geser kotak ke posisinya lalu **SIMPAN**. Semua kotak ikut terkirim ke `/ocr/MLBB.json` & `/ocr/vmix.json`. Centang **Isi gold pemain ke data match** agar gold tiap pemain di Postgame/scoreboard terisi otomatis.
+
+## 💥 Kill streak di Player Notification
+
+Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple Kill, Maniac, Savage, Wipe Out) → pilih pemain → video notifikasi + kartu pemain (foto, nickname, hero yang dipakai, logo tim). Wipe Out menonjolkan logo & nama tim. Posisi kartu: `video_card` di `eventnotif.json`.
+
 ## ⚙️ Konfigurasi (opsional)
 
 | File | Fungsi |

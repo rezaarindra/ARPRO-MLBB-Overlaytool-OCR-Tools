@@ -47,7 +47,33 @@
         .lk small { display: block; color: var(--muted); font-size: 11px; }
         .lk button, .lk a { padding: 5px 9px; font-size: 11px; }
         .lk a { color: var(--accent); font-weight: 700; text-decoration: none; border: 1px solid var(--line); }
-        @media (max-width: 1000px) { .bc-wide { grid-column: auto; } }
+        /* 5 · efek draft */
+        .fx-prev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .fx-box { --c: 27, 92, 255; position: relative; height: 90px; overflow: hidden; background: #2a2c33; border: 1px solid var(--line); display: grid; place-items: center; }
+        .fx-box.red { --c: 227, 38, 59; }
+        .fx-box::before { content: ''; position: absolute; inset: -20% -60%; background: linear-gradient(115deg, transparent 38%, rgba(var(--c), var(--a, .55)) 46%, rgba(var(--c), calc(var(--a, .55) * .28)) 56%, transparent 64%); animation: bcSweep var(--sp, 1.6s) cubic-bezier(.6, 0, .4, 1) infinite; }
+        .fx-box.red::before { background: linear-gradient(65deg, transparent 38%, rgba(var(--c), var(--a, .55)) 46%, rgba(var(--c), calc(var(--a, .55) * .28)) 56%, transparent 64%); animation-name: bcSweepR; }
+        .fx-box span { position: relative; font: 34px 'Noodle', sans-serif; color: rgb(var(--c)); -webkit-text-stroke: 1px #fff; }
+        @keyframes bcSweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+        @keyframes bcSweepR { from { transform: translateX(60%); } to { transform: translateX(-60%); } }
+        .bc-field input[type=range] { padding: 0; accent-color: var(--accent); }
+        .bc-field input[type=color] { height: 36px; padding: 2px; }
+        /* 6 · posisi splash */
+        .sp-prevs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .sp-prevs small { color: var(--muted); font-size: 11px; letter-spacing: 1px; }
+        .sp-prev { position: relative; width: 100%; aspect-ratio: 725 / 227; overflow: hidden; background: #05070f; cursor: grab; user-select: none; touch-action: none; }
+        .sp-prev:active { cursor: grabbing; }
+        .sp-prev img { position: absolute; max-width: none; pointer-events: none; }
+        .sp-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(7, 26, 92, .88) 0%, rgba(7, 26, 92, .35) 34%, transparent 58%), linear-gradient(0deg, rgba(27, 92, 255, .85) 0%, transparent 30%); }
+        .sp-prev.red .sp-shade { background: linear-gradient(270deg, rgba(79, 7, 18, .88) 0%, rgba(79, 7, 18, .35) 34%, transparent 58%), linear-gradient(0deg, rgba(227, 38, 59, .85) 0%, transparent 30%); }
+        .sp-photo { position: absolute; top: 0; bottom: 0; right: 3.3%; aspect-ratio: 3 / 4; display: grid; place-items: center; border: 2px dashed rgba(255, 255, 255, .55); background: rgba(0, 0, 0, .35); font: 600 11px 'Segoe UI', sans-serif; letter-spacing: 1px; color: rgba(255, 255, 255, .7); pointer-events: none; }
+        .sp-prev.red .sp-photo { right: auto; left: 3.3%; }
+        .sp-name { position: absolute; left: 3.6%; bottom: 4%; font: 3.4vw/0.9 'Noodle', sans-serif; letter-spacing: 2px; color: #fff; pointer-events: none; text-shadow: 0 4px 18px rgba(0, 0, 0, .55); }
+        .sp-prev.red .sp-name { left: auto; right: 3.6%; }
+        .sp-sliders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .sp-done { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .sp-done button { padding: 4px 9px; font-size: 11px; }
+        @media (max-width: 1000px) { .bc-wide { grid-column: auto; } .sp-prevs, .sp-sliders { grid-template-columns: 1fr; } }
     </style>
 </head>
 <!-- Broadcast Control: technical pause (pause.html), analisis komposisi draft (draftanalysis.html), bahasa overlay ID / EN. -->
@@ -107,9 +133,51 @@
             <h3>4 · LINK OVERLAY</h3>
             <div class="links" id="links"></div>
         </div>
+
+        <div class="oc-card">
+            <h3>5 · EFEK DRAFT</h3>
+            <p class="oc-small">Berlaku langsung di display, display2, displayban6 &amp; display2ban6 (tanpa refresh).</p>
+            <div class="fx-prev"><div class="fx-box blue" id="fxPrevB"><span></span></div><div class="fx-box red" id="fxPrevR"><span></span></div></div>
+            <label class="bc-field">Teks di kotak giliran pick (kosong = hanya warna) <input id="fxText" maxlength="12" placeholder="kosong"></label>
+            <div class="bc-row">
+                <label class="bc-field">Warna tim biru <input type="color" id="fxBlue"></label>
+                <label class="bc-field">Warna tim merah <input type="color" id="fxRed"></label>
+            </div>
+            <label class="bc-field">Intensitas sapuan <span id="fxIntV"></span> <input type="range" id="fxInt" min="0.1" max="1" step="0.05"></label>
+            <label class="bc-field">Kecepatan sapuan (detik per sapuan) <span id="fxSpeedV"></span> <input type="range" id="fxSpeed" min="0.4" max="5" step="0.1"></label>
+            <label class="bc-field">Lama splash hero tampil (detik) <span id="fxHoldV"></span> <input type="range" id="fxHold" min="0.6" max="5" step="0.1"></label>
+            <div class="oc-row"><button id="fxReset">KEMBALIKAN DEFAULT</button></div>
+            <div class="bc-msg" id="fxMsg"></div>
+        </div>
+
+        <div class="oc-card bc-wide">
+            <h3>6 · POSISI SPLASH HERO</h3>
+            <p class="oc-small">Pilih hero, lalu <b>geser gambar langsung di pratinjau</b> atau pakai slider. Pratinjau = ukuran asli area splash (5 kotak pick) dengan posisi foto pemain &amp; nama hero. Tersimpan per hero dan langsung dipakai overlay.</p>
+            <div class="bc-row">
+                <label class="bc-field">Cari hero <input id="spSearch" placeholder="ketik nama hero"></label>
+                <label class="bc-field">Hero <select id="spHero"></select></label>
+            </div>
+            <div class="sp-prevs">
+                <div><small>TIM BIRU</small><div class="sp-prev blue" data-side="blue"><img alt=""><i class="sp-shade"></i><b class="sp-photo">FOTO PEMAIN</b><span class="sp-name"></span></div></div>
+                <div><small>TIM MERAH</small><div class="sp-prev red" data-side="red"><img alt=""><i class="sp-shade"></i><b class="sp-photo">FOTO PEMAIN</b><span class="sp-name"></span></div></div>
+            </div>
+            <div class="sp-sliders">
+                <label class="bc-field">Zoom <span id="spZoomV"></span> <input type="range" id="spZoom" min="1" max="2.5" step="0.01"></label>
+                <label class="bc-field">Fokus kiri ↔ kanan <span id="spXV"></span> <input type="range" id="spX" min="0" max="100" step="0.5"></label>
+                <label class="bc-field">Fokus atas ↕ bawah <span id="spYV"></span> <input type="range" id="spY" min="0" max="100" step="0.5"></label>
+            </div>
+            <div class="oc-row">
+                <button class="primary" id="spSave">SIMPAN POSISI HERO INI</button>
+                <button id="spReset">KEMBALI KE DEFAULT</button>
+            </div>
+            <div class="bc-msg" id="spMsg"></div>
+            <div class="sp-done" id="spDone"></div>
+        </div>
     </main>
 
     <script src="script/tournament-common.js"></script>
+    <script src="script/hero-assets.js"></script>
+    <script src="script/broadcastfx.js"></script>
     <script>
         const $ = (id) => document.getElementById(id), esc = T.esc;
         const fmt = (s) => { const neg = s < 0; s = Math.abs(Math.floor(s)); return `${neg ? '-' : ''}${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };

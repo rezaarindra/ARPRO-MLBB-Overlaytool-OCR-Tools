@@ -8,7 +8,7 @@
 // Alur per kotak (region, koordinat 1920×1080 setelah frame diluruskan):
 //   potong → perbesar ×3 (halus) → luminansi = kanal warna paling terang (teks biru/merah tetap terang)
 //   → ambang otomatis Otsu (+ bias per kotak) → teks hitam di atas putih → buang bintik / sisa ikon
-//   → Tesseract (satu baris, whitelist angka) → normalisasi sesuai tipe (number / gold / timer)
+//   → Tesseract (satu baris, whitelist angka; tipe text memakai mesin huruf terpisah) → normalisasi sesuai tipe (number / gold / timer / text)
 // Nilai baru baru dipakai bila terbaca sama 2× berturut-turut (anti kedip).
 
 (function () {
@@ -48,7 +48,8 @@
     }
 
     // komponen terhubung pada mask teks; buang yang terlalu kecil / pendek dibanding komponen tertinggi
-    function cleanComponents(mask, w, h) {
+    // keepDots (tipe gold): titik desimal "4.7k" tidak dibuang walau kecil — bentuknya kotak kecil di garis dasar angka
+    function cleanComponents(mask, w, h, keepDots) {
         const label = new Int32Array(w * h).fill(-1);
         const comps = [];
         const stack = [];
@@ -70,6 +71,10 @@
         }
         if (!comps.length) return 0;
         const tallest = Math.max(...comps.map(c => c.maxY - c.minY + 1));
+        const big = comps.filter(c => c.maxY - c.minY + 1 >= tallest * 0.7);
+        const baseline = big.length ? Math.max(...big.map(c => c.maxY)) : h - 1;
+        const isDot = (c, ch, cw) => keepDots && ch >= tallest * 0.1 && ch <= tallest * 0.35 && cw / ch >= 0.5 && cw / ch <= 2
+            && c.maxY >= baseline - tallest * 0.12 && c.minX > 0 && c.maxX < w - 1;
         let kept = 0;
         for (const c of comps) {
             const ch = c.maxY - c.minY + 1;
@@ -77,7 +82,7 @@
             const atEdge = c.minX === 0 || c.maxX === w - 1;
             // sisa ikon di tepi kotak: lebih pendek dari angka, atau potongan sempit-tinggi yang terpotong tepi
             const touchesEdgeOnly = atEdge && (ch < tallest * 0.9 || cw < ch * 0.35);
-            const tiny = c.area < (w * h) * 0.002 || ch < tallest * 0.45;
+            const tiny = (c.area < (w * h) * 0.002 || ch < tallest * 0.45) && !isDot(c, ch, cw);
             const isFrame = (c.maxX - c.minX + 1) > w * 0.92; // garis/bingkai melintang
             if (tiny || touchesEdgeOnly || isFrame) c.pix.forEach(q => { mask[q] = 0; });
             else kept++;
@@ -105,7 +110,7 @@
         const th = Math.min(250, Math.max(5, otsu(hist, w * h) + (r.bias || 0)));
         const mask = new Uint8Array(w * h);
         for (let p = 0; p < w * h; p++) mask[p] = r.invert ? (lum[p] < th ? 1 : 0) : (lum[p] > th ? 1 : 0);
-        const blobs = cleanComponents(mask, w, h);
+        const blobs = cleanComponents(mask, w, h, r.type === 'gold');
 
         // teks hitam di atas putih, dipotong ke batas teks
         let l = w, t = h, rr = -1, b = -1;
@@ -168,6 +173,11 @@
     const fixChars = (t) => t.replace(/[oOQDlI|i!ZzSsBGgT]/g, c => FIX[c]);
 
     function normalize(type, raw) {
+        if (type === 'text') {
+            // teks bebas (nickname, nama tim): huruf, angka, spasi, titik, garis bawah / strip
+            const s = String(raw || '').replace(/[^A-Za-z0-9 ._\-]/g, '').replace(/\s+/g, ' ').trim();
+            return s && s.length <= 32 ? s : null;
+        }
         let t = fixChars(String(raw || '').replace(/\s+/g, ''));
         if (type === 'timer') {
             const digits = t.replace(/[^0-9]/g, '');
@@ -177,6 +187,8 @@
             return `${mm.padStart(2, '0')}:${ss}`;
         }
         if (type === 'gold') {
+            const dotted = /^(\d{1,3})\.(\d)[kK]$/.exec(t.replace(/[^0-9.kK]/g, ''));
+            if (dotted) return `${+dotted[1]}.${dotted[2]}k`;          // "4.7k" / "12.3k" dengan titik terbaca
             const hasK = /[kK]/.test(t);
             const digits = t.split(/[kK]/)[0].replace(/[^0-9]/g, '');
             if (!digits) return null;
@@ -186,8 +198,8 @@
                 if (digits.length === 4 && digits[2] === '0') return `${digits.slice(0, 2)}.${digits[3]}k`;
                 return null;
             }
-            if (digits.length === 4 && digits[0] !== '0') return digits; // fase awal: 1500 – 9999
-            if (digits.length === 3 && t.includes('.')) return null;
+            // fase awal tim (1500 – 9999) & gold pemain di panel spectator (bisa 5 digit, mis. 12345 / 12,345)
+            if ((digits.length === 4 || digits.length === 5) && digits[0] !== '0') return digits;
             return null;
         }
         const digits = t.replace(/[^0-9]/g, '');
@@ -220,11 +232,20 @@
         scheduler = s;
     }
 
+    // mesin huruf untuk kotak tipe "text" dibuat saat pertama dibutuhkan (whitelist berbeda dari mesin angka)
+    let textWorker = null;
+    function getTextWorker() {
+        if (!textWorker) textWorker = makeWorker(Tesseract.PSM.SINGLE_LINE, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ._-').catch(e => { textWorker = null; throw e; });
+        return textWorker;
+    }
+
     async function stop() {
-        const s = scheduler;
+        const s = scheduler, tw = textWorker;
         scheduler = null;
+        textWorker = null;
         Object.keys(lastRead).forEach(k => delete lastRead[k]);
         if (s) await s.terminate();
+        if (tw) { try { await (await tw).terminate(); } catch (e) {} }
     }
 
     async function read(frameCanvas, r) {
@@ -235,8 +256,8 @@
         if (prev && prev.type === r.type && prev.bias === r.bias && prev.invert === r.invert && sameSig(prev.sig, pre.sig)) {
             return { pre, text: prev.text, value: prev.value, conf: prev.conf, cached: true };
         }
-        const { data } = await scheduler.addJob('recognize', pre.canvas);
-        let text = (data.text || '').replace(/\s+/g, '');
+        const { data } = r.type === 'text' ? await (await getTextWorker()).recognize(pre.canvas) : await scheduler.addJob('recognize', pre.canvas);
+        let text = r.type === 'text' ? (data.text || '').replace(/\s+/g, ' ').trim() : (data.text || '').replace(/\s+/g, '');
         if (pre.tiles > 1) {
             // "000" → "0": ambil karakter angka yang paling sering muncul
             const counts = {};

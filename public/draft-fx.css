@@ -10,6 +10,13 @@
     --fx-blue-dark: #071a5c;
     --fx-red: #e3263b;
     --fx-red-dark: #4f0712;
+    /* versi r, g, b (diubah dari Broadcast Control › Efek Draft) */
+    --fx-blue-rgb: 27, 92, 255;
+    --fx-red-rgb: 227, 38, 59;
+    --fx-blue-dark-rgb: 7, 26, 92;
+    --fx-red-dark-rgb: 79, 7, 18;
+    --fx-turn-alpha: 0.55;
+    --fx-turn-speed: 1.6s;
 
     /* tambahan lebar box hero (px). Box pemain (nama) tidak berubah; 0 = ukuran asli */
     --fx-hero-extra: 6px;
@@ -77,8 +84,8 @@ body.fx-ready .uppermiddle .image-box img {
     inset: 0;
 }
 
-/* splash art memenuhi seluruh area 5 box; potongan atas-bawah diatur --fx-splash-y (0% = paling atas).
-   Per hero bisa diatur di database/herofocus.json, contoh: { "lapulapu": { "x": 50, "y": 15 } } */
+/* splash art memenuhi seluruh area 5 box. Posisi & zoom per hero dihitung draft-fx.js (HeroAssets.splashLayout)
+   dari database/herofocus.json; aturan di bawah hanya cadangan bila ukuran gambar belum diketahui. */
 .fx-splash-art img {
     display: block;
     width: 100%;
@@ -94,15 +101,15 @@ body.fx-ready .uppermiddle .image-box img {
 
 .fx-splash.fx-blue .fx-splash-shade {
     background:
-        linear-gradient(90deg, rgba(7, 26, 92, 0.88) 0%, rgba(7, 26, 92, 0.35) 34%, rgba(7, 26, 92, 0) 58%),
-        linear-gradient(0deg, rgba(27, 92, 255, 0.85) 0%, rgba(27, 92, 255, 0) 30%);
+        linear-gradient(90deg, rgba(var(--fx-blue-dark-rgb), 0.88) 0%, rgba(var(--fx-blue-dark-rgb), 0.35) 34%, rgba(var(--fx-blue-dark-rgb), 0) 58%),
+        linear-gradient(0deg, rgba(var(--fx-blue-rgb), 0.85) 0%, rgba(var(--fx-blue-rgb), 0) 30%);
     box-shadow: inset 0 -4px 0 var(--fx-blue);
 }
 
 .fx-splash.fx-red .fx-splash-shade {
     background:
-        linear-gradient(270deg, rgba(79, 7, 18, 0.88) 0%, rgba(79, 7, 18, 0.35) 34%, rgba(79, 7, 18, 0) 58%),
-        linear-gradient(0deg, rgba(227, 38, 59, 0.85) 0%, rgba(227, 38, 59, 0) 30%);
+        linear-gradient(270deg, rgba(var(--fx-red-dark-rgb), 0.88) 0%, rgba(var(--fx-red-dark-rgb), 0.35) 34%, rgba(var(--fx-red-dark-rgb), 0) 58%),
+        linear-gradient(0deg, rgba(var(--fx-red-rgb), 0.85) 0%, rgba(var(--fx-red-rgb), 0) 30%);
     box-shadow: inset 0 -4px 0 var(--fx-red);
 }
 
@@ -178,7 +185,8 @@ body.fx-ready .uppermiddle .image-box img {
 .fx-splash-player.no-photo span { bottom: 18px; left: auto; right: 0; }
 .fx-splash.fx-red .fx-splash-player.no-photo span { left: 0; right: auto; }
 
-/* ---------- Giliran pick: "PICK" + sapuan warna tim di box pemain yang sedang memilih (ref. CLD.mp4) ---------- */
+/* ---------- Giliran pick: sapuan warna tim (ambient) di box pemain yang sedang memilih (ref. CLD.mp4) ----------
+   Teks di atas sapuan default kosong; warna, intensitas, kecepatan & teks diatur di Broadcast Control › Efek Draft. */
 .fx-turn {
     position: absolute;
     inset: 0;
@@ -191,20 +199,24 @@ body.fx-ready .uppermiddle .image-box img {
 
 .fx-turn.on { opacity: 1; }
 
+/* lapisan "bernafas" bawaan display (.active-pick putih / ungu) diganti warna tim */
+body.fx-ready .box.pick.active-pick[id^="pick-left"] { background-color: rgb(var(--fx-blue-rgb)); }
+body.fx-ready .box.pick.active-pick[id^="pick-right"] { background-color: rgb(var(--fx-red-rgb)); }
+
 .fx-turn::before {
     content: '';
     position: absolute;
     inset: -20% -60%;
-    background: linear-gradient(115deg, transparent 38%, rgba(27, 92, 255, 0.55) 46%, rgba(27, 92, 255, 0.15) 56%, transparent 64%);
+    background: linear-gradient(115deg, transparent 38%, rgba(var(--fx-blue-rgb), var(--fx-turn-alpha)) 46%, rgba(var(--fx-blue-rgb), calc(var(--fx-turn-alpha) * 0.28)) 56%, transparent 64%);
     transform: translateX(-60%);
 }
 
 .fx-turn.fx-red::before {
-    background: linear-gradient(65deg, transparent 38%, rgba(227, 38, 59, 0.55) 46%, rgba(227, 38, 59, 0.15) 56%, transparent 64%);
+    background: linear-gradient(65deg, transparent 38%, rgba(var(--fx-red-rgb), var(--fx-turn-alpha)) 46%, rgba(var(--fx-red-rgb), calc(var(--fx-turn-alpha) * 0.28)) 56%, transparent 64%);
     transform: translateX(60%);
 }
 
-.fx-turn.on::before { animation: fxSweep 1.6s cubic-bezier(0.6, 0, 0.4, 1) infinite; }
+.fx-turn.on::before { animation: fxSweep var(--fx-turn-speed) cubic-bezier(0.6, 0, 0.4, 1) infinite; }
 .fx-turn.fx-red.on::before { animation-name: fxSweepR; }
 
 @keyframes fxSweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
@@ -227,6 +239,7 @@ body.fx-ready .uppermiddle .image-box img {
 
 .fx-turn.fx-red span { color: var(--fx-red); }
 .fx-turn.on span { animation: fxPulse 0.9s ease-in-out infinite alternate; }
+.fx-turn span:empty { display: none; }
 
 @keyframes fxPulse { from { opacity: 1; transform: scale(1); } to { opacity: 0.55; transform: scale(0.94); } }
 

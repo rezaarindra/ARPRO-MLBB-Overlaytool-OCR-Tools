@@ -77,6 +77,11 @@ body { overflow-y: auto; padding-bottom: 20px; }
 }
 .pn-action.stolen { background-color: rgba(255, 214, 140, 0.88); }
 .pn-action.fb { background-color: rgba(255, 180, 190, 0.85); }
+.pn-mk-label { align-self: center; margin-bottom: 0; }
+.pn-actions.pn-mk { grid-template-columns: repeat(5, 1fr); }
+.pn-mk .pn-action { height: 104px; font-size: 1.8em; }
+.pn-action.kill { background-color: rgba(255, 214, 140, 0.88); }
+.pn-action.wipe { background-color: rgba(200, 170, 255, 0.88); }
 
 /* ---------- Dropdown daftar pemain ---------- */
 .pn-drop {
@@ -206,6 +211,7 @@ body { overflow-y: auto; padding-bottom: 20px; }
     .pn-body { grid-template-columns: 1fr; }
     .pn-seg { flex-direction: row; }
     .pn-actions { grid-template-columns: 1fr; }
+    .pn-actions.pn-mk { grid-template-columns: repeat(3, 1fr); }
     .pn-action { height: 90px; }
     .pn-teams { grid-template-columns: 1fr; }
     .pn-team.blue { border-right: 0; border-bottom: 1px solid var(--border-color); }

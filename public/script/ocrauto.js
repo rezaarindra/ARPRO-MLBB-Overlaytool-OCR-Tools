@@ -7,11 +7,17 @@
 // Logika deteksi ada di server (/api/ocr/game, /api/ocr/auto), halaman ini hanya menampilkan & mengatur.
 (() => {
     const $ = (id) => document.getElementById(id);
-    const CHECKS = { oaFirstBlood: 'autoFirstBlood', oaLord: 'autoLordSlain', oaSpawn: 'autoObjectiveSpawn', oaHint: 'multikillHints' };
+    const CHECKS = { oaFirstBlood: 'autoFirstBlood', oaLord: 'autoLordSlain', oaSpawn: 'autoObjectiveSpawn', oaHint: 'multikillHints', oaPlayerGold: 'fillPlayerGold' };
     const FIELDS = { oaTurtleFirst: 'turtleFirst', oaTurtleRespawn: 'turtleRespawn', oaLordFirst: 'lordFirst', oaLordRespawn: 'lordRespawn', oaWarn: 'warnBefore', oaWindow: 'multikillWindow' };
     const fmtTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
     const fmtK = (v) => (v / 1000).toFixed(1) + 'K';
     const dismissed = new Set();
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    // saran multikill → notifikasi pemain (Player Notification): operator memilih pemain tim tersebut
+    const EVENT = { 2: [['double_kill', 'DOUBLE KILL']], 3: [['triple_kill', 'TRIPLE KILL']], 4: [['maniac', 'MANIAC']], 5: [['savage', 'SAVAGE'], ['wipe_out', 'WIPE OUT']] };
+    let picking = null;   // { id, side: 'blue'|'red', event, title }
+    let roster = null;    // daftar pemain dari /api/eventnotif/players
+    let lastData = null;
 
     async function loadConfig() {
         try {
@@ -46,12 +52,22 @@
         if (d.t != null) lines.push(`Waktu game  ${fmtTime(d.t)}${d.live ? '' : '  · OCR BERHENTI'}`);
         $('oaStatus').textContent = lines.join('\n');
 
-        $('oaHints').innerHTML = (d.hints || []).filter(h => !dismissed.has(h.id)).map(h => `
-            <div class="oa-hint ${h.side === 1 ? 'blue' : 'red'}">
+        lastData = d;
+        const hints = (d.hints || []).filter(h => !dismissed.has(h.id));
+        if (picking && !hints.some(h => h.id === picking.id)) picking = null;
+        $('oaHints').innerHTML = hints.map(h => {
+            const side = h.side === 1 ? 'blue' : 'red';
+            const team = roster && roster.teams[side];
+            const pick = picking && picking.id === h.id && team
+                ? `<div class="oa-pick">${esc(picking.title)} · pilih pemain:${team.players.map(p => `<button data-pick="${p.slot}" data-id="${h.id}" ${p.nickname ? '' : 'disabled'}>${esc(p.nickname || 'kosong')}</button>`).join('')}</div>` : '';
+            return `<div class="oa-hint ${side}">
                 <span>${h.side === 1 ? 'BIRU' : 'MERAH'} · ${h.count} kill beruntun → ${h.label}?</span>
-                <button class="primary" data-play="${h.videoId}" data-id="${h.id}">TAYANG</button>
+                ${(EVENT[h.count] || []).map(([ev, title]) => `<button class="primary" data-player="${ev}" data-title="${title}" data-side="${side}" data-id="${h.id}" title="Notifikasi pemain: foto, hero & logo tim">${EVENT[h.count].length > 1 ? title : 'PEMAIN'}</button>`).join('')}
+                <button data-play="${h.videoId}" data-id="${h.id}" title="Video saja tanpa data pemain">VIDEO</button>
                 <button data-id="${h.id}">✕</button>
-            </div>`).join('');
+                ${pick}
+            </div>`;
+        }).join('');
 
         $('oaLog').textContent = (d.log || []).slice(0, 5)
             .map(l => `${new Date(l.at).toLocaleTimeString('id-ID', { hour12: false })}  otomatis: ${l.text}`).join('\n');
@@ -59,8 +75,24 @@
 
     $('oaHints').addEventListener('click', async (e) => {
         const b = e.target.closest('button');
-        if (!b) return;
+        if (!b || b.disabled) return;
+        if (b.dataset.player) {
+            picking = { id: b.dataset.id, side: b.dataset.side, event: b.dataset.player, title: b.dataset.title };
+            try { roster = await (await fetch('/api/eventnotif/players', { cache: 'no-store' })).json(); } catch (err) { roster = null; }
+            render(lastData);
+            return;
+        }
+        if (b.dataset.pick != null && picking) {
+            const body = { event: picking.event, side: picking.side, slot: +b.dataset.pick };
+            dismissed.add(b.dataset.id);
+            picking = null;
+            b.closest('.oa-hint').remove();
+            const res = await fetch('/api/eventnotif', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!res.ok) alert((await res.json().catch(() => ({}))).message || 'Gagal mengirim notifikasi');
+            return;
+        }
         dismissed.add(b.dataset.id);
+        if (picking && picking.id === b.dataset.id) picking = null;
         if (b.dataset.play) await fetch('/api/notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ videoId: b.dataset.play }) });
         b.closest('.oa-hint').remove();
     });

@@ -114,17 +114,22 @@
         return true;
     }
 
+    function layoutArt(img, el, focus, side) {
+        const W = el.clientWidth, H = el.clientHeight;
+        if (!img.naturalWidth || !W || !window.HeroAssets || !HeroAssets.splashLayout) { img.removeAttribute('style'); return; }
+        const L = HeroAssets.splashLayout(img.naturalWidth, img.naturalHeight, W, H, focus, side);
+        Object.assign(img.style, { position: 'absolute', left: `${L.left}px`, top: `${L.top}px`, width: `${L.width}px`, height: `${L.height}px`, objectFit: 'fill', maxWidth: 'none' });
+    }
+
     async function playSplash(job, side) {
         const dir = side === 'blue' ? 1 : -1;
         const info = (window.HeroAssets && HeroAssets.byImg(job.src)) || { name: '', portrait: job.src, full: null, focus: null };
         const el = getSplash(side);
         if (!placeSplash(el, side)) return false;
 
-        // splash art memenuhi area (cover); titik fokus per hero dari herofocus.json bila ada
+        // splash art memenuhi area; posisi & zoom per hero dari herofocus.json (Broadcast Control › Posisi Splash)
         const src = info.full || info.portrait;
         const img = el.querySelector('.fx-splash-art img');
-        const f = info.focus;
-        img.style.objectPosition = f && (f.x != null || f.y != null) ? `${f.x != null ? f.x : 50}% ${f.y != null ? f.y : 22}%` : '';
         const bg = el.querySelector('.fx-splash-bg img');
         const player = playerOf(job.slot);
         const pl = el.querySelector('.fx-splash-player');
@@ -133,6 +138,7 @@
             loadImg(bg, src),
             player.photo ? loadImg(pl.querySelector('img'), player.photo) : null
         ]);
+        layoutArt(img, el, info.focus, side);
         el.querySelector('.fx-splash-hero').textContent = (info.name || '').toUpperCase();
         pl.style.display = player.photo || player.name ? '' : 'none';
         pl.classList.toggle('no-photo', !player.photo);
@@ -289,7 +295,8 @@
             if (!t && on) {
                 t = document.createElement('div');
                 t.className = `fx-turn ${/right/.test(b.id) ? 'fx-red' : 'fx-blue'}`;
-                t.innerHTML = '<span>PICK</span>';
+                t.innerHTML = '<span></span>';
+                t.firstChild.textContent = fx.turnText || '';
                 host.appendChild(t);
             }
             if (t) t.classList.toggle('on', on);
@@ -365,6 +372,8 @@
             let m;
             try { m = JSON.parse(ev.data); } catch (e) { return; }
             if (m.type === 'matchformat_update' && m.data) { bo = m.data.bo; syncScore(); }
+            else if (m.type === 'draftfx_update' && m.data) applyFx(m.data);
+            else if (m.type === 'herofocus_update' && window.HeroAssets) HeroAssets.reload();
             else if (m.type === 'draftdata_update') setTimeout(syncPhase, 80); // tunggu displayhero memproses data yang sama
         };
         ws.onclose = () => setTimeout(connectFormat, 3000);
@@ -381,6 +390,27 @@
         syncTurn(); syncScore(); syncPhase();
         connectFormat();
     }
+
+    // ---------- Pengaturan efek dari Broadcast Control (/api/draftfx) ----------
+    let fx = { turnText: '' };
+    const rgb = (h) => { const n = parseInt(String(h).slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    function applyFx(c) {
+        fx = { ...fx, ...c };
+        const root = document.documentElement.style;
+        for (const side of ['blue', 'red']) {
+            if (!/^#[0-9a-f]{6}$/i.test(fx[side] || '')) continue;
+            const [r, g, b] = rgb(fx[side]), dark = [r, g, b].map(v => Math.round(v * 0.28));
+            root.setProperty(`--fx-${side}`, fx[side]);
+            root.setProperty(`--fx-${side}-rgb`, `${r}, ${g}, ${b}`);
+            root.setProperty(`--fx-${side}-dark`, `rgb(${dark.join(', ')})`);
+            root.setProperty(`--fx-${side}-dark-rgb`, dark.join(', '));
+        }
+        if (fx.intensity != null) root.setProperty('--fx-turn-alpha', fx.intensity);
+        if (fx.speed != null) root.setProperty('--fx-turn-speed', `${fx.speed}s`);
+        if (fx.splashHold != null) T.hold = Math.round(fx.splashHold * 1000);
+        document.querySelectorAll('.fx-turn span').forEach(s => { s.textContent = fx.turnText || ''; });
+    }
+    fetch('/api/draftfx', { cache: 'no-store' }).then(r => r.json()).then(d => applyFx(d.config || {})).catch(() => {});
 
     function init() {
         document.body.classList.add('fx-ready');

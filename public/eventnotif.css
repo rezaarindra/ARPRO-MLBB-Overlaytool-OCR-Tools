@@ -306,3 +306,76 @@
     0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
     45% { opacity: 1; transform: scale(1) rotate(25deg); }
 }
+
+/* =====================================================================
+   MODE 3 — VIDEO MULTIKILL (webm layar penuh) + KARTU PEMAIN
+   ===================================================================== */
+.en-mk { position: absolute; inset: 0; visibility: hidden; }
+.en-mk.on { visibility: visible; }
+.en-mk-video { position: absolute; inset: 0; width: 1920px; height: 1080px; object-fit: cover; }
+
+.en-mk-card {
+    --team: #1b5cff;
+    position: absolute;
+    width: 940px;
+    height: 190px;
+    transform-origin: center top;
+    display: grid;
+    grid-template-columns: 150px 170px 1fr;
+    align-items: end;
+    font-family: 'ENNoodle', 'Big Noodle Titling', sans-serif;
+    color: #fff;
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+.en-mk-card.in { opacity: 1; }
+/* panel miring warna tim di belakang kartu */
+.en-mk-card::before {
+    content: '';
+    position: absolute;
+    left: 40px; right: 0; bottom: 0; height: 150px;
+    background: linear-gradient(90deg, var(--team) 0%, rgba(8, 10, 18, .92) 42%, rgba(8, 10, 18, .85) 100%);
+    clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+}
+.en-mk-card::after {
+    content: '';
+    position: absolute;
+    left: 46px; right: 6px; bottom: 0; height: 6px;
+    background: var(--team);
+}
+.en-mk-card > * { position: relative; z-index: 1; }
+
+.en-mk-logo { align-self: center; width: 120px; height: 120px; margin: 50px 0 0 30px; }
+.en-mk-logo img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .5)); }
+
+.en-mk-photo { height: 190px; overflow: hidden; }
+.en-mk-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; display: block; }
+.en-mk-photo img.logo-fallback { object-fit: contain; padding: 50px 20px 10px; box-sizing: border-box; }
+
+.en-mk-info { padding: 0 40px 18px 22px; min-width: 0; }
+.en-mk-title { font-size: 34px; letter-spacing: 6px; line-height: 1; color: #fff; opacity: .85; }
+.en-mk-name { font-size: 76px; line-height: .95; letter-spacing: 2px; white-space: nowrap; overflow: hidden; }
+.en-mk-name span { display: block; white-space: nowrap; overflow: hidden; }
+.en-mk-sub { display: flex; align-items: center; gap: 10px; font-size: 28px; letter-spacing: 2px; color: rgba(255, 255, 255, .78); margin-top: 4px; }
+.en-mk-sub span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.en-mk-hero { width: 40px; height: 40px; object-fit: cover; border: 2px solid var(--team); }
+.en-mk-role { width: 30px; height: 30px; object-fit: contain; filter: brightness(0) invert(1); margin-left: auto; }
+
+/* tim merah: dicerminkan (logo di kanan) */
+.en-mk-card.red { grid-template-columns: 1fr 170px 150px; }
+.en-mk-card.red .en-mk-info { order: 1; text-align: right; padding: 0 22px 18px 40px; }
+.en-mk-card.red .en-mk-photo { order: 2; }
+.en-mk-card.red .en-mk-logo { order: 3; margin: 50px 30px 0 0; }
+.en-mk-card.red .en-mk-sub { flex-direction: row-reverse; }
+.en-mk-card.red .en-mk-role { margin-left: 0; margin-right: auto; }
+.en-mk-card.red::before { left: 0; right: 40px; background: linear-gradient(270deg, var(--team) 0%, rgba(8, 10, 18, .92) 42%, rgba(8, 10, 18, .85) 100%); clip-path: polygon(0 0, 96% 0, 100% 100%, 4% 100%); }
+.en-mk-card.red::after { left: 6px; right: 46px; }
+
+/* Wipe Out: logo tim besar, nama tim jadi tulisan utama */
+.en-mk-card.team { grid-template-columns: 210px 0 1fr; }
+.en-mk-card.team .en-mk-logo { width: 180px; height: 180px; margin: 0 0 0 20px; }
+.en-mk-card.team .en-mk-photo { visibility: hidden; }
+.en-mk-card.team.red { grid-template-columns: 1fr 0 210px; }
+.en-mk-card.team.red .en-mk-logo { margin: 0 20px 0 0; }
+
+.en-calib .en-mk-card { opacity: 1; outline: 2px dashed #ffe600; }
