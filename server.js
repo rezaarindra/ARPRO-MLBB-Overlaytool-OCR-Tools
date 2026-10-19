@@ -1871,7 +1871,9 @@ function ocrGameSummary(withHistory) {
         live: !!ocrState.data && now - ocrState.at <= 15000,
         t: g.lastT, gold: g.cur, lead: g.cur ? g.cur.g1 - g.cur.g2 : null,
         kills: g.kills, lords: g.lords, objectives: ocrObjectives(g.lastT), marks: g.marks,
-        hints: g.hints.filter(h => now - h.at < 30000), log: g.log
+        hints: g.hints.filter(h => now - h.at < 30000), log: g.log,
+        // status saklar otomasi → OCR Control & strip LIVE OCR di Notif Control selalu sama
+        auto: { autoFirstBlood: ocrAuto.autoFirstBlood, autoLordSlain: ocrAuto.autoLordSlain, autoObjectiveSpawn: ocrAuto.autoObjectiveSpawn, multikillHints: ocrAuto.multikillHints, fillPlayerGold: ocrAuto.fillPlayerGold }
     };
     if (withHistory) s.history = g.cur && (!g.gold.length || g.gold[g.gold.length - 1].t < g.cur.t) ? [...g.gold, g.cur] : g.gold;
     return s;
@@ -1945,6 +1947,13 @@ app.get('/api/ocr/game', (req, res) => { res.json(ocrGameSummary(true)); });
 app.post('/api/ocr/game/reset', (req, res) => {
     ocrGame = newOcrGame();
     broadcast({ type: 'ocr_game_reset' });
+    res.json({ ok: true });
+});
+// saran multikill yang sudah ditayangkan / ditutup di satu halaman ikut hilang di halaman lain
+app.post('/api/ocr/hint/dismiss', (req, res) => {
+    const id = String((req.body || {}).id || '');
+    ocrGame.hints = ocrGame.hints.filter(h => h.id !== id);
+    broadcast({ type: 'ocr_game', data: ocrGameSummary(false) });
     res.json({ ok: true });
 });
 app.get('/api/ocr/auto', (req, res) => { res.json({ config: ocrAuto, defaults: defaultOcrAuto }); });

@@ -95,11 +95,28 @@
         .overlaytoollogo img { max-width: 100%; height: auto; }
     </style>
     <link rel="stylesheet" href="eventnotifcontrol.css">
+    <link rel="stylesheet" href="ocrlive.css">
 </head>
 <body>
     <div class="blob-container">
         <div class="blob"></div>
         <div class="blob"></div>
+    </div>
+    <!-- LIVE OCR: strip menempel di atas (script/ocrlive.js). Data sama dengan panel "5 · OTOMASI & GOLD" di OCR Control. -->
+    <div class="ox-bar" id="oxBar">
+        <div class="ox-row">
+            <span class="ox-title">LIVE OCR</span>
+            <span class="ox-live off" id="oxLive">OCR TIDAK AKTIF</span>
+            <span class="ox-cell"><small>WAKTU</small><b id="oxTime">–</b></span>
+            <span class="ox-cell ox-gold"><small>GOLD</small><b id="oxGold">–</b></span>
+            <span class="ox-obj" id="oxObj"></span>
+            <span class="ox-sp"></span>
+            <div class="ox-tog" id="oxTog"></div>
+            <button type="button" id="oxDing" title="Bunyi saat ada saran multikill">DING: ON</button>
+            <button type="button" id="oxReset" title="Reset data game OCR (grafik gold, timer objektif, first blood)">RESET GAME</button>
+        </div>
+        <div class="ox-hints" id="oxHints"></div>
+        <div class="ox-foot"><span id="oxMsg"></span><span id="oxLog"></span></div>
     </div>
     <!-- PLAYER NOTIFICATION: notifikasi bergrafis dengan foto, role & nickname pemain (overlay: notifdisplay.html / eventdisplay.html) -->
     <div class="pn-panel transparent-panel" id="pnPanel">
@@ -246,5 +263,6 @@
         });
     </script>
     <script src="script/eventnotifcontrol.js"></script>
+    <script src="script/ocrlive.js"></script>
 </body>
 </html>

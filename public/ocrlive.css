@@ -1,0 +1,96 @@
+/* ocrlive.css — strip "LIVE OCR" yang menempel di atas notifcontrol.html (script/ocrlive.js) */
+
+.ox-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    background: rgba(13, 15, 18, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color-opaque);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    font-family: 'Big Noodle Titling', sans-serif;
+    letter-spacing: 1px;
+}
+
+.ox-bar button {
+    width: auto;
+    padding: 6px 12px;
+    font-size: 1.05em;
+    letter-spacing: 1px;
+}
+.ox-bar button:hover { transform: none; }
+
+.ox-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding: 8px 20px;
+}
+
+.ox-title { font-size: 1.5em; font-style: oblique; color: var(--accent-color); padding-right: 4px; }
+
+.ox-live { font-size: 1.15em; padding: 4px 10px; border: 1px solid currentColor; white-space: nowrap; }
+.ox-live::before { content: '●'; margin-right: 6px; }
+.ox-live.on { color: var(--active-color); }
+.ox-live.stop { color: var(--red-side-accent); animation: oxBlink 1s steps(2, start) infinite; }
+.ox-live.off { color: #8a8a93; }
+
+.ox-cell { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.ox-cell small, .ox-chip small { font-size: 0.95em; opacity: 0.55; }
+.ox-cell b { font-weight: normal; font-size: 1.6em; }
+.ox-gold b i { font-style: normal; margin-left: 8px; }
+.ox-bar .b { color: var(--blue-side-accent); }
+.ox-bar .r { color: var(--red-side-accent); }
+
+.ox-obj { display: flex; gap: 8px; }
+.ox-chip { display: flex; align-items: baseline; gap: 8px; padding: 3px 10px; border: 1px solid var(--border-color-opaque); white-space: nowrap; }
+.ox-chip b { font-weight: normal; font-size: 1.45em; }
+.ox-chip.warn { border-color: #ffc94d; color: #ffc94d; background: rgba(255, 201, 77, 0.12); }
+.ox-chip.alive { border-color: var(--active-color); color: var(--active-color); background: rgba(0, 255, 140, 0.1); }
+
+.ox-bar.stale .ox-cell, .ox-bar.stale .ox-obj { opacity: 0.45; }
+
+.ox-sp { flex: 1; }
+.ox-tog { display: flex; gap: 6px; flex-wrap: wrap; }
+.ox-tog button, #oxDing { opacity: 0.6; }
+.ox-tog button::before, #oxDing::before { content: '○ '; }
+.ox-tog button.on, #oxDing.on { opacity: 1; border-color: var(--active-color); color: var(--active-color); background: rgba(0, 255, 140, 0.08); }
+.ox-tog button.on::before, #oxDing.on::before { content: '● '; }
+.ox-bar #oxReset { border-color: var(--red-side-accent); color: var(--red-side-accent); }
+
+.ox-foot { display: flex; gap: 18px; padding: 0 20px 6px; font-size: 1em; min-height: 1.2em; }
+.ox-foot #oxLog { opacity: 0.55; }
+.ox-foot #oxMsg { color: var(--active-color); }
+.ox-foot #oxMsg.err { color: var(--red-side-accent); }
+
+.ox-hints { display: flex; flex-direction: column; gap: 6px; padding: 0 20px 10px; }
+.ox-hints:empty { display: none; }
+.ox-hint {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    padding: 8px 12px;
+    border: 2px solid #ffb84d;
+    background: rgba(255, 184, 77, 0.14);
+    animation: oxHint 0.8s ease-in-out infinite alternate;
+}
+.ox-hint.blue { border-left: 8px solid var(--blue-side-accent); }
+.ox-hint.red { border-left: 8px solid var(--red-side-accent); }
+.ox-hint-t { flex: 1; font-size: 1.45em; }
+.ox-hint-t b { font-weight: normal; color: #ffb84d; }
+.ox-bar .ox-hint button { font-size: 1.25em; padding: 6px 16px; }
+.ox-bar .ox-hint button.pri { border-color: var(--accent-color); background: rgba(168, 85, 247, 0.55); }
+.ox-bar .ox-hint button.x { padding: 6px 12px; }
+
+.ox-pick { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; animation: none; }
+.ox-pick em { font-style: normal; opacity: 0.7; font-size: 1.1em; }
+.ox-bar .ox-pick button { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; }
+.ox-pick button img { width: 34px; height: 34px; object-fit: cover; object-position: 50% 15%; background: #1c1f26; }
+.ox-pick button small { opacity: 0.55; font-size: 0.8em; }
+.ox-pick button:disabled { opacity: 0.35; cursor: default; }
+
+@keyframes oxBlink { to { visibility: hidden; } }
+@keyframes oxHint {
+    from { background: rgba(255, 184, 77, 0.08); box-shadow: none; }
+    to { background: rgba(255, 184, 77, 0.3); box-shadow: 0 0 18px rgba(255, 184, 77, 0.55); }
+}

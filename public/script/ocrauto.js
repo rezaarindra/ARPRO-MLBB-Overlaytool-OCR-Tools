@@ -15,6 +15,10 @@
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     // saran multikill → notifikasi pemain (Player Notification): operator memilih pemain tim tersebut
     const EVENT = { 2: [['double_kill', 'DOUBLE KILL']], 3: [['triple_kill', 'TRIPLE KILL']], 4: [['maniac', 'MANIAC']], 5: [['savage', 'SAVAGE'], ['wipe_out', 'WIPE OUT']] };
+    // tombol VIDEO = video yang sama persis dengan tombol KILL STREAK di panel VIDEO NOTIFICATION (notifcontrol.html)
+    const VIDEO = { 2: [['videoPlayer8', 'VIDEO']], 3: [['videoPlayer9', 'VIDEO']], 4: [['videoPlayer10', 'VIDEO']], 5: [['videoPlayer11', 'VIDEO SAVAGE'], ['videoPlayer12', 'VIDEO WIPE OUT']] };
+    const dismiss = (id) => fetch('/api/ocr/hint/dismiss', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {});
+    let autoSeen = null;  // saklar diubah dari halaman lain (Notif Control) → centang di sini ikut berubah
     let picking = null;   // { id, side: 'blue'|'red', event, title }
     let roster = null;    // daftar pemain dari /api/eventnotif/players
     let lastData = null;
@@ -43,6 +47,11 @@
 
     function render(d) {
         if (!d) return;
+        if (d.auto) {
+            const key = JSON.stringify(d.auto);
+            if (autoSeen !== null && key !== autoSeen) for (const [id, k] of Object.entries(CHECKS)) if (k in d.auto) $(id).checked = !!d.auto[k];
+            autoSeen = key;
+        }
         const lines = [];
         if (d.gold) {
             const lead = d.lead, who = Math.abs(lead) < 100 ? 'IMBANG' : `${lead > 0 ? 'BIRU' : 'MERAH'} unggul ${fmtK(Math.abs(lead))}`;
@@ -63,7 +72,7 @@
             return `<div class="oa-hint ${side}">
                 <span>${h.side === 1 ? 'BIRU' : 'MERAH'} · ${h.count} kill beruntun → ${h.label}?</span>
                 ${(EVENT[h.count] || []).map(([ev, title]) => `<button class="primary" data-player="${ev}" data-title="${title}" data-side="${side}" data-id="${h.id}" title="Notifikasi pemain: foto, hero & logo tim">${EVENT[h.count].length > 1 ? title : 'PEMAIN'}</button>`).join('')}
-                <button data-play="${h.videoId}" data-id="${h.id}" title="Video saja tanpa data pemain">VIDEO</button>
+                ${(VIDEO[h.count] || [[h.videoId, 'VIDEO']]).map(([v, t]) => `<button data-play="${v}" data-id="${h.id}" title="Video saja tanpa data pemain (sama dengan panel Video Notification)">${t}</button>`).join('')}
                 <button data-id="${h.id}">✕</button>
                 ${pick}
             </div>`;
@@ -85,6 +94,7 @@
         if (b.dataset.pick != null && picking) {
             const body = { event: picking.event, side: picking.side, slot: +b.dataset.pick };
             dismissed.add(b.dataset.id);
+            dismiss(b.dataset.id);
             picking = null;
             b.closest('.oa-hint').remove();
             const res = await fetch('/api/eventnotif', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -92,6 +102,7 @@
             return;
         }
         dismissed.add(b.dataset.id);
+        dismiss(b.dataset.id);
         if (picking && picking.id === b.dataset.id) picking = null;
         if (b.dataset.play) await fetch('/api/notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ videoId: b.dataset.play }) });
         b.closest('.oa-hint').remove();
