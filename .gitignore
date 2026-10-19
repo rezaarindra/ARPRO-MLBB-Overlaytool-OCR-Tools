@@ -34,3 +34,7 @@ _original_player_photos/
 public/database/vod.json
 public/database/pause.json
 public/database/lang.json
+
+# salinan foto & logo dari SSC2027.id (dibuat otomatis oleh server)
+public/Assets/costum/ssc/*-*.*
+public/Assets/costum/ssc/index.json

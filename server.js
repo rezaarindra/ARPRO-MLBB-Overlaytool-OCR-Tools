@@ -2014,25 +2014,81 @@ async function sscFetchJson(url, timeoutMs) {
     return response.json();
 }
 
-// Logo diunduh sekali ke Assets/costum/ssc/ agar overlay tetap tampil walau internet sempat putus
-async function sscCacheLogo(url) {
-    if (!url) return '';
+// Logo & foto dari website disalin ke Assets/costum/ssc/ (overlay tetap tampil walau internet sempat putus).
+// Salinan dicek ulang ke website tiap SSC_MEDIA_TTL (ETag / Last-Modified → bila tidak berubah hampir tanpa unduhan).
+// Nama file = hash URL + hash ISI gambar → foto yang diganti di website (walau URL-nya sama) otomatis jadi file baru,
+// sehingga browser / OBS tidak memakai cache lama.
+const SSC_MEDIA_TTL = 2 * 60 * 1000;
+const sscMediaIndexPath = path.join(sscLogoDir, 'index.json');
+let sscMediaIndex = {};
+try { sscMediaIndex = JSON.parse(fsSync.readFileSync(sscMediaIndexPath, 'utf8')) || {}; } catch (e) {}
+const sscMediaPending = new Map();
+let sscMediaSaveTimer = null;
+function sscMediaSave() {
+    clearTimeout(sscMediaSaveTimer);
+    sscMediaSaveTimer = setTimeout(() => {
+        const payload = JSON.stringify(sscMediaIndex, null, 2);
+        fileQueue.enqueue(async () => { await fs.mkdir(sscLogoDir, { recursive: true }); await writeFileSafe(sscMediaIndexPath, payload); });
+    }, 500);
+}
+
+function sscCacheLogo(url, opts = {}) {
+    if (!url) return Promise.resolve('');
+    const ttl = opts.maxAge != null ? opts.maxAge : SSC_MEDIA_TTL;
+    const key = `${url}|${ttl}`;
+    if (!sscMediaPending.has(key)) sscMediaPending.set(key, sscCacheLogoRun(url, ttl).finally(() => sscMediaPending.delete(key)));
+    return sscMediaPending.get(key);
+}
+
+async function sscCacheLogoRun(url, ttl) {
+    const urlHash = crypto.createHash('sha1').update(url).digest('hex').slice(0, 16);
+    const entry = sscMediaIndex[url];
+    const have = entry && entry.file && fsSync.existsSync(path.join(sscLogoDir, entry.file));
+    if (have && Date.now() - (entry.checkedAt || 0) < ttl) return `/Assets/costum/ssc/${entry.file}`;
     try {
-        const hash = crypto.createHash('sha1').update(url).digest('hex').slice(0, 16);
-        const existing = fsSync.existsSync(sscLogoDir) ? (await fs.readdir(sscLogoDir)).find(f => f.startsWith(hash + '.')) : null;
-        if (existing) return `/Assets/costum/ssc/${existing}`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        const headers = {};
+        if (have && entry.etag) headers['If-None-Match'] = entry.etag;
+        if (have && entry.lastModified) headers['If-Modified-Since'] = entry.lastModified;
+        const response = await fetch(url, { headers, cache: 'no-store', signal: AbortSignal.timeout(8000) });
+        if (response.status === 304 && have) {
+            entry.checkedAt = Date.now();
+            sscMediaSave();
+            return `/Assets/costum/ssc/${entry.file}`;
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const type = response.headers.get('content-type') || '';
-        const ext = type.includes('jpeg') ? 'jpg' : type.includes('webp') ? 'webp' : type.includes('svg') ? 'svg' : 'png';
+        const ext = type.includes('jpeg') ? 'jpg' : type.includes('webp') ? 'webp' : type.includes('svg') ? 'svg' : type.includes('gif') ? 'gif' : 'png';
         const buffer = Buffer.from(await response.arrayBuffer());
-        await fs.mkdir(sscLogoDir, { recursive: true });
-        await fs.writeFile(path.join(sscLogoDir, `${hash}.${ext}`), buffer);
-        return `/Assets/costum/ssc/${hash}.${ext}`;
+        const file = `${urlHash}-${crypto.createHash('sha1').update(buffer).digest('hex').slice(0, 10)}.${ext}`;
+        if (!fsSync.existsSync(path.join(sscLogoDir, file))) {
+            await fs.mkdir(sscLogoDir, { recursive: true });
+            await fs.writeFile(path.join(sscLogoDir, file), buffer);
+        }
+        sscMediaIndex[url] = { file, etag: response.headers.get('etag') || '', lastModified: response.headers.get('last-modified') || '', checkedAt: Date.now() };
+        sscMediaSave();
+        return `/Assets/costum/ssc/${file}`;
     } catch (error) {
-        console.error('SSC logo cache error:', error.message);
+        console.error('SSC media cache error:', error.message);
+        if (have) return `/Assets/costum/ssc/${entry.file}`; // website tidak terjangkau → pakai salinan terakhir
+        // salinan model lama (nama = hash URL saja) masih bisa dipakai saat offline
+        try { const old = (await fs.readdir(sscLogoDir)).find(f => f.startsWith(urlHash + '.')); if (old) return `/Assets/costum/ssc/${old}`; } catch (e) {}
         return url; // tetap pakai URL asli
     }
+}
+
+// bersihkan salinan yang tidak dipakai lagi (foto lama yang sudah diganti) & lebih tua dari 3 hari
+async function sscMediaCleanup() {
+    try {
+        const used = new Set(Object.values(sscMediaIndex).map(e => e.file));
+        const mdText = JSON.stringify(cache.matchdata || {});
+        const cutoff = Date.now() - 3 * 24 * 3600 * 1000;
+        for (const f of await fs.readdir(sscLogoDir)) {
+            // hanya salinan model baru (hashURL-hashIsi.ext); file lama bawaan repo tidak disentuh
+            if (!/^[0-9a-f]{16}-[0-9a-f]{10}\.[a-z]+$/.test(f) || used.has(f) || mdText.includes(f)) continue;
+            const st = await fs.stat(path.join(sscLogoDir, f));
+            if (st.isFile() && st.mtimeMs < cutoff) await fs.unlink(path.join(sscLogoDir, f));
+        }
+    } catch (e) {}
 }
 
 // URL dataset lain dari link Data Live yang sama (mis. "pemain", "mvp", "sponsor")
@@ -2099,6 +2155,33 @@ async function sscApply(row) {
     sscState.lastSync = Date.now();
 }
 
+// Foto pemain & logo tim diperbarui berkala walau lineup tidak berubah (foto diganti di website).
+// Hanya field foto / logo dari SSC yang disentuh — nama, lane, hero & data lain yang diedit operator tidak ditimpa.
+async function sscRefreshMedia(row) {
+    const md = cache.matchdata;
+    if (!md || !md.teamdata || !md.ssc || !md.ssc.roster) return false;
+    const map = sscConfig.homeSide === 'red' ? { home: 'redteam', away: 'blueteam' } : { home: 'blueteam', away: 'redteam' };
+    const next = JSON.parse(JSON.stringify(md));
+    let changed = false;
+    for (const [side, key] of Object.entries(map)) {
+        const team = next.teamdata[key], url = row[`${side}_logo_url`];
+        if (url && team && (!team.logo || team.logo.startsWith('/Assets/costum/ssc/'))) {
+            const logo = await sscCacheLogo(url);
+            if (logo && logo !== team.logo) { team.logo = logo; changed = true; }
+        }
+        const roster = next.ssc.roster[key];
+        if (!roster || !Array.isArray(roster.players) || !row[`${side}_tim`]) continue;
+        const fresh = roster.players.map(p => ({ ...p }));
+        await sscAttachPhotos(row[`${side}_tim`], fresh);
+        fresh.forEach((p, i) => { if ((p.foto || '') !== (roster.players[i].foto || '')) { roster.players[i].foto = p.foto; changed = true; } });
+    }
+    if (changed) {
+        next.ssc.syncedAt = new Date().toISOString();
+        saveMatchData(next);
+    }
+    return changed;
+}
+
 async function sscCheck(force) {
     if (sscBusy) return;
     sscBusy = true;
@@ -2131,6 +2214,7 @@ async function sscCheck(force) {
             } else if (force || signature !== sscState.signature) {
                 sscState.signature = signature;
                 await sscApply(row);
+                sscState.lastMedia = Date.now();
                 sscState.status = 'synced';
             } else {
                 sscState.status = 'synced';
@@ -2142,8 +2226,19 @@ async function sscCheck(force) {
     } finally {
         sscBusy = false;
         sscBroadcast(force);
+        // tiap SSC_MEDIA_TTL: cek foto & logo di website. Di dalam finally karena cek lineup yang tidak berubah keluar lewat
+        // "return" lebih awal; berjalan di latar (tidak ditunggu) agar cek lineup tiap detik tidak tertahan.
+        const row = sscState.lineup;
+        if (row && !sscMediaBusy && !(sscConfig.lock && !force) && Date.now() - (sscState.lastMedia || 0) >= SSC_MEDIA_TTL) {
+            sscMediaBusy = true;
+            sscState.lastMedia = Date.now();
+            sscRefreshMedia(row).catch(e => console.error('SSC refresh foto:', e.message)).finally(() => { sscMediaBusy = false; });
+        }
     }
 }
+let sscMediaBusy = false;
+setTimeout(sscMediaCleanup, 60 * 1000);
+setInterval(sscMediaCleanup, 24 * 3600 * 1000);
 
 function sscLoop() {
     clearTimeout(sscTimer);
@@ -2184,6 +2279,8 @@ app.post('/api/ssc/config', async (req, res) => {
 // Sync paksa (tetap jalan walau "lock" aktif): menimpa nama tim, logo & nickname dengan data website
 app.post('/api/ssc/sync', async (req, res) => {
     if (!sscConfig.feedUrl) return res.status(400).json({ message: 'Isi link Data Live dulu.' });
+    // tombol sinkron manual: semua foto & logo dicek ulang ke website saat itu juga
+    for (const e of Object.values(sscMediaIndex)) e.checkedAt = 0;
     await sscCheck(true);
     res.status(sscState.status === 'error' ? 502 : 200).json({ config: sscConfig, state: sscPublicState() });
 });
