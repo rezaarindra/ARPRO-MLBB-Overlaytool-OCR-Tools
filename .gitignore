@@ -38,3 +38,6 @@ public/database/lang.json
 # salinan foto & logo dari SSC2027.id (dibuat otomatis oleh server)
 public/Assets/costum/ssc/*-*.*
 public/Assets/costum/ssc/index.json
+
+# output CSV untuk vMix (ditulis server)
+output/

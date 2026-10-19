@@ -1727,6 +1727,7 @@ app.post('/api/ocr/data', (req, res) => {
     Object.assign(ocrVmixLast, out);
     ocrAnalyze(out);
     ocrPlayerGold(out);
+    goldDiffSync();
     if (changed) broadcast({ type: 'ocr_update', data: out }); // scoreboard OCR langsung diperbarui (tanpa menunggu polling)
     res.json({ ok: true });
 });
@@ -1894,6 +1895,50 @@ function ocrPlayerGold(d) {
         }
     }
     if (changed) { ocrGoldAt = Date.now(); saveMatchData(next); }
+}
+
+// --- SELISIH GOLD UNTUK vMix (CSV): angka + selisih hanya di sisi tim yang unggul, sisi lain benar-benar kosong ---
+// URL : /ocr/selisih-kiri.csv & /ocr/selisih-kanan.csv (vMix › Data Sources › CSV › URL)
+// File: output/Selisih Tim Kiri.csv & output/Selisih Tim Kanan.csv (vMix › Data Sources › CSV › File)
+// Kiri = gold1 (tim biru, kiri HUD), kanan = gold2. Kedua sisi kosong bila selisih ≤ 100 gold atau OCR berhenti > 15 detik.
+const GOLD_DIFF_MIN = 100;
+const outputDir = path.join(__dirname, 'output');
+const GOLD_DIFF_FILES = { kiri: 'Selisih Tim Kiri.csv', kanan: 'Selisih Tim Kanan.csv' };
+let goldDiffLast = null;
+
+// 450 → "+450", 12345 → "+12.3K", 12000 → "+12K"
+function fmtGoldDiff(n) {
+    if (n < 1000) return `+${n}`;
+    const k = Math.round(n / 100) / 10;
+    return `+${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+}
+function goldDiffValues() {
+    const d = ocrState.data, none = { kiri: '', kanan: '' };
+    if (!d || Date.now() - ocrState.at > 15000) return none;
+    const g1 = goldNum(d.gold1), g2 = goldNum(d.gold2);
+    if (g1 == null || g2 == null) return none;
+    const diff = g1 - g2;
+    if (Math.abs(diff) <= GOLD_DIFF_MIN) return none;
+    return diff > 0 ? { kiri: fmtGoldDiff(diff), kanan: '' } : { kiri: '', kanan: fmtGoldDiff(-diff) };
+}
+// satu kolom "selisih", satu baris; sisi kosong = "" (baris tetap ada agar vMix mengosongkan field, bukan menahan nilai lama)
+const goldDiffCsv = (v) => `selisih\r\n"${v}"\r\n`;
+function goldDiffSync() {
+    const v = goldDiffValues(), key = JSON.stringify(v);
+    if (key === goldDiffLast) return;
+    goldDiffLast = key;
+    fileQueue.enqueue(async () => {
+        await fs.mkdir(outputDir, { recursive: true });
+        for (const [side, file] of Object.entries(GOLD_DIFF_FILES)) await writeFileSafe(path.join(outputDir, file), goldDiffCsv(v[side]));
+    });
+}
+goldDiffSync();
+setInterval(goldDiffSync, 2000); // OCR berhenti → kedua sisi kosong setelah 15 detik
+for (const side of ['kiri', 'kanan']) {
+    app.get(`/ocr/selisih-${side}.csv`, (req, res) => {
+        res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.send(goldDiffCsv(goldDiffValues()[side]));
+    });
 }
 
 app.get('/api/ocr/game', (req, res) => { res.json(ocrGameSummary(true)); });
