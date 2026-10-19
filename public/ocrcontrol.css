@@ -118,3 +118,4 @@ select:focus, input:focus { outline: none; border-color: var(--accent); }
 .oc-name { width: 130px; padding: 4px 6px; font: 700 13px Consolas, monospace; }
 .oc-del { padding: 3px 8px; font-size: 11px; }
 .oc-del:hover { border-color: var(--bad) !important; color: var(--bad); }
+.oc-add label.oc-small { flex: none; min-width: 0; }

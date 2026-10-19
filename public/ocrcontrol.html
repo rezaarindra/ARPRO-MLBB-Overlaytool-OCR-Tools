@@ -22,19 +22,20 @@
 
     <main class="oc-main">
         <section class="oc-stage">
-            <div class="oc-canvas-wrap" id="ocWrap">
-                <canvas id="ocView" width="1920" height="1080"></canvas>
-                <div class="oc-empty" id="ocEmpty">Pilih sumber gambar di panel kanan, lalu klik <b>HUBUNGKAN</b>.</div>
-            </div>
-            <div class="oc-hint">Geser kotak untuk memindahkan · tarik sudut kanan-bawah untuk mengubah ukuran · kotak harus memuat <b>angka / teksnya saja</b> (tanpa ikon).</div>
             <div class="oc-add">
-                <select id="ocAddType" title="Jenis yang akan dibaca kotak baru">
+                <label class="oc-small" for="ocAddType"><b>KOTAK OCR TAMBAHAN</b> · jenis:</label>
+                <select id="ocAddType" title="Jenis yang dibaca kotak baru">
                     <option value="gold">Gold</option><option value="number">Angka</option><option value="text">Teks (nickname, dll.)</option><option value="timer">Timer</option>
                 </select>
                 <button id="ocAdd">+ TAMBAH KOTAK</button>
                 <button id="ocAddGold">+ SET GOLD 10 PEMAIN</button>
-                <span class="oc-small">Kotak tambahan ikut terkirim ke <b>/ocr/MLBB.json</b> &amp; <b>/ocr/vmix.json</b> dengan namanya sendiri. Jangan lupa <b>SIMPAN</b> profil.</span>
+                <span class="oc-small">Atau <b>tarik di area kosong gambar</b> untuk menggambar kotak langsung. Hasil ikut terkirim ke <b>/ocr/MLBB.json</b> &amp; <b>/ocr/vmix.json</b>. Jangan lupa <b>SIMPAN</b> profil.</span>
             </div>
+            <div class="oc-canvas-wrap" id="ocWrap">
+                <canvas id="ocView" width="1920" height="1080"></canvas>
+                <div class="oc-empty" id="ocEmpty">Pilih sumber gambar di panel kanan, lalu klik <b>HUBUNGKAN</b>.</div>
+            </div>
+            <div class="oc-hint">Geser kotak untuk memindahkan · tarik sudut kanan-bawah untuk mengubah ukuran · tarik di area kosong = kotak baru · kotak harus memuat <b>angka / teksnya saja</b> (tanpa ikon).</div>
 
             <table class="oc-table">
                 <thead><tr><th></th><th>Data</th><th>Tipe</th><th>Gambar yang dibaca mesin</th><th>Hasil</th><th>Kecerahan teks</th><th>Teks gelap</th><th></th></tr></thead>

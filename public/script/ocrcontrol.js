@@ -305,6 +305,12 @@
                 return;
             }
         }
+        // area kosong: tarik untuk menggambar kotak baru (jenis = pilihan "Jenis kotak baru")
+        const type = $('ocAddType').value;
+        const n = state.regions.length;
+        const r = addRegion({ label: { gold: 'gold_player', number: 'angka', timer: 'timer_custom', text: 'teks' }[type], type, x: p.x, y: p.y, w: 10, h: 10 });
+        drag = { i: n, mode: 'create', sx: p.x, sy: p.y, r0: { ...r } };
+        state.sel = n;
     });
     window.addEventListener('mousemove', (e) => {
         const p = toFrame(e);
@@ -314,11 +320,23 @@
             return;
         }
         const r = state.regions[drag.i], dx = Math.round(p.x - drag.sx), dy = Math.round(p.y - drag.sy);
-        if (drag.mode === 'move') { r.x = drag.r0.x + dx; r.y = drag.r0.y + dy; }
+        if (drag.mode === 'create') {
+            r.x = Math.round(Math.min(drag.sx, p.x)); r.y = Math.round(Math.min(drag.sy, p.y));
+            r.w = Math.max(10, Math.abs(dx)); r.h = Math.max(10, Math.abs(dy));
+        } else if (drag.mode === 'move') { r.x = drag.r0.x + dx; r.y = drag.r0.y + dy; }
         else { r.w = Math.max(10, drag.r0.w + dx); r.h = Math.max(10, drag.r0.h + dy); }
         r.x = Math.max(0, Math.min(E.FRAME_W - r.w, r.x)); r.y = Math.max(0, Math.min(E.FRAME_H - r.h, r.y));
     });
-    window.addEventListener('mouseup', () => { if (drag) { drag = null; if (!state.running) previewOnly(); } });
+    window.addEventListener('mouseup', () => {
+        if (!drag) return;
+        if (drag.mode === 'create') {
+            const r = state.regions[drag.i];
+            if (r.w < 14 || r.h < 10) { state.regions.splice(drag.i, 1); state.sel = Math.min(state.sel, state.regions.length - 1); } // hanya klik → batal
+            buildRows();
+        }
+        drag = null;
+        if (!state.running) previewOnly();
+    });
 
     // tombol panah: geser kotak terpilih 1 px (Shift = 10 px)
     window.addEventListener('keydown', (e) => {
