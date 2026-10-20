@@ -1986,15 +1986,17 @@ function goldDiffValues() {
     if (Math.abs(diff) <= GOLD_DIFF_MIN) return none;
     return diff > 0 ? { kiri: fmtGoldDiff(diff), kanan: '' } : { kiri: '', kanan: fmtGoldDiff(-diff) };
 }
-// satu kolom "selisih", satu baris; sisi kosong = "" (baris tetap ada agar vMix mengosongkan field, bukan menahan nilai lama)
-const goldDiffCsv = (v) => `selisih\r\n"${v}"\r\n`;
+// Column1 = selisih (kosong bila tim ini tidak unggul), Column2 = penanda tim. vMix membuang baris yang seluruhnya kosong,
+// jadi Column2 (KIRI / KANAN) menjaga baris ke-2 tetap ada → title vMix diikat ke Column1 baris 2 & bisa benar-benar kosong.
+const GOLD_DIFF_TAG = { kiri: 'KIRI', kanan: 'KANAN' };
+const goldDiffCsv = (v, side) => `selisih,tim\r\n${v},${GOLD_DIFF_TAG[side]}\r\n`;
 function goldDiffSync() {
     const v = goldDiffValues(), key = JSON.stringify(v);
     if (key === goldDiffLast) return;
     goldDiffLast = key;
     fileQueue.enqueue(async () => {
         await fs.mkdir(outputDir, { recursive: true });
-        for (const [side, file] of Object.entries(GOLD_DIFF_FILES)) await writeFileSafe(path.join(outputDir, file), goldDiffCsv(v[side]));
+        for (const [side, file] of Object.entries(GOLD_DIFF_FILES)) await writeFileSafe(path.join(outputDir, file), goldDiffCsv(v[side], side));
     });
 }
 goldDiffSync();
@@ -2002,7 +2004,7 @@ setInterval(goldDiffSync, 2000); // OCR berhenti → kedua sisi kosong setelah 1
 for (const side of ['kiri', 'kanan']) {
     app.get(`/ocr/selisih-${side}.csv`, (req, res) => {
         res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store' });
-        res.send(goldDiffCsv(goldDiffValues()[side]));
+        res.send(goldDiffCsv(goldDiffValues()[side], side));
     });
 }
 
