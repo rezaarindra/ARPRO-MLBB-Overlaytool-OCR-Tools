@@ -206,6 +206,8 @@ Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple K
 
 `lineupdisplay.html` (Browser Source 1920×1080): dua baris pemain (foto, hero, nickname, **spell**). Tombol **TAMPILKAN STATISTIK** ada di **area putih di bawah tampilan** (di luar 1920×1080, tidak ikut tertangkap OBS / vMix), juga di Control Panel › Lineup Overlay dan Stream Deck (`/api/companion/lineup-stats-show` / `-hide`). Butuh 10 hero; tertutup otomatis saat draft dikosongkan.
 
+**Logo sponsor** (baris "SUPPORTED BY"): taruh PNG transparan di `public/Assets/sponsor/` dengan awalan urutan (`01-...png`, `02-...png`). Bila folder berisi logo, daftar ini menggantikan sponsor dari feed SSC. Potong ruang kosong di sekeliling logo agar tampil besar.
+
 | Statistik | Dasar perhitungan |
 |---|---|
 | Early to Mid / Late Game | Potensi fase game tiap hero + role (assassin / jungle cepat, marksman late) |

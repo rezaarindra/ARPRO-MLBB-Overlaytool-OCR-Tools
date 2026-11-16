@@ -347,6 +347,54 @@ body.ssc-ui[data-sc-page^="control"] .ssct-pick button[data-side="blue"] { color
 body.ssc-ui[data-sc-page^="control"] .ssct-pick button[data-side="red"] { color: #E0253F; }
 body.ssc-ui[data-sc-page^="control"] .ssct-wrap { background: var(--sc-panel-solid); }
 body.ssc-ui[data-sc-page^="control"] .ig-ctl-msg { color: var(--sc-green); }
+
+/* Tata letak responsif Control Panel: tanpa trik scale 0.7 + kotak 2500 px (dulu melebar keluar layar
+   setelah ada kolom spell). Kotak mengikuti lebar layar; sisi biru & merah berdampingan bila muat,
+   otomatis bertumpuk bila tidak; layar sempit → kolom 2×2 → 1 kolom. */
+body.ssc-ui[data-sc-page^="control"] { overflow-x: hidden; }
+body.ssc-ui[data-sc-page^="control"] .content-wrapper { scale: none; font-size: 13px; padding: 0 16px 24px; }
+body.ssc-ui[data-sc-page^="control"] h1 { font-size: 3em; margin: 14px 0 6px; }
+body.ssc-ui[data-sc-page^="control"] h2 { font-size: 1.9em; margin: 14px 0 8px; }
+body.ssc-ui[data-sc-page^="control"] .button { flex-wrap: wrap; margin: 10px 0 16px; }
+body.ssc-ui[data-sc-page^="control"] .timercontrol { flex-wrap: wrap; margin: 10px 0; }
+body.ssc-ui[data-sc-page^="control"] .mainbox {
+    width: 100%; max-width: 1880px; box-sizing: border-box;
+    flex-wrap: wrap; flex-direction: row; gap: 16px; padding: 12px;
+}
+body.ssc-ui[data-sc-page^="control"] .blueside,
+body.ssc-ui[data-sc-page^="control"] .redside { flex: 1 1 820px; min-width: 0; box-sizing: border-box; padding: 12px; gap: 12px; flex-direction: row; }
+body.ssc-ui[data-sc-page^="control"] .section-card { min-width: 0; }
+body.ssc-ui[data-sc-page^="control"] .section-card:nth-of-type(1) { flex: 1.1 1 0; }
+body.ssc-ui[data-sc-page^="control"] .section-card:nth-of-type(2) { flex: 2.15 1 0; }
+body.ssc-ui[data-sc-page^="control"] .section-card:nth-of-type(3),
+body.ssc-ui[data-sc-page^="control"] .section-card:nth-of-type(4) { flex: 1.2 1 0; }
+body.ssc-ui[data-sc-page^="control"] .namebox { font-size: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.ssc-ui[data-sc-page^="control"] input[type="text"],
+body.ssc-ui[data-sc-page^="control"] .lane-dropdown { height: 34px; min-width: 0; font-size: 1em; }
+body.ssc-ui[data-sc-page^="control"] .name-box { gap: 4px; }
+body.ssc-ui[data-sc-page^="control"] .name-box input[type="text"] { flex: 1 1 60px; }
+body.ssc-ui[data-sc-page^="control"] .lane-dropdown { flex: 0 0 74px; width: 74px; padding: 0 4px; }
+body.ssc-ui[data-sc-page^="control"] .lane-dropdown.spell-dropdown { flex-basis: 86px; width: 86px; }
+body.ssc-ui[data-sc-page^="control"] .name-box button { flex: 0 0 44px; width: 44px; height: 34px; }
+body.ssc-ui[data-sc-page^="control"] .dropdown-container { gap: 6px; margin-bottom: 8px; }
+body.ssc-ui[data-sc-page^="control"] .dropdown-container input[type="text"] { flex: 1 1 auto; width: auto; }
+body.ssc-ui[data-sc-page^="control"] .dropdown-container .swap-button { flex: 0 0 auto; padding: 0 10px; height: 34px; }
+body.ssc-ui[data-sc-page^="control"] .container { padding: 8px; min-width: 0; }
+body.ssc-ui[data-sc-page^="control"] input[type="file"] { max-width: 100%; font-size: 0.9em; }
+body.ssc-ui[data-sc-page^="control"] .ctl-split { max-width: 1880px; padding: 0; gap: 24px; width: 100%; }
+body.ssc-ui[data-sc-page^="control"] .ssct-wrap { overflow-x: auto; }
+body.ssc-ui[data-sc-page^="control"] .ig-ctl select { flex: 0 1 260px; width: 260px; min-width: 180px; max-width: 100%; }
+body.ssc-ui[data-sc-page^="control"] .overlaytoollogo img { max-width: min(100%, 520px); }
+@media (max-width: 900px) {
+    body.ssc-ui[data-sc-page^="control"] .blueside,
+    body.ssc-ui[data-sc-page^="control"] .redside { flex-wrap: wrap; }
+    body.ssc-ui[data-sc-page^="control"] .section-card:nth-of-type(n) { flex: 1 1 calc(50% - 12px) !important; }
+}
+@media (max-width: 560px) {
+    body.ssc-ui[data-sc-page^="control"] .content-wrapper { padding: 0 10px 20px; }
+    body.ssc-ui[data-sc-page^="control"] .section-card:nth-of-type(n) { flex-basis: 100% !important; }
+    body.ssc-ui[data-sc-page^="control"] h1 { font-size: 2.3em; }
+}
 body.ssc-ui input[type="file"] { background: var(--sc-field) !important; color: var(--sc-text) !important; border: 1px solid var(--sc-line-strong) !important; border-radius: 10px; }
 
 /* ---------- Notif Control (notifcontrol.html + eventnotifcontrol.css + ocrlive.css) ---------- */
@@ -543,3 +591,69 @@ body.ssc-ui[data-sc-page="costumoverlaycontrol"] select:hover, body.ssc-ui[data-
 body.ssc-ui[data-sc-page="costumoverlaycontrol"] .btn-file, body.ssc-ui[data-sc-page="costumoverlaycontrol"] .btn-cancel-modal { background: var(--sc-panel-solid); color: var(--sc-text); border: 1px solid var(--sc-line-strong); }
 body.ssc-ui[data-sc-page="costumoverlaycontrol"] input[type="checkbox"] { background: var(--sc-panel-solid); border-color: var(--sc-line-strong); }
 body.ssc-ui[data-sc-page="costumoverlaycontrol"] .card { box-shadow: inset 0 1px 0 var(--sc-hi), var(--sc-shadow); border-color: rgba(106, 47, 214, 0.16); }
+
+/* ===================== 3. Responsif (semua halaman control bertema SSC) =====================
+   Firefox tidak menyusutkan input di grid "1fr 1fr" (lebar bawaan input ±20 huruf) → input keluar kartu.
+   Semua isian boleh menyusut; grid 2 / 4 kolom memakai minmax(0, 1fr). */
+body.ssc-ui :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { min-width: 0; max-width: 100%; box-sizing: border-box; }
+body.ssc-ui :where(.oc-grid2, .oc-grid4) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.ssc-ui :where(.oc-grid2, .oc-grid4) > * { min-width: 0; }
+body.ssc-ui :where(.oc-grid2, .oc-grid4) :where(input, select) { width: 100%; }
+body.ssc-ui :where(.oc-card, .oc-side, .oc-main > *) { min-width: 0; }
+/* Custom Overlay: bar sendiri dulu bermargin -20 px → halaman bisa digeser ke samping */
+body.ssc-ui .sticky-header.sc-ownhead { margin-left: 0; margin-right: 0; }
+/* Caster Dashboard: kolom tengah 440 px membuat tim merah keluar layar di 1000–1200 px */
+body.ssc-ui[data-sc-page="casterdashboard"] .cd-top { grid-template-columns: minmax(0, 1fr) minmax(300px, 440px) minmax(0, 1fr); }
+body.ssc-ui[data-sc-page="casterdashboard"] .cd-team > * { min-width: 0; }
+@media (max-width: 1200px) {
+    body.ssc-ui[data-sc-page="casterdashboard"] .cd-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    body.ssc-ui[data-sc-page="casterdashboard"] .cd-center { grid-column: 1 / -1; order: -1; }
+}
+@media (max-width: 700px) {
+    body.ssc-ui[data-sc-page="casterdashboard"] .cd-top { grid-template-columns: minmax(0, 1fr); }
+}
+/* Layar sempit (tablet kecil / HP) */
+@media (max-width: 760px) {
+    .sct-actions .sc-link { padding: 0 10px; }
+    .sct-actions .sc-link { font-size: 0; gap: 0; }
+    .sct-actions .sc-link svg { width: 18px; height: 18px; }
+    .sc-topbar { gap: 10px; padding: 0 12px; }
+    .sc-topbar .sc-badge { padding: 0 6px; }
+    body.ssc-ui .oc-head.sc-ownhead { flex-wrap: wrap; height: auto; row-gap: 6px; padding-top: 8px; padding-bottom: 8px; }
+    body.ssc-ui .sticky-header.sc-ownhead .header-content { flex-wrap: wrap; }
+    body.ssc-ui :where(.oc-main) { padding-left: 10px; padding-right: 10px; }
+    body.ssc-ui :where(.oc-row, .bc-row, .oc-add, .ox-row, .ox-foot, .ox-ctl) { flex-wrap: wrap; }
+    body.ssc-ui :where(.oc-add .oc-small) { min-width: 0; flex-basis: 100%; }
+    body.ssc-ui :where(.oc-card) { overflow-wrap: anywhere; }
+    body.ssc-ui :where(table) { display: block; max-width: 100%; overflow-x: auto; }
+    /* grid kartu dengan kolom minimal 420–460 px → 1 kolom */
+    body.ssc-ui :where(.bc-main, .tc-main, .cp-main) { grid-template-columns: minmax(0, 1fr); padding-left: 10px; padding-right: 10px; }
+    body.ssc-ui :where(.cp-item) { grid-template-columns: minmax(0, 1fr) auto; }
+    body.ssc-ui :where(.cp-item) > :first-child { grid-column: 1 / -1; }
+    body.ssc-ui :where(.tc-match) { font-size: 20px; }
+    body.ssc-ui :where(.oc-grid4[style*="repeat(5"]) { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    /* Notif Control: strip LIVE OCR */
+    body.ssc-ui :where(.ox-row) { padding-left: 10px; padding-right: 10px; }
+    body.ssc-ui :where(.ox-ctl) { margin-left: 0; min-width: 0; max-width: 100%; }
+    body.ssc-ui :where(.ox-tog) { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; max-width: 100%; }
+    body.ssc-ui :where(.ox-tog button, .ox-ctl button) { white-space: normal; }
+    body.ssc-ui :where(.ox-foot) { padding-left: 10px; padding-right: 10px; flex-wrap: wrap; overflow-wrap: anywhere; }
+    body.ssc-ui :where(.ox-foot) > * { min-width: 0; }
+    /* Notif Control: panel notifikasi (eventnotifcontrol.css) */
+    body.ssc-ui[data-sc-page="notifcontrol"] :where(.pn-body, .pn-actions, .pn-teams, .vn-grid) > * { min-width: 0; }
+    body.ssc-ui[data-sc-page="notifcontrol"] :where(.pn-actions) { grid-template-columns: minmax(0, 1fr); }
+    body.ssc-ui[data-sc-page="notifcontrol"] :where(.pn-actions.pn-mk, .vn-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    body.ssc-ui[data-sc-page="notifcontrol"] :where(.pn-actions button, .pn-label, .pn-actions b, .pn-actions small) { overflow-wrap: anywhere; white-space: normal; min-width: 0; }
+    body.ssc-ui[data-sc-page="notifcontrol"] :where(.pn-foot button) { width: auto; flex: 1 1 120px; }
+    /* Postgame */
+    body.ssc-ui[data-sc-page="postgamecontrol"] .info-group { min-width: 0; flex: 1 1 140px; }
+    body.ssc-ui[data-sc-page="postgamecontrol"] :where(.game-info-panel, .winner-panel) { flex-wrap: wrap; }
+    body.ssc-ui[data-sc-page="postgamecontrol"] .win-btn, body.ssc-ui[data-sc-page="postgamecontrol"] .win-btn.save { width: auto; flex: 1 1 140px; }
+    body.ssc-ui[data-sc-page="postgamecontrol"] .stats-group { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    body.ssc-ui[data-sc-page="postgamecontrol"] .container { padding-left: 10px; padding-right: 10px; }
+    /* Hub */
+    body.ssc-ui[data-sc-page="hub"] .main-content { padding: 20px 14px; min-width: 0; }
+    body.ssc-ui[data-sc-page="hub"] .page-title { font-size: 2.1rem; overflow-wrap: anywhere; }
+    body.ssc-ui[data-sc-page="hub"] .tools-grid { grid-template-columns: minmax(0, 1fr); }
+    body.ssc-ui[data-sc-page="hub"] .modal-box { max-width: calc(100vw - 24px); box-sizing: border-box; }
+}

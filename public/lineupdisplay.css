@@ -408,7 +408,7 @@ body.bg-dark .lu-map { color: var(--ssc-yellow); }
 .lu-sponsors-label { font-family: var(--ssc-font-marker); font-size: 20px; color: var(--ssc-ink); }
 body.bg-dark .lu-sponsors-label { color: #fff; }
 .lu-sponsors-logos { display: flex; align-items: center; gap: 26px; padding: 8px 22px; background: rgba(255, 255, 255, 0.88); border: 3px solid var(--ssc-ink); border-radius: 999px; }
-.lu-sponsors-logos img { height: 46px; max-width: 160px; object-fit: contain; }
+.lu-sponsors-logos img { height: 48px; max-width: 260px; object-fit: contain; }
 
 /* ---------- Tampil / sembunyi ---------- */
 .lu-root.is-visible .lu-header { opacity: 1; transform: translateY(0); }

@@ -2749,7 +2749,24 @@ app.get('/api/ssc/mvp', async (req, res) => {
 
 // Logo sponsor (dataset "sponsor") untuk banner MVP; logo disimpan lokal, daftar di-cache 5 menit
 let sscSponsorCache = { key: '', at: 0, list: [] };
+// Logo sponsor lokal: public/Assets/sponsor/*.png|jpg|webp|svg (urut nama file, mis. 01-..., 02-...).
+// Bila folder berisi logo, daftar ini yang dipakai overlay (menggantikan sponsor dari feed SSC).
+function localSponsors() {
+    try {
+        const dir = path.join(__dirname, 'public', 'Assets', 'sponsor');
+        return fsSync.readdirSync(dir)
+            .filter(f => /\.(png|jpe?g|webp|svg)$/i.test(f))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+            .map(f => ({
+                nama: f.replace(/\.[^.]+$/, '').replace(/^\d+[-_ ]*/, '').replace(/[-_]+/g, ' '),
+                logo: `/Assets/sponsor/${encodeURIComponent(f)}`
+            }));
+    } catch (e) { return []; }
+}
+
 app.get('/api/ssc/sponsors', async (req, res) => {
+    const local = localSponsors();
+    if (local.length) return res.json({ list: local, source: 'local' });
     if (!sscConfig.feedUrl) return res.json({ list: [] });
     try {
         const u = sscDatasetUrl('sponsor');
