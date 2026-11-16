@@ -1,0 +1,7 @@
+Huruf tema SSC 2027 ("Poster Arena") — semua berlisensi SIL Open Font License 1.1 (teks lisensi: OFL.txt)
+
+Bangers-latin.woff2          Bangers            (c) Vernon Adams          judul & angka besar
+Rubik-latin.woff2            Rubik (400–800)    (c) The Rubik Project Authors   teks, tombol, label
+PermanentMarker-latin.woff2  Permanent Marker   (c) Font Diner           label aksen pendek
+
+Dipakai oleh ssc-theme.css (overlay lineup & statistik) dan ssc-control.css (halaman control).

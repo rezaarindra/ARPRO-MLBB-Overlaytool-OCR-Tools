@@ -173,7 +173,7 @@
         try {
             const [list, t] = await Promise.all([get('/api/tournament/milestones'), get('/api/tournament')]);
             $('msAuto').checked = t.autoMilestones !== false;
-            $('msList').innerHTML = list.map(m => `<tr><td><b style="color:#ffcf4a">${esc(m.title)}</b><br>${esc(m.text)}<br><span style="color:var(--muted)">${esc([m.player, m.team].filter(Boolean).join(' · '))}</span></td>
+            $('msList').innerHTML = list.map(m => `<tr><td><b style="color:var(--gold, #ffcf4a)">${esc(m.title)}</b><br>${esc(m.text)}<br><span style="color:var(--muted)">${esc([m.player, m.team].filter(Boolean).join(' · '))}</span></td>
                 <td style="width:80px"><button data-ms="${esc(m.id)}">TAYANG</button></td></tr>`).join('') || '<tr><td style="color:var(--muted)">Belum ada rekor / milestone.</td></tr>';
         } catch (e) {}
     }

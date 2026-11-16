@@ -177,6 +177,12 @@
         .styled-panel { background: rgba(0,0,0,0.25); border: 1px solid var(--glass-border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
         .styled-panel.qr-panel { flex-grow: 1; align-items: center; justify-content: center; border-top: 4px solid var(--accent-primary); }
         .styled-panel.links-panel { flex-grow: 1; }
+        .styled-panel.hub-observer { flex-direction: row; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; }
+        .hub-observer > div { display: flex; flex-direction: column; gap: 4px; min-width: 260px; flex: 1; }
+        .hub-observer b { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: 1px; }
+        .hub-observer span { color: var(--text-muted); font-size: 0.92rem; }
+        .hub-observer a:not(.btn-visit) { color: inherit; font-weight: 700; }
+        .hub-observer .btn-visit { text-decoration: none; white-space: nowrap; }
         .panel-title { font-family: var(--font-display); font-size: 2rem; letter-spacing: 1px; margin: 0 0 15px 0; text-align: center; }
 
         /* Sync Progress Styles */
@@ -279,8 +285,12 @@
         ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #52525b; }
     </style>
+    <!-- tema SSC 2027 (Design.md) -->
+    <link rel="stylesheet" href="/ssc-theme.css">
+    <link rel="stylesheet" href="/ssc-control.css">
+    <script src="/script/ssc-control.js"></script>
 </head>
-<body>
+<body data-sc-nobar>
 
     <div class="ambient-bg"></div>
     <div class="blob-container">
@@ -332,6 +342,14 @@
             <div class="page-header">
                 <h1 class="page-title">Control Hub</h1>
                 <div class="page-subtitle">Manage game states, scores, and drafting phases.</div>
+            </div>
+            <!-- ARPRO OCR Observer: aplikasi OCR untuk PC observer (kode pasangan di OCR Control PC server) -->
+            <div class="styled-panel hub-observer">
+                <div>
+                    <b>ARPRO OCR OBSERVER</b>
+                    <span>Aplikasi OCR untuk PC observer: data OCR dikirim langsung ke tool lewat jaringan. Isi IP server &amp; kode pasangan dari <a href="ocrcontrol.html" target="_blank">OCR Control</a> (kartu 6).</span>
+                </div>
+                <a class="btn-visit" href="/download/ocr-observer">UNDUH OCR OBSERVER (.exe)</a>
             </div>
             <div class="tools-grid" id="controlGrid"></div>
         </div>
@@ -477,7 +495,7 @@
         let wsClient = null;
 
         // --- DATA FILES ---
-        const controlFiles = ['control.html', 'controlban6.html', 'drawcontrol.html', 'notifcontrol.html', 'postgamecontrol.html', 'schedulecontrol.html', 'costumoverlaycontrol.html', 'ocrcontrol.html', 'tournamentcontrol.html', 'casterdashboard.html', 'socialcard.html', 'vodtimeline.html', 'broadcastcontrol.html', 'companion.html'];
+        const controlFiles = ['control.html', 'controlban6.html', 'drawcontrol.html', 'notifcontrol.html', 'postgamecontrol.html', 'schedulecontrol.html', 'costumoverlaycontrol.html', 'ocrcontrol.html', 'tournamentcontrol.html', 'casterdashboard.html', 'socialcard.html', 'vodtimeline.html', 'broadcastcontrol.html', 'companion.html', 'lineupstats.html'];
         const displayFiles = ['display.html', 'display2.html', 'displaycostum.html', 'displayban6.html', 'display2ban6.html', 'displaycostumban6.html', 'postdraft.html', 'postdraft2.html', 'postdraftcostum.html', 'scoreboard.html', 'scoreboardcostum.html','scoreboardocr.html','scoreboardcostumocr.html', 'goldlead.html', 'goldgraph.html', 'herostats.html', 'leaderboard.html', 'standings.html', 'bracket.html', 'h2h.html', 'draftspotlight.html', 'profile.html', 'seriesrecap.html', 'milestone.html', 'pause.html', 'draftanalysis.html', 'previousdraft.html', 'notifdisplay.html', 'builds.html', 'globalban.html', 'lineupdisplay.html', 'ingamedisplay.html', 'eventdisplay.html'];
         const utilityFiles = ['postgame.html', 'mvpdisplay.html', 'scheduledisplay.html', 'drawdisplay.html', 'drawdisplay2.html', 'drawdisplay3.html', 'drawfinal.html'];
 

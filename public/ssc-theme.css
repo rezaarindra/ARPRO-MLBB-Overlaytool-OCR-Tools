@@ -1,0 +1,30 @@
+/* ssc-theme.css — token tema SSC 2027 "Poster Arena" (Design.md): huruf, warna, garis 5 warna.
+   Dipakai overlay lineup & statistik (lineupdisplay.html) dan halaman control (ssc-control.css). */
+
+@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: block; src: url('Assets/Font/ssc/Bangers-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Rubik'; font-style: normal; font-weight: 400 800; font-display: block; src: url('Assets/Font/ssc/Rubik-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Permanent Marker'; font-style: normal; font-weight: 400; font-display: block; src: url('Assets/Font/ssc/PermanentMarker-latin.woff2') format('woff2'); }
+
+:root {
+    --ssc-yellow: #FFE01C;
+    --ssc-pink: #FF2B8A;
+    --ssc-red: #FF2D2D;
+    --ssc-blue: #1BA0FF;
+    --ssc-green: #7ED957;
+    --ssc-purple: #6A2FD6;
+    --ssc-purple-light: #8A40FF;
+    --ssc-purple-rail: #3A1796;
+    --ssc-amber: #FFC641;
+    --ssc-orange: #FF8333;
+    --ssc-pink-soft: #FF83BA;
+    --ssc-magenta: #B3155A;
+    --ssc-cream: #FFF3C8;
+    --ssc-ink: #170B36;
+    --ssc-night: #150A33;
+    --ssc-night-2: #20104A;
+    --ssc-stripe: linear-gradient(90deg,
+        #FFE01C 0 20%, #FF2B8A 20% 40%, #FF2D2D 40% 60%, #1BA0FF 60% 80%, #7ED957 80% 100%);
+    --ssc-font-title: 'Bangers', 'Rubik', sans-serif;
+    --ssc-font-text: 'Rubik', 'Segoe UI', sans-serif;
+    --ssc-font-marker: 'Permanent Marker', 'Rubik', sans-serif;
+}

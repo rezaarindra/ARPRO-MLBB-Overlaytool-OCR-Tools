@@ -119,3 +119,13 @@ select:focus, input:focus { outline: none; border-color: var(--accent); }
 .oc-del { padding: 3px 8px; font-size: 11px; }
 .oc-del:hover { border-color: var(--bad) !important; color: var(--bad); }
 .oc-add label.oc-small { flex: none; min-width: 0; }
+
+/* 6 · OCR OBSERVER (PC lain): kode pasangan + unduh aplikasi */
+.oc-pair-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: baseline; margin: 6px 0 4px; font-size: 13px; color: var(--muted); }
+.oc-pair-grid b { color: var(--text, #fff); font: 700 15px Consolas, monospace; }
+.oc-pair-grid .oc-pair-key { font-size: 26px; letter-spacing: 6px; color: var(--accent); }
+.oc-btnlink { flex: 1; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; font-weight: 800; font-size: 12px; letter-spacing: 0.5px; padding: 9px 10px; border: 1px solid var(--line); color: inherit; }
+.oc-btnlink.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.oc-btnlink.disabled { opacity: 0.45; pointer-events: none; }
+.oc-pair-warn { color: #ff6b6b; font-weight: 700; }
+html.oc-observer .oc-pair { display: none; }

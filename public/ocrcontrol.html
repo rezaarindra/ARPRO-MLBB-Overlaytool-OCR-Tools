@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR Control</title>
     <link rel="stylesheet" href="ocrcontrol.css">
+    <!-- tema SSC 2027 (Design.md) -->
+    <link rel="stylesheet" href="/ssc-theme.css">
+    <link rel="stylesheet" href="/ssc-control.css">
+    <script src="/script/ssc-control.js"></script>
 </head>
 <!-- OCR gameplay MLBB tanpa OBS: sumber langsung dari HDMI capture / webcam / layar. Hasil → /ocr/MLBB.json (scoreboard OCR). -->
 <body>
@@ -124,6 +128,20 @@
                 <a href="/goldgraph.html" target="_blank" class="oc-link">/goldgraph.html ↗</a>
             </div>
 
+            <div class="oc-card oc-pair" id="ocPairCard">
+                <h3>6 · OCR OBSERVER (PC LAIN)</h3>
+                <p class="oc-small">Observer bisa menjalankan OCR dari PC-nya sendiri: unduh aplikasi, isi <b>IP server</b> &amp; <b>kode pasangan</b> di bawah. Data OCR dari PC lain hanya diterima bila kodenya cocok.</p>
+                <div class="oc-pair-grid">
+                    <span>IP server</span><b id="ocPairIp">—</b>
+                    <span>Kode pasangan</span><b class="oc-pair-key" id="ocPairKey">——————</b>
+                </div>
+                <div class="oc-row">
+                    <a class="oc-btnlink primary" href="/download/ocr-observer" id="ocPairDownload">UNDUH OCR OBSERVER (.exe)</a>
+                    <button id="ocPairNew" title="Kode lama langsung tidak berlaku">Ganti Kode</button>
+                </div>
+                <div class="oc-meta" id="ocPairSources">Belum ada data OCR.</div>
+            </div>
+
             <div class="oc-card">
                 <h3>OUTPUT</h3>
                 <p class="oc-small">Dibaca otomatis oleh <b>scoreboardocr.html</b> &amp; <b>scoreboardcostumocr.html</b>.</p>
@@ -144,5 +162,6 @@
     <script src="script/ocr-engine.js"></script>
     <script src="script/ocrcontrol.js"></script>
     <script src="script/ocrauto.js"></script>
+    <script src="script/ocrpair.js"></script>
 </body>
 </html>

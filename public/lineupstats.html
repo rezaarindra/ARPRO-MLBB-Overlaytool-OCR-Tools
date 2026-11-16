@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik Lineup</title>
+    <link rel="stylesheet" href="ssc-theme.css">
+    <link rel="stylesheet" href="ssc-control.css">
+    <link rel="stylesheet" href="lineupstats.css">
+    <script src="script/ssc-control.js"></script>
+</head>
+<!-- Pengaturan statistik lineup (lineupdisplay.html): pratinjau draft saat ini, bobot Line Up Rating, koreksi nilai per hero,
+     perbarui data dari MLBB Academy. -->
+<body>
+    <main class="sc-page">
+        <span class="sc-kicker">Statistik setelah draft</span>
+        <h1 class="sc-hello">STATISTIK LINEUP</h1>
+        <p class="sc-lead">Nilai 1–10 tiap tim dihitung dari data MLBB Academy (rating resmi hero + data counter &amp; teammate antar hero). Tampilkan lewat tombol <b>TAMPILKAN STATISTIK</b> di bawah <a href="lineupdisplay.html" target="_blank">lineupdisplay.html ↗</a> atau di Control Panel.</p>
+
+        <div class="sc-grid ls-top">
+            <section class="sc-card">
+                <h2>DRAFT SAAT INI</h2>
+                <div id="lsPreview" class="sc-muted">Memuat…</div>
+                <div class="sc-row" style="margin-top:14px">
+                    <button class="sc-btn primary" id="lsShow">TAMPILKAN STATISTIK</button>
+                    <button class="sc-btn" id="lsHide">SEMBUNYIKAN STATISTIK</button>
+                    <span class="sc-muted" id="lsShowMsg"></span>
+                </div>
+            </section>
+
+            <section class="sc-card">
+                <h2>BOBOT LINE UP RATING</h2>
+                <p class="sc-muted">Line Up Rating = rata-rata berbobot 7 statistik + (bobot counter × Counter Index), dibatasi 1–10. Bobot 0 = statistik tidak dihitung.</p>
+                <div class="ls-weights" id="lsWeights"></div>
+                <div class="sc-row" style="margin-top:12px">
+                    <button class="sc-btn primary" id="lsSaveWeights">SIMPAN BOBOT</button>
+                    <button class="sc-btn" id="lsResetWeights">BOBOT BAWAAN</button>
+                    <span class="sc-muted" id="lsWeightMsg"></span>
+                </div>
+            </section>
+        </div>
+
+        <section class="sc-card" style="margin-top:18px">
+            <div class="sc-row ls-headrow">
+                <h2 style="margin:0">NILAI PER HERO</h2>
+                <span class="sc-sp"></span>
+                <input type="text" class="sc-input" id="lsSearch" placeholder="Cari hero…">
+                <label class="sc-muted"><input type="checkbox" id="lsOnlyEdited"> hanya yang dikoreksi</label>
+            </div>
+            <p class="sc-muted">Angka abu-abu = hasil hitung otomatis. Isi kolom untuk mengoreksi (1–10), kosongkan untuk kembali ke otomatis. Tersimpan otomatis.
+                Team Synergy &amp; Counter Index dihitung dari pasangan hero, jadi tidak dikoreksi per hero.</p>
+            <div class="sc-table-wrap">
+                <table class="sc-table">
+                    <thead><tr><th>Hero</th><th>Data</th><th>Early–Mid</th><th>Late</th><th>Damage</th><th>Survivability</th><th>Control</th><th>Objective &amp; Push</th><th></th></tr></thead>
+                    <tbody id="lsRows"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="sc-card" style="margin-top:18px">
+            <h2>DATA MLBB ACADEMY</h2>
+            <p class="sc-muted" id="lsDataInfo">—</p>
+            <div class="sc-tips">Perbarui setelah patch baru MLBB. Butuh internet, sekitar 5 menit. Koreksi nilai per hero di atas tidak hilang.</div>
+            <div class="sc-row" style="margin-top:12px">
+                <button class="sc-btn" id="lsRebuild">PERBARUI DATA HERO</button>
+                <span class="sc-muted" id="lsRebuildMsg"></span>
+            </div>
+        </section>
+    </main>
+    <script src="script/lineupstats.js"></script>
+</body>
+</html>

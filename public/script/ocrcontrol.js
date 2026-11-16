@@ -11,6 +11,12 @@
     const E = window.OcrEngine;
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
+    // ARPRO OCR Observer (aplikasi .exe di PC observer) membuka halaman ini dengan ?observer=1&key=KODE:
+    // data OCR dari PC lain hanya diterima server bila kode pasangan cocok.
+    const OBS_KEY = params.get('key') || '';
+    const OBS_NAME = params.get('name') || '';
+    const HEADERS = { 'Content-Type': 'application/json', ...(OBS_KEY ? { 'X-OCR-Key': OBS_KEY } : {}), ...(OBS_NAME ? { 'X-OCR-Name': OBS_NAME.slice(0, 40) } : {}) };
+    if (params.get('observer')) document.documentElement.classList.add('oc-observer');
     const COLORS = ['#a855f7', '#00d2ff', '#ffd34d', '#4d84ff', '#ffffff', '#ff5a6b', '#ffd34d', '#00ff8c', '#ff9a3d'];
 
     const view = $('ocView'), vctx = view.getContext('2d');
@@ -48,6 +54,7 @@
         const origin = location.origin;
         const firefox = /firefox/i.test(navigator.userAgent);
         warn(`Browser memblokir HDMI capture / webcam di alamat <b>${location.host}</b> (bukan localhost). ` +
+            `<b>Paling mudah: pakai aplikasi <a href="/download/ocr-observer" style="color:#fff">ARPRO OCR Observer (.exe)</a></b> di PC ini, isi IP server &amp; kode pasangan dari OCR Control di PC server. Atau: ` +
             (firefox
                 ? `Di Firefox: buka <b>about:config</b>, ubah <b>media.devices.insecure.enabled</b> dan <b>media.getusermedia.insecure.enabled</b> menjadi <b>true</b>, lalu muat ulang halaman ini.`
                 : `Di Chrome / Edge: buka <b>chrome://flags/#unsafely-treat-insecure-origin-as-secure</b> (Edge: <b>edge://flags/#unsafely-treat-insecure-origin-as-secure</b>), isi <b>${origin}</b>, pilih <b>Enabled</b>, lalu klik Relaunch.`) +
@@ -450,17 +457,23 @@
             state.lastMs = Math.round(performance.now() - t0);
             const json = JSON.stringify(out);
             // kirim saat berubah, dan minimal tiap 2 detik (penanda OCR masih hidup)
-            if (json !== state.lastJson || Date.now() - state.lastSend > 2000) {
+            const retryWait = state.sendError && Date.now() - (state.lastTry || 0) < 3000;
+            if (!retryWait && (json !== state.lastJson || Date.now() - state.lastSend > 2000)) {
+                state.lastTry = Date.now();
                 $('ocJson').textContent = JSON.stringify(out, null, 2);
-                await fetch('/api/ocr/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json });
-                state.lastJson = json;
-                state.lastSend = Date.now();
+                const res = await fetch('/api/ocr/data', { method: 'POST', headers: HEADERS, body: json });
+                // ditolak server (kode pasangan salah / dikunci): pesan tetap tampil sampai data diterima lagi
+                state.sendError = res.ok ? null : ((await res.json().catch(() => ({}))).message || `Data ditolak server (HTTP ${res.status})`);
+                if (res.ok) {
+                    state.lastJson = json;
+                    state.lastSend = Date.now();
+                }
             }
             const fresh = results.filter(([, res]) => !res.cached).length;
             state.rate = state.rate ? state.rate * 0.8 + (1000 / Math.max(1, performance.now() - state.prevStart)) * 0.2 : 1;
             state.prevStart = t0;
             $('ocPerf').textContent = `Sekali baca: ${state.lastMs} ms (${fresh} kotak dibaca ulang, ${state.regions.length - fresh} tidak berubah)\n±${state.rate.toFixed(1)} baca / detik\nTerkirim: ${new Date(state.lastSend).toLocaleTimeString()}`;
-            setStatus('OCR berjalan', 'on');
+            if (state.sendError) setStatus(state.sendError, 'err'); else setStatus('OCR berjalan', 'on');
         } catch (e) {
             setStatus('Error: ' + (e.message || e), 'err');
         } finally {
@@ -520,8 +533,8 @@
         buildRows();
     }
     $('ocSave').addEventListener('click', async () => {
-        await fetch('/api/ocr/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile()) });
-        $('ocProfileInfo').textContent = 'Tersimpan ' + new Date().toLocaleTimeString();
+        const res = await fetch('/api/ocr/profile', { method: 'POST', headers: HEADERS, body: JSON.stringify(profile()) });
+        $('ocProfileInfo').textContent = res.ok ? 'Tersimpan ' + new Date().toLocaleTimeString() : ((await res.json().catch(() => ({}))).message || 'Gagal menyimpan');
     });
     $('ocDefault').addEventListener('click', () => { state.regions = E.DEFAULT_REGIONS.map(r => ({ ...r })); state.confirmed = {}; buildRows(); previewOnly(); });
     $('ocExport').addEventListener('click', () => {

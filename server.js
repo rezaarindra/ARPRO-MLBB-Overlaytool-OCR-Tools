@@ -427,6 +427,11 @@ app.post('/api/matchdraft', (req, res) => {
         // draft baru dimulai (hero pertama masuk setelah draft kosong) → chapter VOD otomatis
         if (filledBefore === 0 && draftFilled(cache.matchdraft) > 0) vodLog(`DRAFT ${vodMatchLabel()}`, 'draft', { chapter: true });
         broadcast({ type: 'draftdata_update', data: cache.matchdraft.draftdata });
+        // draft dikosongkan untuk game berikutnya → statistik lineup kembali tersembunyi
+        if (lineupState.stats && draftFilled(cache.matchdraft) === 0) {
+            lineupState = { ...lineupState, stats: false };
+            broadcast({ type: 'lineup_control', mode: lineupState.mode, stats: false });
+        }
         recordPicks(cache.matchdraft.draftdata);
         
         const payload = JSON.stringify(cache.matchdraft, null, 2);
@@ -1479,6 +1484,172 @@ app.post('/api/herofocus', async (req, res) => {
     res.json({ key, focus: map[key] || null });
 });
 
+// --- STATISTIK LINEUP (lineupdisplay.html, tombol TAMPILKAN STATISTIK) ---
+// Data hero: public/database/herostats.json (rating resmi + matriks counter/teammate Academy MLBB, tools/build-herostats.js)
+// + herometa.json (potensi early / late / push per hero). Koreksi per hero & bobot rating: database/lineupstats.json.
+// Semua nilai 1–10 (clamp); hero tanpa data = 5 (netral). Logika mengikuti catatan tim:
+//   early / late  = potensi fase game + kasus role (assassin / jungle cepat, marksman late)
+//   damage / survivability / control = rating resmi (offense / durability / ability effects) + speciality
+//   objective & push = kemampuan objektif (push, jungle, role)
+//   team synergy  = data teammate antar 5 hero satu tim · counter index = data counter 5 hero lawan (cermin)
+//   line up rating = rata-rata berbobot 7 statistik + koreksi counter index
+const herostatsPath = path.join(dbDir, 'herostats.json');
+const lineupStatsPath = path.join(dbDir, 'lineupstats.json');
+const LS_KEYS = ['early', 'late', 'damage', 'survivability', 'control', 'push', 'synergy'];
+const LS_LABEL = { early: 'EARLY TO MID GAME POTENTIAL', late: 'LATE GAME POTENTIAL', damage: 'DAMAGE POTENTIAL', survivability: 'SURVIVABILITY',
+    control: 'CONTROL ABILITY', push: 'OBJECTIVE & PUSH ABILITY', synergy: 'TEAM SYNERGY' };
+const LS_DEFAULT = { weights: { early: 1, late: 1, damage: 1, survivability: 1, control: 1, push: 1, synergy: 1, counter: 0.5 }, overrides: {} };
+let lineupStats = JSON.parse(JSON.stringify(LS_DEFAULT));
+try { const j = JSON.parse(fsSync.readFileSync(lineupStatsPath, 'utf8')); lineupStats = { weights: { ...LS_DEFAULT.weights, ...(j.weights || {}) }, overrides: j.overrides || {} }; } catch (e) {}
+const lsClamp = (v, lo = 1, hi = 10) => Math.min(hi, Math.max(lo, v));
+let herostatsCache = { at: 0, data: null, byName: new Map() };
+function herostatsData() {
+    try {
+        const st = fsSync.statSync(herostatsPath);
+        if (herostatsCache.data && st.mtimeMs === herostatsCache.at) return herostatsCache;
+        const data = JSON.parse(fsSync.readFileSync(herostatsPath, 'utf8'));
+        const byName = new Map(Object.entries(data.heroes || {}).map(([id, h]) => [heroLoose(h.name), id]));
+        // ejaan herolist.json yang berbeda dengan Academy
+        for (const [ours, theirs] of [['Beleric', 'Belerick']]) if (byName.has(heroLoose(theirs))) byName.set(heroLoose(ours), byName.get(heroLoose(theirs)));
+        herostatsCache = { at: st.mtimeMs, data, byName };
+    } catch (e) { herostatsCache = { at: 0, data: null, byName: new Map() }; }
+    return herostatsCache;
+}
+// nilai 6 statistik satu hero (1–10) sebelum koreksi; null bila hero tidak dikenal sama sekali
+function lsHeroBase(name, hs, meta) {
+    const id = hs.byName.get(heroLoose(name)), h = id && hs.data.heroes[id];
+    const m = meta.get(heroLoose(name));
+    if (!h && !m) return null;
+    const roles = (h ? h.roles : [m.role]).map(s => String(s).toLowerCase());
+    const lanes = (h ? h.lanes : []).map(s => String(s).toLowerCase());
+    const spec = (h ? h.speciality : []).map(s => String(s).toLowerCase());
+    const has = (list, ...w) => w.some(x => list.some(s => s.includes(x)));
+    const axis = (i) => (m ? 1 + m.axes[i] * 3 : 5);        // herometa 0–3 → 1–10
+    const r = h ? h.ratings : null;
+    const rate = (k, fb) => (r && r[k] ? r[k] : fb);
+    let early = axis(0), late = axis(1), push = axis(5);
+    if (has(roles, 'assassin')) { early += 1; late -= 0.5; }
+    if (has(lanes, 'jungl')) { early += 1; push += 1; }
+    if (has(roles, 'marksman')) { early -= 1; late += 1; push += 0.5; }
+    if (has(roles, 'mage')) late += 0.5;
+    if (has(spec, 'chase', 'reap')) early += 0.5;
+    if (has(spec, 'push')) push += 1.5;
+    if (has(roles, 'fighter')) push += 0.5;
+    const dmgBonus = Math.min(1, ['burst', 'damage', 'poke'].filter(w => has(spec, w)).length * 0.5);
+    return {
+        early: lsClamp(early), late: lsClamp(late), push: lsClamp(push),
+        damage: lsClamp(rate('offense', 5) + dmgBonus),
+        survivability: lsClamp(rate('durability', 5) + (has(spec, 'regen') ? 0.5 : 0) + (has(spec, 'guard') ? 0.5 : 0)),
+        control: lsClamp(rate('control', 5) + (has(spec, 'crowd control') ? 1 : 0) + (has(spec, 'initiator') ? 0.5 : 0))
+    };
+}
+function lsHero(name, hs, meta) {
+    const base = lsHeroBase(name, hs, meta);
+    const o = lineupStats.overrides[name] || {};
+    const out = {};
+    for (const k of ['early', 'late', 'damage', 'survivability', 'control', 'push']) {
+        const v = o[k] != null && o[k] !== '' ? +o[k] : base ? base[k] : null;
+        out[k] = v == null || !Number.isFinite(v) ? null : lsClamp(v);
+    }
+    return { known: !!base || Object.keys(o).length > 0, stats: out, id: hs.byName.get(heroLoose(name)) || null };
+}
+const lsPair = (mx, a, b) => { const v = mx && mx[a] ? mx[a][b] : undefined; return Number.isFinite(v) ? v : null; };
+function lineupStatsCalc() {
+    const dd = (cache.matchdraft && cache.matchdraft.draftdata) || {};
+    const hero = heroResolver(), meta = heroMetaMap(), hs = herostatsData();
+    const sides = {};
+    for (const [side, dkey] of [['blue', 'blueside'], ['red', 'redside']]) {
+        // sama dengan kartu lineupdisplay.html: hero dari draft yang sedang berjalan
+        const picks = ((dd[dkey] || {}).pick || []).slice(0, 5).map(p => hero(p && p.hero));
+        sides[side] = picks.filter(Boolean).map(n => ({ name: n, ...lsHero(n, hs, meta) }));
+    }
+    const out = { ready: sides.blue.length === 5 && sides.red.length === 5, dataSource: hs.data ? hs.data.source : null, dataBuiltAt: hs.data ? hs.data.builtAt : null,
+        labels: LS_LABEL, keys: LS_KEYS, weights: lineupStats.weights };
+    const T = hs.data && hs.data.teammate, C = hs.data && hs.data.counter;
+    for (const side of ['blue', 'red']) {
+        const list = sides[side], stats = {};
+        for (const k of ['early', 'late', 'damage', 'survivability', 'control', 'push']) {
+            const vals = list.map(h => h.stats[k]).filter(v => v != null);
+            stats[k] = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 5;
+        }
+        // synergy: rata-rata kenaikan win rate pasangan satu tim (poin persen, dua arah) → 1–10 (−2 pp = 1 · 0 = 5,5 · +2 pp = 10)
+        const pv = [];
+        for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+            const a = list[i].id, b = list[j].id, x = lsPair(T, a, b), y = lsPair(T, b, a);
+            if (x != null || y != null) pv.push(((x != null ? x : y) + (y != null ? y : x)) / 2);
+        }
+        stats.synergy = pv.length ? lsClamp(5.5 + (pv.reduce((s, v) => s + v, 0) / pv.length) * 2.25) : 5;
+        out[side] = { heroes: list.map(h => ({ name: h.name, known: h.known })), stats };
+    }
+    // counter index tim biru (merah = cermin): jumlah keunggulan matchup 5×5 hero (poin persen) dibagi 5
+    let cs = 0;
+    for (const a of sides.blue) for (const b of sides.red) {
+        const x = lsPair(C, a.id, b.id), y = lsPair(C, b.id, a.id);
+        if (x != null || y != null) cs += ((x != null ? x : -y) - (y != null ? y : -x)) / 2;
+    }
+    const ci = Math.round(lsClamp(cs / 5, -10, 10) * 10) / 10;
+    out.blue.counter = ci; out.red.counter = Math.round(-ci * 10) / 10 || 0;
+    const w = lineupStats.weights;
+    for (const side of ['blue', 'red']) {
+        const s = out[side].stats, wsum = LS_KEYS.reduce((t, k) => t + Math.max(0, +w[k] || 0), 0) || 1;
+        const avg = LS_KEYS.reduce((t, k) => t + s[k] * Math.max(0, +w[k] || 0), 0) / wsum;
+        out[side].rating = Math.round(lsClamp(avg + (+w.counter || 0) * out[side].counter) * 10) / 10;
+        for (const k of LS_KEYS) s[k] = Math.round(s[k] * 100) / 100;
+    }
+    out.unknown = [...sides.blue, ...sides.red].filter(h => !h.known).map(h => h.name);
+    return out;
+}
+app.get('/api/lineup-stats', (req, res) => { res.json(lineupStatsCalc()); });
+// pengaturan: bobot line up rating & koreksi nilai per hero (halaman lineupstats.html)
+app.get('/api/lineup-stats/settings', (req, res) => {
+    const hs = herostatsData(), meta = heroMetaMap();
+    let list = [];
+    try { list = JSON.parse(fsSync.readFileSync(herolistPath, 'utf8')).map(h => h.name); } catch (e) {}
+    const heroes = list.map(n => {
+        const base = lsHeroBase(n, hs, meta);
+        return { name: n, base, override: lineupStats.overrides[n] || null, inData: hs.byName.has(heroLoose(n)) };
+    });
+    res.json({ weights: lineupStats.weights, defaults: LS_DEFAULT.weights, heroes, dataSource: hs.data ? hs.data.source : null, dataBuiltAt: hs.data ? hs.data.builtAt : null });
+});
+app.post('/api/lineup-stats/settings', async (req, res) => {
+    const b = req.body || {};
+    if (b.weights) for (const k of [...LS_KEYS, 'counter']) if (b.weights[k] != null) {
+        const v = +b.weights[k];
+        if (!Number.isFinite(v) || v < 0 || v > 5) return res.status(400).json({ message: `Bobot ${k} harus 0–5` });
+        lineupStats.weights[k] = v;
+    }
+    if (b.resetWeights) lineupStats.weights = { ...LS_DEFAULT.weights };
+    if (b.hero) {
+        const o = {};
+        for (const k of ['early', 'late', 'damage', 'survivability', 'control', 'push']) {
+            const v = (b.override || {})[k];
+            if (v == null || v === '') continue;
+            if (!Number.isFinite(+v) || +v < 1 || +v > 10) return res.status(400).json({ message: `Nilai ${k} harus 1–10` });
+            o[k] = +v;
+        }
+        if (Object.keys(o).length) lineupStats.overrides[String(b.hero)] = o; else delete lineupStats.overrides[String(b.hero)];
+    }
+    await fileQueue.enqueue(() => writeFileSafe(lineupStatsPath, JSON.stringify(lineupStats, null, 2)));
+    broadcast({ type: 'lineup_stats_update' });
+    res.json({ ok: true, weights: lineupStats.weights });
+});
+// perbarui data hero dari Academy MLBB (±5 menit, butuh internet) — menjalankan tools/build-herostats.js di latar
+let herostatsBuild = { running: false, log: '', startedAt: null, finishedAt: null, ok: null };
+app.get('/api/lineup-stats/rebuild', (req, res) => { res.json(herostatsBuild); });
+app.post('/api/lineup-stats/rebuild', (req, res) => {
+    if (herostatsBuild.running) return res.json(herostatsBuild);
+    const { spawn } = require('child_process');
+    herostatsBuild = { running: true, log: '', startedAt: new Date().toISOString(), finishedAt: null, ok: null };
+    const p = spawn(process.execPath, [path.join(__dirname, 'tools', 'build-herostats.js')], { cwd: __dirname });
+    const add = (d) => { herostatsBuild.log = (herostatsBuild.log + d.toString()).slice(-2000); };
+    p.stdout.on('data', add); p.stderr.on('data', add);
+    p.on('close', (code) => {
+        herostatsBuild.running = false; herostatsBuild.ok = code === 0; herostatsBuild.finishedAt = new Date().toISOString();
+        if (code === 0) broadcast({ type: 'lineup_stats_update' });
+    });
+    res.json(herostatsBuild);
+});
+
 app.get('/api/draft-analysis', (req, res) => { res.json(draftAnalysis()); });
 app.post('/api/draft-analysis/mode', (req, res) => {
     const m = (req.body || {}).mode;
@@ -1504,6 +1675,8 @@ const COMPANION_ACTIONS = {
     'lineup-show': ['Tampilkan lineup', '/api/lineup-control', () => ({ mode: 'show' })],
     'lineup-hide': ['Sembunyikan lineup', '/api/lineup-control', () => ({ mode: 'hide' })],
     'lineup-auto': ['Lineup mode otomatis', '/api/lineup-control', () => ({ mode: 'auto' })],
+    'lineup-stats-show': ['Tampilkan statistik lineup', '/api/lineup-control', () => ({ stats: true })],
+    'lineup-stats-hide': ['Sembunyikan statistik lineup', '/api/lineup-control', () => ({ stats: false })],
     'save-result': ['Simpan hasil game ke turnamen', '/api/tournament/game', () => ({})],
     'profile-hide': ['Sembunyikan kartu profil', '/api/profile-card', () => ({ show: false })],
     'profile-show': ['Tampilkan kartu profil', '/api/profile-card', (q) => ({ show: true, ...(q.type ? { type: q.type } : {}), ...(q.name ? { name: q.name } : {}) })],
@@ -1577,13 +1750,26 @@ app.get('/api/herofull', async (req, res) => {
 
 // --- LINEUP OVERLAY CONTROL (lineupdisplay.html) ---
 // auto = tampil sendiri saat 10 hero sudah terpilih (fase ADJUSTMENT), show / hide = paksa dari control panel
-let lineupState = { mode: 'auto' };
+// stats = panel statistik di antara dua baris lineup (tombol TAMPILKAN STATISTIK, butuh 10 hero)
+let lineupState = { mode: 'auto', stats: false };
 app.get('/api/lineup-control', (req, res) => { res.json(lineupState); });
 app.post('/api/lineup-control', (req, res) => {
-    const mode = req.body.mode;
-    if (!['auto', 'show', 'hide'].includes(mode)) return res.status(400).json({ message: 'Mode harus auto, show, atau hide' });
-    lineupState = { mode };
-    broadcast({ type: 'lineup_control', mode });
+    const b = req.body || {};
+    const next = { ...lineupState };
+    if (b.mode != null) {
+        if (!['auto', 'show', 'hide'].includes(b.mode)) return res.status(400).json({ message: 'Mode harus auto, show, atau hide' });
+        next.mode = b.mode;
+        if (b.mode === 'hide') next.stats = false;
+    }
+    if (b.stats != null) {
+        next.stats = !!b.stats;
+        if (next.stats) {
+            if (!lineupStatsCalc().ready) return res.status(400).json({ message: 'Statistik butuh 10 hero terpilih (draft belum lengkap).' });
+            if (next.mode === 'hide') next.mode = 'show';
+        }
+    }
+    lineupState = next;
+    broadcast({ type: 'lineup_control', mode: lineupState.mode, stats: lineupState.stats });
     res.json(lineupState);
 });
 
@@ -1727,12 +1913,69 @@ app.get('/ocr/vmix.json', (req, res) => {
     res.json([row]);
 });
 app.get('/api/ocr/data', (req, res) => { res.json({ data: ocrState.data, age: ocrState.data ? Date.now() - ocrState.at : null }); });
+
+// --- ARPRO OCR OBSERVER (observer/ARPRO-OCR-Observer.exe di PC lain) ---
+// Aplikasi membuka OCR Control lewat Edge / Chrome dengan izin capture untuk alamat server, lalu mengirim data OCR ke sini.
+// Data OCR dari PC lain hanya diterima bila membawa kode pasangan 6 digit (tampil di OCR Control PC server).
+const ocrKeyPath = path.join(dbDir, 'ocrkey.json');
+let ocrKey = '';
+try { ocrKey = String(JSON.parse(fsSync.readFileSync(ocrKeyPath, 'utf8')).key || ''); } catch (e) {}
+function newOcrKey() {
+    ocrKey = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    const payload = JSON.stringify({ key: ocrKey }, null, 2);
+    fileQueue.enqueue(() => writeFileSafe(ocrKeyPath, payload));
+}
+if (!/^\d{6}$/.test(ocrKey)) newOcrKey();
+const ocrKeyFails = new Map(); // ip → { n, at }: 10 kode salah dalam 1 menit → dikunci 1 menit
+const clientIp = (req) => String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+function ocrKeyCheck(req) {
+    if (isFromThisPc(req)) return { ok: true };
+    const ip = clientIp(req), now = Date.now(), f = ocrKeyFails.get(ip);
+    const recent = f && now - f.at < 60000 ? f.n : 0;
+    if (recent >= 10) return { ok: false, status: 429, message: 'Terlalu banyak kode salah. Tunggu 1 menit.' };
+    if (String(req.headers['x-ocr-key'] || req.query.key || '') === ocrKey) { ocrKeyFails.delete(ip); return { ok: true }; }
+    ocrKeyFails.set(ip, { n: recent + 1, at: now });
+    return { ok: false, status: 403, message: 'Kode pasangan OCR Observer salah. Lihat kode di OCR Control (PC server).' };
+}
+const ocrSources = new Map(); // nama sumber → waktu data terakhir
+function ocrSourceName(req) {
+    if (isFromThisPc(req)) return 'PC server';
+    const name = String(req.headers['x-ocr-name'] || '').replace(/[^\w .\-]/g, '').trim().slice(0, 40);
+    return `Observer ${name || clientIp(req)}`;
+}
+app.get('/api/ocr/pair', (req, res) => {
+    if (!isFromThisPc(req)) return res.status(403).json({ message: 'Kode pasangan hanya bisa dilihat di PC server.' });
+    const now = Date.now();
+    res.json({ key: ocrKey, port, sources: [...ocrSources].filter(([, t]) => now - t < 60000).map(([name, at]) => ({ name, age: now - at })),
+        download: fsSync.existsSync(observerExe) });
+});
+app.post('/api/ocr/pair/new', (req, res) => {
+    if (!isFromThisPc(req)) return res.status(403).json({ message: 'Kode pasangan hanya bisa diganti di PC server.' });
+    newOcrKey();
+    res.json({ key: ocrKey });
+});
+// dipakai aplikasi Observer untuk mengecek IP & kode sebelum membuka OCR Control
+app.get('/api/ocr/observer/check', (req, res) => {
+    const c = ocrKeyCheck(req);
+    if (!c.ok) return res.status(c.status).json({ ok: false, message: c.message });
+    res.json({ ok: true, app: 'ARPRO ESPORT TOOLS', port });
+});
+const observerExe = path.join(__dirname, 'observer', 'ARPRO-OCR-Observer.exe');
+app.get('/download/ocr-observer', (req, res) => {
+    if (!fsSync.existsSync(observerExe)) return res.status(404).send('ARPRO-OCR-Observer.exe belum ada di folder observer/. Jalankan observer/build.cmd di PC server.');
+    res.download(observerExe, 'ARPRO-OCR-Observer.exe');
+});
+
 app.post('/api/ocr/data', (req, res) => {
+    const auth = ocrKeyCheck(req);
+    if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+    const src = ocrSourceName(req);
+    ocrSources.set(src, Date.now());
     const b = req.body || {};
     const out = {};
     for (const [k, v] of Object.entries(b)) if (/^[a-z0-9_]{1,24}$/i.test(k)) out[k] = String(v == null ? '' : v).slice(0, 32); // 32: kotak tipe teks (nickname)
     const changed = JSON.stringify(out) !== JSON.stringify(ocrState.data);
-    ocrState = { data: out, at: Date.now() };
+    ocrState = { data: out, at: Date.now(), source: src };
     Object.assign(ocrVmixLast, out);
     ocrAnalyze(out);
     ocrPlayerGold(out);
@@ -1744,6 +1987,8 @@ app.get('/api/ocr/profile', async (req, res) => {
     try { res.json(JSON.parse(await fs.readFile(ocrProfilePath, 'utf8'))); } catch (e) { res.json(null); }
 });
 app.post('/api/ocr/profile', async (req, res) => {
+    const auth = ocrKeyCheck(req);
+    if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
     await fileQueue.enqueue(() => writeFileSafe(ocrProfilePath, JSON.stringify(req.body || {}, null, 2)));
     res.json({ ok: true });
 });
@@ -1935,6 +2180,8 @@ function ocrGameSummary(withHistory) {
         t: g.lastT, gold: g.cur, lead: g.cur ? g.cur.g1 - g.cur.g2 : null,
         kills: g.kills, lords: g.lords, objectives: ocrObjectives(g.lastT), marks: g.marks,
         hints: g.hints.filter(h => now - h.at < 30000), log: g.log, turtle: { 1: turtleScore[1], 2: turtleScore[2] },
+        // asal data OCR (PC server / Observer) & peringatan bila dua sumber mengirim bersamaan
+        source: ocrState.source || null, conflict: [...ocrSources.values()].filter(t => now - t < 4000).length > 1,
         // status saklar otomasi → OCR Control & strip LIVE OCR di Notif Control selalu sama
         auto: { autoFirstBlood: ocrAuto.autoFirstBlood, autoLordSlain: ocrAuto.autoLordSlain, autoObjectiveSpawn: ocrAuto.autoObjectiveSpawn, multikillHints: ocrAuto.multikillHints, fillPlayerGold: ocrAuto.fillPlayerGold }
     };

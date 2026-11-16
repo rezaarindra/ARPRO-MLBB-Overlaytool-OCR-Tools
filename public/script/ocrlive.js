@@ -68,8 +68,11 @@
         const running = !!d.live;
         const live = $('#oxLive');
         live.className = 'ox-live ' + (running ? 'on' : d.t != null ? 'stop' : 'off');
-        live.textContent = running ? 'OCR LIVE' : d.t != null ? 'OCR BERHENTI' : 'OCR TIDAK AKTIF';
-        live.title = running ? 'OCR Control sedang membaca layar game' : 'Buka / START ocrcontrol.html (jendela terpisah, jangan tab di belakang)';
+        const src = d.source && running ? ` · ${d.source.toUpperCase()}` : '';
+        live.textContent = d.conflict && running ? 'DUA SUMBER OCR!' : running ? `OCR LIVE${src}` : d.t != null ? 'OCR BERHENTI' : 'OCR TIDAK AKTIF';
+        if (d.conflict && running) live.className = 'ox-live stop';
+        live.title = d.conflict && running ? 'PC server & Observer mengirim data OCR bersamaan: hentikan salah satu (START OCR)'
+            : running ? `OCR Control sedang membaca layar game (${d.source || 'PC server'})` : 'Buka / START ocrcontrol.html atau ARPRO OCR Observer (jendela terpisah, jangan tab di belakang)';
         bar.classList.toggle('stale', !running);
 
         $('#oxTime').textContent = d.t != null ? fmtTime(d.t) : '–';

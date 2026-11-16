@@ -1,201 +1,402 @@
-/* lineupdisplay.css — layar lineup hasil draft (Task 2): hero + nickname + role, 1920×1080 */
-
-@font-face {
-    font-family: 'myfonts';
-    src: url('Assets/Font/big_noodle_titling.ttf') format('truetype');
-}
-
-:root {
-    --lu-blue: #1b5cff;
-    --lu-blue-dark: #071a5c;
-    --lu-red: #e3263b;
-    --lu-red-dark: #4f0712;
-    --lu-ink: #0b0f1d;
-    --lu-card-w: 170px;
-    --lu-card-h: 740px;
-    --lu-gap: 10px;
-}
+/* lineupdisplay.css — Lineup + Statistik, tema SSC 2027 "Poster Arena" (Design.md + poster referensi).
+   Area siaran 1920×1080 (.lu-root); di bawahnya area putih tombol operator (.lu-ctrl, tidak tertangkap OBS / vMix). */
 
 * { box-sizing: border-box; }
 
 html, body {
     margin: 0;
+    background: transparent;
+    font-family: var(--ssc-font-text);
+    color: var(--ssc-ink);
+    scrollbar-width: none;           /* tanpa scrollbar di OBS / vMix walau area tombol ada di bawah */
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+body.no-ctrl { width: 1920px; height: 1080px; overflow: hidden; }
+body.no-ctrl .lu-ctrl { display: none; }
+
+/* ---------- Area siaran ---------- */
+.lu-viewport { position: relative; width: 1920px; height: 1080px; overflow: hidden; margin: 0 auto; }
+.lu-root {
+    position: absolute;
+    left: 0; top: 0;
     width: 1920px;
     height: 1080px;
     overflow: hidden;
-    font-family: 'myfonts', 'Big Noodle Titling', sans-serif;
-    color: #fff;
-    background: transparent;
+    transform-origin: 0 0;
+    --t-blue: var(--ssc-blue);
+    --t-red: var(--ssc-red);
 }
 
-body.bg-dark {
+/* latar poster: gradien krem → pink, pecahan petir, titik halftone */
+.lu-bg { position: absolute; inset: 0; z-index: 0; }
+.lu-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+body.bg-poster .lu-root {
     background:
-        radial-gradient(1200px 600px at 20% 0%, rgba(27, 92, 255, 0.28), transparent 60%),
-        radial-gradient(1200px 600px at 80% 100%, rgba(227, 38, 59, 0.24), transparent 60%),
-        linear-gradient(180deg, #0a0e1c 0%, #05070f 100%);
+        radial-gradient(900px 520px at 50% 42%, rgba(255, 243, 200, 0.95), transparent 70%),
+        linear-gradient(160deg, #FFF3C8 0%, #FFD9C4 34%, #FFA9BF 68%, #FF6A9C 100%);
 }
-
-body.bg-green { background: #00b140; }
-
-.lu-root {
-    position: relative;
-    width: 1920px;
-    height: 1080px;
+body.bg-dark .lu-root {
+    background:
+        radial-gradient(900px 520px at 50% 42%, rgba(106, 47, 214, 0.55), transparent 70%),
+        linear-gradient(160deg, #20104A 0%, #150A33 60%, #0d0622 100%);
 }
+body.bg-dark .lu-bg svg { opacity: 0.55; }
+body.bg-transparent .lu-bg, body.bg-green .lu-bg { display: none; }
+body.bg-green .lu-root { background: #00b140; }
+.lu-halftone {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(23, 11, 54, 0.16) 1.4px, transparent 1.6px);
+    background-size: 14px 14px;
+    -webkit-mask-image: radial-gradient(1200px 700px at 50% 50%, transparent 35%, #000 100%);
+    mask-image: radial-gradient(1200px 700px at 50% 50%, transparent 35%, #000 100%);
+}
+body.bg-dark .lu-halftone { background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.4px, transparent 1.6px); }
 
-/* ---------- Header: tim kiri · judul · tim kanan ---------- */
+/* ---------- Header ---------- */
 .lu-header {
     position: absolute;
-    top: 56px;
+    z-index: 3;
+    top: 28px;
     left: 40px;
     right: 40px;
-    height: 96px;
+    height: 136px;
     display: grid;
-    grid-template-columns: 1fr 420px 1fr;
+    grid-template-columns: 1fr 520px 1fr;
     align-items: center;
     opacity: 0;
     transform: translateY(-40px);
-    transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: opacity 0.4s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-
-.lu-team {
-    display: flex;
-    align-items: center;
-    height: 96px;
-}
-
-.lu-team.red { flex-direction: row-reverse; }
-
+.lu-team { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.lu-team.red { flex-direction: row-reverse; text-align: right; }
 .lu-logo {
-    width: 96px;
-    height: 96px;
     flex: none;
+    width: 108px;
+    height: 108px;
+    border-radius: 16px;
     background: #fff;
+    border: 3px solid var(--ssc-ink);
+    box-shadow: 6px 6px 0 var(--t-blue);
     display: flex;
     align-items: center;
     justify-content: center;
-    clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+    padding: 8px;
 }
-
-.lu-team.red .lu-logo { clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%); }
-
-.lu-logo img {
-    width: 76%;
-    height: 76%;
-    object-fit: contain;
-}
-
-.lu-teaminfo {
-    flex: 1;
-    height: 72px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0 28px;
-    margin-left: -10px;
-    background: linear-gradient(90deg, var(--lu-blue) 0%, var(--lu-blue-dark) 100%);
-    clip-path: polygon(0 0, 100% 0, 97% 100%, 0 100%);
-    min-width: 0;
-}
-
-.lu-team.red .lu-teaminfo {
-    margin-left: 0;
-    margin-right: -10px;
-    text-align: right;
-    background: linear-gradient(270deg, var(--lu-red) 0%, var(--lu-red-dark) 100%);
-    clip-path: polygon(3% 0, 100% 0, 100% 100%, 0 100%);
-}
-
+.lu-team.red .lu-logo { box-shadow: -6px 6px 0 var(--t-red); }
+.lu-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lu-teaminfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.lu-team.red .lu-teaminfo { align-items: stretch; }
+.lu-team.red .lu-teamname, .lu-team.red .lu-school { text-align: right; }
 .lu-teamname {
-    font-size: 46px;
+    max-width: 100%;
+    font-family: var(--ssc-font-title);
+    font-size: 54px;
     line-height: 1;
-    letter-spacing: 2px;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: var(--t-blue);
+    padding: 10px 22px 8px;
+    border: 3px solid var(--ssc-ink);
+    transform: skewX(-10deg);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: clip;
+    text-shadow: 3px 3px 0 var(--ssc-ink);
 }
-
-.lu-school {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
+.lu-team.red .lu-teamname { background: var(--t-red); transform: skewX(10deg); }
+.lu-school { font-weight: 700; font-size: 19px; color: var(--ssc-ink); padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+body.bg-dark .lu-school { color: #fff; }
 .lu-score {
-    width: 72px;
-    height: 72px;
     flex: none;
+    width: 92px;
+    height: 92px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 54px;
-    color: var(--lu-ink);
-    background: #fff;
-    clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
+    font-family: var(--ssc-font-title);
+    font-size: 66px;
+    color: var(--ssc-ink);
+    background: var(--ssc-yellow);
+    border: 3px solid var(--ssc-ink);
+    border-radius: 14px;
+    box-shadow: 5px 5px 0 var(--ssc-pink);
+    transform: rotate(-4deg);
 }
-
-.lu-title {
-    text-align: center;
-}
-
-.lu-title img {
-    height: 58px;
-    object-fit: contain;
-}
-
+.lu-team.red .lu-score { transform: rotate(4deg); box-shadow: -5px 5px 0 var(--ssc-pink); }
+.lu-title { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.lu-title { gap: 6px; }
+.lu-title img { height: 34px; object-fit: contain; }
 .lu-title h1 {
     margin: 0;
-    font-size: 40px;
-    font-weight: normal;
-    letter-spacing: 4px;
-    line-height: 1;
+    font-family: var(--ssc-font-title);
+    font-weight: 400;
+    font-size: 62px;
+    line-height: 0.95;
+    letter-spacing: 0.04em;
+    color: var(--ssc-purple);
+    text-shadow: 4px 4px 0 var(--ssc-yellow);
+    transform: rotate(-2deg);
 }
-
-.lu-chips {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-top: 6px;
-}
-
+body.bg-dark .lu-title h1 { color: #fff; text-shadow: 4px 4px 0 var(--ssc-pink); }
+.lu-chips { display: flex; gap: 8px; justify-content: center; }
 .lu-chips span {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 3px 10px;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    padding: 4px 14px;
+    border-radius: 999px;
     background: #fff;
-    color: var(--lu-ink);
+    border: 2px solid var(--ssc-ink);
+    color: var(--ssc-ink);
+    text-transform: uppercase;
 }
-
 .lu-chips span:empty { display: none; }
+.lu-chips .lu-chip-accent { background: var(--ssc-yellow); }
+.lu-map { font-family: var(--ssc-font-marker); font-size: 20px; color: var(--ssc-magenta); }
+.lu-map:empty { display: none; }
+body.bg-dark .lu-map { color: var(--ssc-yellow); }
 
-.lu-chips span.lu-chip-accent { background: #ffc531; }
-
-/* nama map dari fitur Map Draw (ref. MPL "FLYING CLOUD") */
-.lu-map {
-    margin-top: 6px;
-    font-size: 26px;
-    letter-spacing: 3px;
-    line-height: 1;
-    color: rgba(255, 255, 255, 0.85);
+/* 5 warna di bawah header */
+.lu-header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -20px;
+    height: 6px;
+    background: var(--ssc-stripe);
+    border-radius: 3px;
 }
 
-.lu-map:empty { display: none; }
-
-/* ---------- Sponsor (dataset "sponsor" ssc2027.id), ref. MPL "ENDORSED BY" ---------- */
-.lu-sponsors {
+/* ---------- Baris pemain ---------- */
+.lu-row {
     position: absolute;
+    z-index: 2;
     left: 40px;
     right: 40px;
-    bottom: 22px;
-    height: 70px;
+    display: flex;
+    gap: 14px;
+    transition: top 0.7s cubic-bezier(0.65, 0, 0.35, 1), height 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.lu-row.blue { top: 200px; height: 372px; }
+.lu-row.red { top: 594px; height: 372px; }
+.lu-root.stats-on .lu-row.blue { top: 20px; height: 236px; }
+.lu-root.stats-on .lu-row.red { top: 824px; height: 236px; }
+
+.lu-rowtag {
+    flex: none;
+    width: 66px;
+    border: 3px solid var(--ssc-ink);
+    border-radius: 16px;
+    background: var(--t-blue);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    gap: 12px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: opacity 0.4s ease 0.15s, transform 0.5s ease 0.15s;
+}
+.lu-row.red .lu-rowtag { background: var(--t-red); transform: translateX(30px); }
+.lu-rowtag img { width: 48px; height: 48px; object-fit: contain; background: #fff; border-radius: 10px; padding: 4px; flex: none; }
+.lu-rowtag span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--ssc-font-title);
+    font-size: 30px;
+    letter-spacing: 0.05em;
+    color: #fff;
+    text-shadow: 2px 2px 0 var(--ssc-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    max-height: 100%;
+}
+
+.lu-group { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+
+.lu-card {
+    position: relative;
+    min-width: 0;
+    border: 3px solid var(--ssc-ink);
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(170deg, #4fb9ff 0%, var(--t-blue) 60%, #0b4f9c 100%);
+    box-shadow: 6px 6px 0 var(--t-blue);
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+    transition: opacity 0.45s ease calc(var(--d) * 70ms + 0.2s), transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d) * 70ms + 0.2s);
+}
+.lu-card.red { background: linear-gradient(170deg, #ff8a8a 0%, var(--t-red) 60%, #8e1010 100%); box-shadow: 6px 6px 0 var(--t-red); }
+.lu-art { position: absolute; inset: 0; }
+.lu-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--fx, 50%) var(--fy, 25%);
+    transform: scale(1.08);
+    transition: transform 1.2s ease;
+}
+.lu-card.empty .lu-art img { object-fit: contain; padding: 30%; opacity: 0.5; }
+.lu-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(23, 11, 54, 0.9) 0%, rgba(23, 11, 54, 0.25) 42%, transparent 70%);
+}
+/* foto pemain (cutout) di depan splash */
+.lu-photo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 94%;
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
+}
+.lu-card.has-photo .lu-photo { display: flex; }
+.lu-photo img { height: 100%; width: auto; max-width: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 8px 14px rgba(23, 11, 54, 0.55)); }
+.lu-card.has-photo .lu-art::after { background: linear-gradient(0deg, rgba(23, 11, 54, 0.92) 0%, rgba(23, 11, 54, 0.45) 38%, rgba(23, 11, 54, 0.1) 70%); }
+
+/* pita nama (seperti poster: label kecil · nama besar · label bawah) */
+.lu-tags {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+.lu-heroname {
+    max-width: 100%;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: #fff;
+    background: var(--ssc-pink);
+    border: 2px solid var(--ssc-ink);
+    padding: 3px 10px;
+    transform: skewX(-10deg) rotate(-3deg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.lu-heroname:empty { display: none; }
+.lu-nick {
+    width: 100%;
+    font-family: var(--ssc-font-title);
+    font-size: 40px;
+    line-height: 1.05;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: linear-gradient(90deg, var(--ssc-pink) 0%, var(--ssc-orange) 100%);
+    border: 3px solid var(--ssc-ink);
+    padding: 4px 12px 2px;
+    transform: skewX(-10deg) rotate(-3deg);
+    text-shadow: 2px 2px 0 var(--ssc-ink);
+    white-space: nowrap;
+    overflow: hidden;
+}
+.lu-nick:empty { display: none; }
+.lu-spell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    color: var(--ssc-ink);
+    background: var(--ssc-yellow);
+    border: 2px solid var(--ssc-ink);
+    border-radius: 999px;
+    padding: 2px 12px 2px 3px;
+    transform: rotate(-3deg);
+    white-space: nowrap;
+}
+.lu-spell img { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ssc-ink); background: var(--ssc-ink); object-fit: cover; flex: none; }
+.lu-spell.none { visibility: hidden; }
+.lu-root.stats-on .lu-tags { bottom: 8px; gap: 4px; }
+.lu-root.stats-on .lu-nick { font-size: 32px; }
+.lu-root.stats-on .lu-heroname, .lu-root.stats-on .lu-spell { font-size: 13px; }
+.lu-root.stats-on .lu-spell img { width: 22px; height: 22px; }
+
+/* ---------- Panel statistik ---------- */
+.lu-stats {
+    position: absolute;
+    z-index: 2;
+    left: 40px;
+    right: 40px;
+    top: 274px;
+    height: 532px;
+    display: grid;
+    grid-template-columns: 360px 1fr 360px;
+    gap: 22px;
+    opacity: 0;
+    transform: scale(0.96);
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lu-root.stats-on .lu-stats { opacity: 1; transform: scale(1); transition-delay: 0.45s; }
+.ls-center, .ls-side {
+    position: relative;
+    background: rgba(21, 10, 51, 0.93);
+    border: 3px solid var(--ssc-ink);
+    border-radius: 22px;
+    box-shadow: 0 18px 40px rgba(23, 11, 54, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: #fff;
+    overflow: hidden;
+}
+.ls-center::before, .ls-side::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--ssc-stripe); }
+.ls-center { padding: 24px 40px 14px; display: flex; flex-direction: column; justify-content: space-between; }
+.ls-bars { display: flex; flex-direction: column; gap: 6px; }
+.ls-row { display: flex; flex-direction: column; gap: 4px; }
+.ls-label { text-align: center; font-weight: 800; font-size: 15px; letter-spacing: 0.14em; color: var(--ssc-cream); }
+.ls-line { display: grid; grid-template-columns: 92px 1fr 8px 1fr 92px; align-items: center; gap: 12px; }
+.ls-val { font-family: var(--ssc-font-title); font-size: 36px; line-height: 1; letter-spacing: 0.02em; color: rgba(255, 255, 255, 0.72); }
+.ls-val.l { text-align: right; }
+.ls-val.lead.l { color: var(--ssc-yellow); }
+.ls-val.lead.r { color: var(--ssc-pink-soft); }
+.ls-track { height: 22px; border-radius: 11px; background: rgba(255, 255, 255, 0.12); display: flex; overflow: hidden; }
+.ls-track.l { justify-content: flex-end; }
+.ls-fill { height: 100%; width: 0; border-radius: 11px; transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) calc(0.55s + var(--i) * 80ms); }
+.ls-track.l .ls-fill { background: linear-gradient(90deg, var(--ssc-orange), var(--ssc-yellow)); }
+.ls-track.r .ls-fill { background: linear-gradient(90deg, var(--ssc-pink), var(--ssc-pink-soft)); }
+.lu-root.stats-on .ls-fill { width: var(--w); }
+.ls-mid { width: 8px; height: 34px; border-radius: 4px; background: #fff; justify-self: center; }
+.ls-notice { text-align: center; font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.7); padding-top: 8px; }
+.ls-notice b { font-family: var(--ssc-font-marker); font-weight: 400; color: var(--ssc-pink-soft); letter-spacing: 0.02em; }
+
+.ls-side { padding: 30px 28px 24px; display: flex; flex-direction: column; gap: 18px; }
+.ls-team { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.ls-side.red .ls-team { flex-direction: row-reverse; text-align: right; }
+.ls-team img { width: 78px; height: 78px; flex: none; object-fit: contain; background: #fff; border: 3px solid var(--ssc-ink); border-radius: 14px; padding: 6px; }
+.ls-side.blue .ls-team img { box-shadow: 4px 4px 0 var(--t-blue); }
+.ls-side.red .ls-team img { box-shadow: -4px 4px 0 var(--t-red); }
+.ls-team span { font-family: var(--ssc-font-title); font-size: 38px; line-height: 1; letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ls-metric { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; border-radius: 16px; background: rgba(255, 255, 255, 0.07); border: 2px solid rgba(255, 255, 255, 0.12); }
+.ls-side.red .ls-metric { align-items: flex-end; }
+.ls-mlabel { font-weight: 800; font-size: 15px; letter-spacing: 0.14em; color: var(--ssc-cream); }
+.ls-counter { font-family: var(--ssc-font-title); font-weight: 400; font-size: 70px; line-height: 1; color: #fff; }
+.ls-counter.pos { color: var(--ssc-green); }
+.ls-counter.neg { color: #ff6b6b; }
+.ls-metric.big { flex: 1; justify-content: center; }
+.ls-rating { font-family: var(--ssc-font-title); font-weight: 400; font-size: 118px; line-height: 0.95; color: var(--ssc-yellow); text-shadow: 5px 5px 0 var(--ssc-pink); }
+
+/* ---------- Sponsor ---------- */
+.lu-sponsors {
+    position: absolute;
+    z-index: 2;
+    left: 40px;
+    right: 40px;
+    bottom: 20px;
+    height: 76px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -203,200 +404,61 @@ body.bg-green { background: #00b140; }
     opacity: 0;
     transition: opacity 0.4s ease;
 }
-
 .lu-sponsors.empty { display: none; }
-
-.lu-sponsors-label {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 2.5px;
-    color: rgba(255, 255, 255, 0.65);
-}
-
-.lu-sponsors-logos {
-    display: flex;
-    align-items: center;
-    gap: 34px;
-}
-
-.lu-sponsors-logos img {
-    height: 54px;
-    max-width: 180px;
-    object-fit: contain;
-}
-
-.lu-root.is-visible .lu-sponsors { opacity: 1; transition: opacity 0.5s ease 0.9s; }
-
-/* ---------- Kartu hero ---------- */
-.lu-cards {
-    position: absolute;
-    top: 236px;
-    left: 40px;
-    right: 40px;
-    height: var(--lu-card-h);
-    display: flex;
-    justify-content: space-between;
-}
-
-.lu-group {
-    display: flex;
-    gap: var(--lu-gap);
-}
-
-.lu-card {
-    --d: 0;
-    position: relative;
-    width: var(--lu-card-w);
-    height: var(--lu-card-h);
-    overflow: hidden;
-    background: #111522;
-    opacity: 0;
-    transform: translateY(70px);
-    transition:
-        opacity 0.35s ease calc(var(--d) * 80ms + 150ms),
-        transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d) * 80ms + 150ms);
-}
-
-.lu-art {
-    position: absolute;
-    inset: 0 0 104px 0;
-    overflow: hidden;
-}
-
-.lu-art img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 15%;
-    transform: scale(1.08);
-    transition: transform 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d) * 80ms + 150ms), opacity 0.4s ease;
-}
-
-.lu-art::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, rgba(5, 7, 15, 0.75) 0%, rgba(5, 7, 15, 0) 28%);
-}
-
-/* foto pemain (ssc2027.id) berdiri di depan art hero, seperti referensi lineup Arcadia */
-.lu-photo {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 104px;
-    height: 58%;
-    display: none;
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.4s ease calc(var(--d) * 80ms + 450ms), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d) * 80ms + 450ms);
-}
-
-.lu-card.has-photo .lu-photo { display: block; }
-
-.lu-photo::before {
-    content: '';
-    position: absolute;
-    inset: 30% 0 0 0;
-    background: linear-gradient(0deg, var(--lu-blue-dark) 0%, transparent 100%);
-}
-
-.lu-card.red .lu-photo::before { background: linear-gradient(0deg, var(--lu-red-dark) 0%, transparent 100%); }
-
-.lu-photo img {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: 50% 100%;
-    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
-}
-
-.lu-root.is-visible .lu-photo { opacity: 1; transform: translateY(0); }
-
-/* slot belum ada hero: logo tim samar */
-.lu-card.empty .lu-art img {
-    object-fit: contain;
-    padding: 30px;
-    opacity: 0.18;
-    filter: grayscale(1);
-}
-
-.lu-heroname {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 34px;
-    max-height: calc(100% - 104px);
-    padding: 12px 0;
-    display: flex;
-    justify-content: center;
-    background: var(--lu-blue);
-}
-
-.lu-card.red .lu-heroname { background: var(--lu-red); }
-.lu-card.empty .lu-heroname { display: none; }
-
-.lu-heroname span {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 26px;
-    letter-spacing: 2px;
-    line-height: 1;
-    white-space: nowrap;
-}
-
-.lu-foot {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 104px;
-}
-
-.lu-role {
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: var(--lu-ink);
-    font-size: 21px;
-    letter-spacing: 1.5px;
-    color: rgba(255, 255, 255, 0.85);
-}
-
-.lu-role img {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-}
-
-.lu-role.none img { display: none; }
-
-.lu-nick {
-    height: 68px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 8px;
-    font-size: 36px;
-    letter-spacing: 1.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    background: linear-gradient(180deg, var(--lu-blue) 0%, var(--lu-blue-dark) 100%);
-}
-
-.lu-card.red .lu-nick { background: linear-gradient(180deg, var(--lu-red) 0%, var(--lu-red-dark) 100%); }
+.lu-sponsors-label { font-family: var(--ssc-font-marker); font-size: 20px; color: var(--ssc-ink); }
+body.bg-dark .lu-sponsors-label { color: #fff; }
+.lu-sponsors-logos { display: flex; align-items: center; gap: 26px; padding: 8px 22px; background: rgba(255, 255, 255, 0.88); border: 3px solid var(--ssc-ink); border-radius: 999px; }
+.lu-sponsors-logos img { height: 46px; max-width: 160px; object-fit: contain; }
 
 /* ---------- Tampil / sembunyi ---------- */
 .lu-root.is-visible .lu-header { opacity: 1; transform: translateY(0); }
-.lu-root.is-visible .lu-card { opacity: 1; transform: translateY(0); }
+.lu-root.is-visible .lu-card { opacity: 1; transform: translateY(0) scale(1); }
 .lu-root.is-visible .lu-art img { transform: scale(1); }
+.lu-root.is-visible .lu-rowtag { opacity: 1; transform: translateX(0); }
+.lu-root.is-visible .lu-sponsors { opacity: 1; transition-delay: 0.9s; }
+.lu-root.stats-on .lu-header { opacity: 0; transform: translateY(-60px); transition-delay: 0s; }
+.lu-root.stats-on .lu-sponsors { opacity: 0; transition-delay: 0s; }
+.lu-root:not(.is-visible) .lu-card,
+.lu-root:not(.is-visible) .lu-rowtag { transition-delay: 0s; }
+.lu-root:not(.is-visible) .lu-stats { opacity: 0; transition-delay: 0s; }
 
-/* keluar: tanpa jeda berjenjang, lebih cepat */
-.lu-root:not(.is-visible) .lu-card {
-    transition: opacity 0.3s ease, transform 0.35s ease-in;
+/* ---------- Area tombol operator (di bawah 1080 px) ---------- */
+.lu-ctrl {
+    position: relative;
+    background: #fff;
+    color: var(--ssc-ink);
+    padding: 22px 28px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 28px;
+    min-height: 150px;
 }
+.lu-ctrl::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--ssc-stripe); }
+.lu-ctrl-info { display: flex; flex-direction: column; gap: 4px; min-width: 260px; }
+.lu-ctrl-info b { font-family: var(--ssc-font-title); font-weight: 400; font-size: 30px; letter-spacing: 0.03em; color: var(--ssc-purple); }
+.lu-ctrl-info span { font-weight: 600; font-size: 15px; color: #5B5084; }
+.lu-ctrl-info span.err { color: #AD1212; }
+.lu-ctrl-info span.ok { color: #1D6B28; }
+.lu-ctrl-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.lu-ctrl button {
+    font-family: var(--ssc-font-text);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: 2px solid var(--ssc-ink);
+    background: #fff;
+    color: var(--ssc-ink);
+    cursor: pointer;
+    box-shadow: 3px 3px 0 #DDD2F7;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.lu-ctrl button.primary { background: var(--ssc-yellow); box-shadow: 3px 3px 0 var(--ssc-pink); font-size: 17px; padding: 14px 24px; }
+.lu-ctrl button.on { background: var(--ssc-purple); color: #fff; box-shadow: 3px 3px 0 var(--ssc-yellow); }
+.lu-ctrl button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ssc-pink); }
+.lu-ctrl button:disabled { opacity: 0.45; cursor: default; }
+.lu-ctrl-sep { width: 2px; height: 34px; background: #DDD2F7; margin: 0 6px; }
+.lu-ctrl-note { flex-basis: 100%; font-size: 13px; color: #5B5084; }
+.lu-ctrl-note a { color: #0762B2; font-weight: 700; }

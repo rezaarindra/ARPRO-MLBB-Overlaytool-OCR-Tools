@@ -6,6 +6,10 @@
     <title>Control Panel</title>
     <link rel="stylesheet" href="control.css">
     <link rel="stylesheet" href="sscteams.css">
+    <!-- tema SSC 2027 (Design.md) -->
+    <link rel="stylesheet" href="/ssc-theme.css">
+    <link rel="stylesheet" href="/ssc-control.css">
+    <script src="/script/ssc-control.js"></script>
 </head>
 
 <body>
@@ -219,6 +223,11 @@
             <button data-lineup-mode="show">Show</button>
             <button data-lineup-mode="hide">Hide</button>
         </div>
+        <div class="timercontrol">
+            <button data-lineup-stats="1" title="Panel statistik di antara dua baris lineup (butuh 10 hero)">Tampilkan Statistik</button>
+            <button data-lineup-stats="0">Sembunyikan Statistik</button>
+        </div>
+        <p class="lineup-stats-msg" id="lineupStatsMsg"><a href="lineupstats.html" target="_blank">Atur nilai hero &amp; bobot statistik ↗</a></p>
 
         <h2>IN-GAME OVERLAY</h2>
         <div class="timercontrol ig-ctl">

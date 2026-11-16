@@ -9,6 +9,25 @@
 let currentBlueLogo = "";
 let currentRedLogo = "";
 
+// Battle spell tiap pemain (kolom "spell" di matchdata, sama dengan Postgame Control). Nama = file Assets/Itemandspell/<nama>.png
+const SPELLS = ['Flicker', 'Retribution', 'Execute', 'Purify', 'Sprint', 'Aegis', 'Inspire', 'Vengeance', 'Flameshot', 'Petrify', 'Revitalize', 'Arrival'];
+const SLOTS = [3, 4, 5, 6, 7, 10, 11, 12, 13, 14];
+const spellOf = (p) => (p && SPELLS.includes(p.spell) ? p.spell : 'none');
+// dropdown spell dibuat di samping dropdown lane (control.html tidak perlu diubah per slot)
+function buildSpellSelects() {
+    SLOTS.forEach(i => {
+        const lane = document.getElementById(`lane-select-${i}`);
+        if (!lane || document.getElementById(`spell-select-${i}`)) return;
+        const sel = document.createElement('select');
+        sel.id = `spell-select-${i}`;
+        sel.className = 'lane-dropdown spell-dropdown';
+        sel.title = 'Battle spell (tampil di Statistik Lineup & Postgame)';
+        sel.innerHTML = '<option value="none">Spell</option>' + SPELLS.map(s => `<option value="${s}">${s}</option>`).join('');
+        lane.insertAdjacentElement('afterend', sel);
+    });
+}
+const spellSel = (i) => document.getElementById(`spell-select-${i}`);
+
 // --- FUNGSI UTAMA: LOAD & SAVE DATA ---
 
 // Mengambil data dari Server dan mengisi Input Form
@@ -38,6 +57,7 @@ async function loadFromServer() {
             const playerLane = (blue.playerlist && blue.playerlist[i]) ? blue.playerlist[i].lane : "none";
             const laneSelect = document.getElementById(`lane-select-${3+i}`);
             if (laneSelect) laneSelect.value = playerLane;
+            if (spellSel(3 + i)) spellSel(3 + i).value = spellOf(blue.playerlist && blue.playerlist[i]);
         }
 
         // --- LOAD RED TEAM (Nama, Skor, Logo) ---
@@ -55,6 +75,7 @@ async function loadFromServer() {
             const playerLane = (red.playerlist && red.playerlist[i]) ? red.playerlist[i].lane : "none";
             const laneSelect = document.getElementById(`lane-select-${10+i}`);
             if (laneSelect) laneSelect.value = playerLane;
+            if (spellSel(10 + i)) spellSel(10 + i).value = spellOf(red.playerlist && red.playerlist[i]);
         }
 
     } catch (error) {
@@ -86,6 +107,7 @@ async function saveToServer() {
             // Simpan Lane (NEW)
             const laneVal = document.getElementById(`lane-select-${3+i}`).value;
             fullData.teamdata.blueteam.playerlist[i].lane = laneVal;
+            if (spellSel(3 + i)) fullData.teamdata.blueteam.playerlist[i].spell = spellSel(3 + i).value === 'none' ? '' : spellSel(3 + i).value;
         }
 
         // --- Update Red Team ---
@@ -103,6 +125,7 @@ async function saveToServer() {
             // Simpan Lane (NEW)
             const laneVal = document.getElementById(`lane-select-${10+i}`).value;
             fullData.teamdata.redteam.playerlist[i].lane = laneVal;
+            if (spellSel(10 + i)) fullData.teamdata.redteam.playerlist[i].spell = spellSel(10 + i).value === 'none' ? '' : spellSel(10 + i).value;
         }
 
         // 3. KIRIM DATA LENGKAP KEMBALI KE SERVER
@@ -136,6 +159,7 @@ function setupAutoSave() {
         if (select) {
             select.addEventListener('change', saveToServer); // Gunakan 'change' untuk dropdown
         }
+        if (spellSel(i)) spellSel(i).addEventListener('change', saveToServer);
     });
 }
 
@@ -180,6 +204,7 @@ async function resetNames() {
     laneIndices.forEach(i => {
         const select = document.getElementById(`lane-select-${i}`);
         if(select) select.value = "none";
+        if (spellSel(i)) spellSel(i).value = "none";
     });
 
     await saveToServer(); 
@@ -201,9 +226,11 @@ async function switchNames() {
     // Ambil Player & Lane Biru
     let bluePlayers = [];
     let blueLanes = [];
+    const blueSpells = [], redSpells = [];
     for(let i=3; i<=7; i++) {
         bluePlayers.push(document.getElementById(`name-input-${i}`).value);
         blueLanes.push(document.getElementById(`lane-select-${i}`).value);
+        blueSpells.push(spellSel(i) ? spellSel(i).value : 'none');
     }
 
     // Ambil Player & Lane Merah
@@ -214,6 +241,7 @@ async function switchNames() {
     for(let i=10; i<=14; i++) {
         redPlayers.push(document.getElementById(`name-input-${i}`).value);
         redLanes.push(document.getElementById(`lane-select-${i}`).value);
+        redSpells.push(spellSel(i) ? spellSel(i).value : 'none');
     }
 
     // 2. Tukar Nilai di UI
@@ -223,6 +251,7 @@ async function switchNames() {
     for(let i=0; i<5; i++) {
         document.getElementById(`name-input-${3+i}`).value = redPlayers[i];
         document.getElementById(`lane-select-${3+i}`).value = redLanes[i];
+        if (spellSel(3 + i)) spellSel(3 + i).value = redSpells[i];
     }
 
     // Set Sisi Merah dengan data Biru
@@ -231,6 +260,7 @@ async function switchNames() {
     for(let i=0; i<5; i++) {
         document.getElementById(`name-input-${10+i}`).value = bluePlayers[i];
         document.getElementById(`lane-select-${10+i}`).value = blueLanes[i];
+        if (spellSel(10 + i)) spellSel(10 + i).value = blueSpells[i];
     }
 
     // 3. Simpan
@@ -279,6 +309,8 @@ function handleSwapClick(index, button) {
             lane1.value = lane2.value;
             lane2.value = tempLane;
         }
+        const sp1 = spellSel(firstSwapSelection.index), sp2 = spellSel(index);
+        if (sp1 && sp2) { const t = sp1.value; sp1.value = sp2.value; sp2.value = t; }
 
         saveToServer(); 
         resetSwapUI();
@@ -301,6 +333,7 @@ function resetSwapUI() {
 // --- INITIALIZATION ---
 
 function initializeApp() {
+    buildSpellSelects();
     loadFromServer(); 
     setupAutoSave(); 
     setupLogoUpload(); 

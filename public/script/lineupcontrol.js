@@ -34,7 +34,36 @@
 
     buttons.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.lineupMode)));
 
-    fetch('/api/lineup-control').then(r => r.json()).then(d => mark(d.mode)).catch(() => {});
+    // Statistik lineup (panel di antara dua baris, sama dengan tombol di area putih lineupdisplay.html)
+    const statBtns = document.querySelectorAll('[data-lineup-stats]');
+    const msg = document.getElementById('lineupStatsMsg');
+    const msgHtml = msg ? msg.innerHTML : '';
+    function markStats(on) {
+        statBtns.forEach(btn => {
+            const active = (btn.dataset.lineupStats === '1') === !!on;
+            btn.style.borderColor = active ? COLORS[on ? 'show' : 'hide'] : '';
+            btn.style.color = active ? COLORS[on ? 'show' : 'hide'] : '';
+        });
+    }
+    statBtns.forEach(btn => btn.addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/lineup-control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stats: btn.dataset.lineupStats === '1' }) });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Gagal');
+            mark(data.mode); markStats(data.stats);
+            if (msg) msg.innerHTML = msgHtml;
+        } catch (e) {
+            if (msg) { msg.textContent = e.message; setTimeout(() => { msg.innerHTML = msgHtml; }, 4000); }
+        }
+    }));
+    // ikut berubah bila ditekan dari lineupdisplay.html / Stream Deck
+    (function listen() {
+        const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+        ws.onmessage = (ev) => { try { const m = JSON.parse(ev.data); if (m.type === 'lineup_control') { mark(m.mode); markStats(m.stats); } } catch (e) {} };
+        ws.onclose = () => setTimeout(listen, 3000);
+    })();
+
+    fetch('/api/lineup-control').then(r => r.json()).then(d => { mark(d.mode); markStats(d.stats); }).catch(() => {});
 })();
 
 // Format seri (BO): skor overlay draft tampil sebagai garis kemenangan, chip "BO3" di layar lineup

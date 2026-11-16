@@ -42,6 +42,10 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 📱 | **Social Card** | Kartu PNG 1080×1080 / 1350 / 1920 sekali klik: hasil series, hasil game, MVP, klasemen, top pemain, hero meta. |
 | 🎬 | **VOD Timeline** | Event siaran tercatat otomatis dengan jam rekam → chapter YouTube, marker DaVinci Resolve (EDL), CSV. |
 | ⏸️ | **Technical Pause** | Timer jeda per tim dengan jatah waktu (default 5:00), pause admin, riwayat, overlay `pause.html` tampil sendiri. |
+| 📐 | **Statistik Lineup** | Setelah draft: 7 statistik tim (early–mid, late, damage, survivability, control, objective & push, team synergy), **Counter Index** & **Line Up Rating** dari data MLBB Academy. Tampil lewat tombol **TAMPILKAN STATISTIK**. |
+| ✨ | **Battle Spell** | Spell tiap pemain dipilih di Control Panel, tampil di lineup, statistik & postgame. |
+| 🖥️ | **ARPRO OCR Observer** | Aplikasi `.exe` kecil untuk PC observer: OCR dijalankan dari PC lain dan datanya dikirim langsung ke tool (kode pasangan 6 digit). |
+| 🎨 | **Tema SSC 2027** | Halaman control, lineup & statistik memakai gaya "Poster Arena" SSC 2027 (Bangers + Rubik, ungu–kuning–pink, garis 5 warna), pilihan Terang / Gelap. |
 | 🧩 | **Analisis Komposisi Draft** | Tipe komposisi (teamfight/poke/pick-off/split push), power curve, profil damage, sinergi hero dari arsip turnamen. |
 | 🌐 | **Overlay Dua Bahasa** | Label overlay ID ⇄ EN satu tombol, atau dikunci per Browser Source dengan `?lang=id` / `?lang=en`. |
 | 🎛️ | **Stream Deck / Companion** | Satu URL per tombol: notifikasi, MVP, lineup, skor, pemenang, simpan hasil game. |
@@ -198,6 +202,31 @@ Di **OCR Control** pilih jenis (**Gold / Angka / Teks / Timer**) lalu **+ TAMBAH
 
 Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple Kill, Maniac, Savage, Wipe Out) → pilih pemain → video notifikasi + kartu pemain (foto, nickname, hero yang dipakai, logo tim). Wipe Out menonjolkan logo & nama tim. Posisi kartu: `video_card` di `eventnotif.json`.
 
+## 📐 Lineup & Statistik setelah draft
+
+`lineupdisplay.html` (Browser Source 1920×1080): dua baris pemain (foto, hero, nickname, **spell**). Tombol **TAMPILKAN STATISTIK** ada di **area putih di bawah tampilan** (di luar 1920×1080, tidak ikut tertangkap OBS / vMix), juga di Control Panel › Lineup Overlay dan Stream Deck (`/api/companion/lineup-stats-show` / `-hide`). Butuh 10 hero; tertutup otomatis saat draft dikosongkan.
+
+| Statistik | Dasar perhitungan |
+|---|---|
+| Early to Mid / Late Game | Potensi fase game tiap hero + role (assassin / jungle cepat, marksman late) |
+| Damage / Survivability / Control | Rating resmi hero (offense / durability / ability effects) + speciality |
+| Objective & Push | Push, jungle, role |
+| Team Synergy | Data teammate MLBB Academy antar 5 hero satu tim |
+| Counter Index | Data counter MLBB Academy 5×5 hero (tim lawan = cermin) |
+| Line Up Rating | Rata-rata berbobot 7 statistik + bobot × Counter Index (bobot diatur di `lineupstats.html`) |
+
+Semua nilai 1–10, hero tanpa data = 5. Koreksi nilai per hero & bobot: **Statistik Lineup** (`lineupstats.html`). Data hero (`public/database/herostats.json`) diperbarui setelah patch baru lewat tombol **PERBARUI DATA HERO** atau `node tools/build-herostats.js` (butuh internet). `public/database/mlbbids.json` berisi kamus ID hero / spell / item untuk data after match (matchTools). Spell pemain: Control Panel › dropdown **Spell** di samping lane. Parameter: `?bg=poster` (bawaan) · `dark` · `transparent` · `green`, `?ctrl=0` tanpa area tombol.
+
+## 🖥️ ARPRO OCR Observer (OCR dari PC lain)
+
+Browser hanya mengizinkan capture layar / HDMI di `localhost`, jadi OCR Control biasa hanya bisa dipakai di PC server. Untuk observer di PC lain:
+
+1. PC server: buka **OCR Control** › kartu **6 · OCR OBSERVER**, catat **IP server** & **kode pasangan** 6 digit.
+2. PC observer: **UNDUH OCR OBSERVER (.exe)** dari Hub / OCR Control (`/download/ocr-observer`), jalankan, isi IP, kode, nama observer → **SAMBUNGKAN & BUKA OCR**.
+3. OCR Control terbuka di jendela Edge / Chrome (profil terpisah, izin capture hanya untuk alamat server). Pilih sumber gambar, HUBUNGKAN, START OCR.
+
+Data dari PC lain hanya diterima bila kodenya cocok (10 kode salah dalam 1 menit → dikunci 1 menit). Sumber OCR aktif tampil di OCR Control & strip LIVE OCR (peringatan bila dua sumber mengirim bersamaan). Shortcut langsung tersambung: `ARPRO-OCR-Observer.exe --ip=192.168.1.10 --key=123456 --name=OBS1 --connect`. Build ulang: `observer/build.cmd` (C# compiler bawaan Windows). Windows SmartScreen bisa memperingatkan aplikasi yang belum bertanda tangan: klik **More info › Run anyway**.
+
 ## ⚙️ Konfigurasi (opsional)
 
 | File | Fungsi |
@@ -219,6 +248,8 @@ Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple K
 │   ├── database/             # Data JSON
 │   ├── vendor/tesseract/     # Engine OCR (Tesseract.js)
 │   └── Assets/               # Hero, item, map, font, logo, voice line
+├── observer/                 # ARPRO OCR Observer (.exe + sumber C#)
+├── tools/                    # Skrip: data statistik hero, pasang tema SSC
 └── mock/                     # Data contoh untuk testing feed
 ```
 
