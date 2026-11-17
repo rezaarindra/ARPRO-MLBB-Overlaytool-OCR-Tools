@@ -204,7 +204,7 @@ Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple K
 
 ## 📐 Lineup & Statistik setelah draft
 
-`lineupdisplay.html` (Browser Source 1920×1080): dua baris pemain (foto, hero, nickname, **spell**). Tombol **TAMPILKAN STATISTIK** ada di **area putih di bawah tampilan** (di luar 1920×1080, tidak ikut tertangkap OBS / vMix), juga di Control Panel › Lineup Overlay dan Stream Deck (`/api/companion/lineup-stats-show` / `-hide`). Butuh 10 hero; tertutup otomatis saat draft dikosongkan.
+`lineupdisplay.html` (Browser Source 1920×1080): dua baris pemain (foto, hero, nickname, **spell**). Saat dibuka layar **kosong**; lineup baru masuk dengan animasi setelah operator menekan **START** (tekan lagi untuk memutar ulang animasi), **HIDE** mengosongkan layar, dan lineup otomatis kosong lagi saat draft dikosongkan untuk game berikutnya. START / HIDE ada di area putih bawah, Control Panel › Lineup Overlay, dan Stream Deck (`/api/companion/lineup-show` / `-hide`). Tombol **TAMPILKAN STATISTIK** ada di **area putih di bawah tampilan** (di luar 1920×1080, tidak ikut tertangkap OBS / vMix), juga di Control Panel › Lineup Overlay dan Stream Deck (`/api/companion/lineup-stats-show` / `-hide`). Butuh 10 hero; tertutup otomatis saat draft dikosongkan.
 
 **Logo sponsor** (baris "SUPPORTED BY"): taruh PNG transparan di `public/Assets/sponsor/` dengan awalan urutan (`01-...png`, `02-...png`). Bila folder berisi logo, daftar ini menggantikan sponsor dari feed SSC. Potong ruang kosong di sekeliling logo agar tampil besar.
 
@@ -214,7 +214,7 @@ Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple K
 | Damage / Survivability / Control | Rating resmi hero (offense / durability / ability effects) + speciality |
 | Objective & Push | Push, jungle, role |
 | Team Synergy | Data teammate MLBB Academy antar 5 hero satu tim |
-| Counter Index | Data counter MLBB Academy 5×5 hero (tim lawan = cermin) |
+| Counter Index | Data counter MLBB Academy 5×5 hero: jumlah keunggulan win rate (poin persen) ÷ 5, tim lawan = cermin. Umumnya antara −2 dan +2; **0.0 berarti matchup kedua tim seimbang** (bukan error) |
 | Line Up Rating | Rata-rata berbobot 7 statistik + bobot × Counter Index (bobot diatur di `lineupstats.html`) |
 
 Semua nilai 1–10, hero tanpa data = 5. Koreksi nilai per hero & bobot: **Statistik Lineup** (`lineupstats.html`). Data hero (`public/database/herostats.json`) diperbarui setelah patch baru lewat tombol **PERBARUI DATA HERO** atau `node tools/build-herostats.js` (butuh internet). `public/database/mlbbids.json` berisi kamus ID hero / spell / item untuk data after match (matchTools). Spell pemain: Control Panel › dropdown **Spell** di samping lane. Parameter: `?bg=poster` (bawaan) · `dark` · `transparent` · `green`, `?ctrl=0` tanpa area tombol.

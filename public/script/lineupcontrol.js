@@ -3,11 +3,11 @@
  * (c) 2026 CV. Arindra Production & ARPRO Esport
  * Released under the MIT License: https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools
  */
-// lineupcontrol.js — tombol Auto / Show / Hide untuk lineupdisplay.html (di control panel)
+// lineupcontrol.js — tombol Start / Hide untuk lineupdisplay.html (di control panel)
 
 (function () {
     const buttons = document.querySelectorAll('[data-lineup-mode]');
-    const COLORS = { auto: '#a855f7', show: '#00ff8c', hide: '#ff2828' };
+    const COLORS = { show: '#00ff8c', hide: '#ff2828' };
 
     function mark(mode) {
         buttons.forEach(btn => {

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="lineupdisplay.css">
 </head>
 <!-- Lineup + Statistik (tema SSC 2027 "Poster Arena"). Area siaran 1920×1080 di atas; di bawahnya area putih berisi tombol
-     (TAMPILKAN STATISTIK) yang tidak ikut tertangkap OBS / vMix. ?bg=poster (bawaan) · dark · transparent · green · ?ctrl=0 tanpa area tombol -->
+     (START / HIDE, TAMPILKAN STATISTIK) yang tidak ikut tertangkap OBS / vMix. Saat dibuka layar kosong sampai START ditekan. ?bg=poster (bawaan) · dark · transparent · green · ?ctrl=0 tanpa area tombol -->
 <body>
     <div class="lu-viewport" id="luViewport">
         <div class="lu-root" id="luRoot">
@@ -109,12 +109,11 @@
             <span id="luCtrlStatus">Memuat…</span>
         </div>
         <div class="lu-ctrl-buttons">
+            <button type="button" class="start" data-mode="show" title="Lineup masuk dengan animasi (tekan lagi untuk memutar ulang)">▶ START</button>
+            <button type="button" data-mode="hide" title="Kosongkan layar">HIDE</button>
+            <span class="lu-ctrl-sep"></span>
             <button type="button" class="primary" id="luStatsShow">TAMPILKAN STATISTIK</button>
             <button type="button" id="luStatsHide">SEMBUNYIKAN STATISTIK</button>
-            <span class="lu-ctrl-sep"></span>
-            <button type="button" data-mode="auto" title="Lineup tampil otomatis setelah 10 hero terpilih">AUTO</button>
-            <button type="button" data-mode="show">SHOW</button>
-            <button type="button" data-mode="hide">HIDE</button>
         </div>
         <div class="lu-ctrl-note">Area putih ini tidak ikut tampil di OBS / vMix (Browser Source 1920×1080). Pengaturan nilai hero &amp; bobot: <a href="lineupstats.html" target="_blank">Statistik Lineup ↗</a></div>
     </div>

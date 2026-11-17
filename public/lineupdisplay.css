@@ -28,14 +28,16 @@ body.no-ctrl .lu-ctrl { display: none; }
 }
 
 /* latar poster: gradien krem → pink, pecahan petir, titik halftone */
-.lu-bg { position: absolute; inset: 0; z-index: 0; }
+/* latar ikut masuk saat START (layar benar-benar kosong sebelum START) */
+.lu-bg { position: absolute; inset: 0; z-index: 0; opacity: 0; transition: opacity 0.5s ease 0.35s; }
+.lu-root.is-visible .lu-bg { opacity: 1; transition-delay: 0s; }
 .lu-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-body.bg-poster .lu-root {
+body.bg-poster .lu-bg {
     background:
         radial-gradient(900px 520px at 50% 42%, rgba(255, 243, 200, 0.95), transparent 70%),
         linear-gradient(160deg, #FFF3C8 0%, #FFD9C4 34%, #FFA9BF 68%, #FF6A9C 100%);
 }
-body.bg-dark .lu-root {
+body.bg-dark .lu-bg {
     background:
         radial-gradient(900px 520px at 50% 42%, rgba(106, 47, 214, 0.55), transparent 70%),
         linear-gradient(160deg, #20104A 0%, #150A33 60%, #0d0622 100%);
@@ -156,18 +158,6 @@ body.bg-dark .lu-title h1 { color: #fff; text-shadow: 4px 4px 0 var(--ssc-pink);
 .lu-map { font-family: var(--ssc-font-marker); font-size: 20px; color: var(--ssc-magenta); }
 .lu-map:empty { display: none; }
 body.bg-dark .lu-map { color: var(--ssc-yellow); }
-
-/* 5 warna di bawah header */
-.lu-header::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -20px;
-    height: 6px;
-    background: var(--ssc-stripe);
-    border-radius: 3px;
-}
 
 /* ---------- Baris pemain ---------- */
 .lu-row {
@@ -353,7 +343,6 @@ body.bg-dark .lu-map { color: var(--ssc-yellow); }
     color: #fff;
     overflow: hidden;
 }
-.ls-center::before, .ls-side::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--ssc-stripe); }
 .ls-center { padding: 24px 40px 14px; display: flex; flex-direction: column; justify-content: space-between; }
 .ls-bars { display: flex; flex-direction: column; gap: 6px; }
 .ls-row { display: flex; flex-direction: column; gap: 4px; }
@@ -456,6 +445,10 @@ body.bg-dark .lu-sponsors-label { color: #fff; }
     transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 .lu-ctrl button.primary { background: var(--ssc-yellow); box-shadow: 3px 3px 0 var(--ssc-pink); font-size: 17px; padding: 14px 24px; }
+.lu-ctrl button.start { background: var(--ssc-green); color: var(--ssc-ink); box-shadow: 3px 3px 0 var(--ssc-purple); font-size: 20px; padding: 14px 34px; }
+.lu-ctrl button.start.on { background: var(--ssc-green); color: var(--ssc-ink); box-shadow: 3px 3px 0 var(--ssc-yellow), 0 0 0 3px var(--ssc-purple); }
+/* START saat sudah tampil: semua elemen kembali ke posisi awal tanpa transisi, lalu animasi masuk diputar lagi */
+.lu-root.lu-reset, .lu-root.lu-reset * { transition: none !important; }
 .lu-ctrl button.on { background: var(--ssc-purple); color: #fff; box-shadow: 3px 3px 0 var(--ssc-yellow); }
 .lu-ctrl button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ssc-pink); }
 .lu-ctrl button:disabled { opacity: 0.45; cursor: default; }

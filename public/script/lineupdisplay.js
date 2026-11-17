@@ -5,12 +5,12 @@
  */
 // lineupdisplay.js — Lineup + Statistik (tema SSC 2027).
 // Data: tim & nickname dari /api/matchdata (SSC Sync), hero dari /api/matchdraft, spell = pilihan di Control Panel.
-// Lineup tampil otomatis setelah 10 hero terpilih (mode "auto") atau dipaksa show / hide. Tombol TAMPILKAN STATISTIK
+// Saat halaman dibuka layar selalu kosong; lineup baru masuk (dengan animasi) setelah operator menekan START
+// (area putih di bawah, Control Panel, atau Stream Deck). HIDE mengosongkan lagi. Tombol TAMPILKAN STATISTIK
 // (area putih di bawah 1080 px, Control Panel, atau Stream Deck) membuka panel statistik di antara dua baris:
 // angka dihitung server (/api/lineup-stats) dari data Academy MLBB.
 
 (function () {
-    const AUTO_DELAY = 4500; // tunggu animasi pick terakhir di overlay draft selesai
     const SPELLS = ['Flicker', 'Retribution', 'Execute', 'Purify', 'Sprint', 'Aegis', 'Inspire', 'Vengeance', 'Flameshot', 'Petrify', 'Revitalize', 'Arrival'];
     const CTRL_H = 170;
 
@@ -23,7 +23,8 @@
 
     const $ = (id) => document.getElementById(id);
     const root = $('luRoot');
-    const state = { md: null, draft: null, mapdraw: null, mode: 'auto', stats: false, statsData: null, visible: false, autoTimer: null, firstEval: true };
+    // started = START sudah ditekan sejak halaman ini dibuka (halaman yang baru dibuka selalu kosong)
+    const state = { md: null, draft: null, mapdraw: null, mode: 'hide', stats: false, statsData: null, visible: false, started: false };
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
     // ---------- Pratinjau di browser biasa: area siaran diperkecil agar tombol di bawah ikut terlihat ----------
@@ -209,13 +210,6 @@
     }
 
     // ---------- Tampil / sembunyi ----------
-    function allPicked() {
-        const d = state.draft;
-        if (!d || !d.blueside || !d.redside) return false;
-        const picks = [...(d.blueside.pick || []).slice(0, 5), ...(d.redside.pick || []).slice(0, 5)];
-        return picks.length === 10 && picks.every(p => p && p.hero);
-    }
-
     function setVisible(v) {
         state.visible = v;
         root.classList.toggle('is-visible', v);
@@ -224,25 +218,30 @@
     }
 
     function evaluate() {
-        const auto = state.mode === 'auto' && allPicked();
-        const want = state.mode === 'show' || auto;
-        if (!want) {
-            clearTimeout(state.autoTimer);
-            state.autoTimer = null;
-            if (state.visible) setVisible(false);
-        } else if (!state.visible) {
-            if (state.mode === 'show' || state.firstEval || state.stats) {
-                setVisible(true);
-            } else if (!state.autoTimer) {
-                state.autoTimer = setTimeout(() => {
-                    state.autoTimer = null;
-                    if (state.mode === 'auto' && allPicked()) setVisible(true);
-                }, AUTO_DELAY);
-            }
+        if (state.mode !== 'show') state.started = false;
+        const want = state.mode === 'show' && state.started;
+        if (want !== state.visible) setVisible(want);
+        else { applyStats(); renderCtrl(); }
+    }
+
+    // START: animasi masuk dari awal (bila sudah tampil, dikosongkan seketika lalu masuk lagi)
+    function start() {
+        state.started = true;
+        if (state.visible) {
+            root.classList.add('lu-reset');
+            state.visible = false;
+            root.classList.remove('is-visible', 'stats-on');
+            void root.offsetWidth;
+            root.classList.remove('lu-reset');
+            void root.offsetWidth;
         }
-        state.firstEval = false;
-        applyStats();
-        renderCtrl();
+        evaluate();
+    }
+    let lastStart = 0;
+    function applyControl(c) {
+        if (c.mode) state.mode = c.mode;
+        if (c.stats != null) state.stats = !!c.stats;
+        if (c.start && c.start !== lastStart && state.mode === 'show') { lastStart = c.start; start(); } else evaluate();
     }
 
     // ---------- Area tombol operator ----------
@@ -256,10 +255,10 @@
         const el = $('luCtrlStatus');
         let text, cls = '';
         if (ctrlMsg) { text = ctrlMsg.text; cls = ctrlMsg.err ? 'err' : 'ok'; }
-        else if (!ready) text = 'Statistik menunggu 10 hero terpilih di draft.';
-        else if (state.stats && state.visible) { text = 'Statistik sedang TAMPIL.'; cls = 'ok'; }
-        else if (state.stats) text = 'Statistik aktif, lineup sedang disembunyikan.';
-        else text = state.visible ? 'Lineup tampil · statistik tersembunyi.' : 'Lineup tersembunyi.';
+        else if (state.mode === 'show' && !state.started) text = 'Lineup sedang tampil di siaran (halaman ini baru dibuka, jadi kosong). Tekan START untuk memutar ulang animasi masuk.';
+        else if (!state.visible) text = 'Layar kosong. Tekan START untuk memunculkan lineup.';
+        else if (state.stats) { text = 'Lineup + statistik sedang TAMPIL.'; cls = 'ok'; }
+        else { text = ready ? 'Lineup TAMPIL · statistik tersembunyi.' : 'Lineup TAMPIL · statistik menunggu 10 hero terpilih di draft.'; cls = 'ok'; }
         const unknown = state.statsData && state.statsData.unknown && state.statsData.unknown.length ? ` Hero tanpa data (dihitung 5): ${state.statsData.unknown.join(', ')}.` : '';
         el.textContent = text + (ctrlMsg ? '' : unknown);
         el.className = cls;
@@ -275,8 +274,7 @@
             const res = await fetch('/api/lineup-control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             const out = await res.json();
             if (!res.ok) throw new Error(out.message || 'Gagal');
-            state.mode = out.mode; state.stats = !!out.stats;
-            evaluate();
+            applyControl(out);
         } catch (e) { flash(e.message, true); }
     }
     if (withCtrl) {
@@ -292,7 +290,7 @@
     }
     async function loadMatch() { try { state.md = await fetchJson('/api/matchdata'); render(); } catch (e) { console.error('matchdata', e); } }
     async function loadDraft() { try { const d = await fetchJson('/api/matchdraft'); state.draft = d.draftdata; render(); } catch (e) { console.error('matchdraft', e); } }
-    async function loadControl() { try { const c = await fetchJson('/api/lineup-control'); state.mode = c.mode || 'auto'; state.stats = !!c.stats; } catch (e) {} }
+    async function loadControl() { try { const c = await fetchJson('/api/lineup-control'); state.mode = c.mode === 'show' ? 'show' : 'hide'; state.stats = !!c.stats; } catch (e) {} }
     async function loadMap() { try { const m = await fetchJson('/api/mapdraw'); state.mapdraw = m.drawdata; renderMap(); } catch (e) {} }
     async function loadFormat() { try { state.bo = (await fetchJson('/api/match-format')).bo; render(); } catch (e) {} }
 
@@ -317,9 +315,7 @@
                 if (msg.data) { state.draft = msg.data; render(); evaluate(); } else loadDraft().then(evaluate);
                 loadStatsSoon();
             } else if (msg.type === 'lineup_control') {
-                state.mode = msg.mode || state.mode;
-                if (msg.stats != null) state.stats = !!msg.stats;
-                evaluate();
+                applyControl(msg);
             } else if (msg.type === 'lineup_stats_update') {
                 loadStatsSoon();
             } else if (msg.type === 'matchformat_update' && msg.data) {

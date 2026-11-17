@@ -427,10 +427,10 @@ app.post('/api/matchdraft', (req, res) => {
         // draft baru dimulai (hero pertama masuk setelah draft kosong) → chapter VOD otomatis
         if (filledBefore === 0 && draftFilled(cache.matchdraft) > 0) vodLog(`DRAFT ${vodMatchLabel()}`, 'draft', { chapter: true });
         broadcast({ type: 'draftdata_update', data: cache.matchdraft.draftdata });
-        // draft dikosongkan untuk game berikutnya → statistik lineup kembali tersembunyi
-        if (lineupState.stats && draftFilled(cache.matchdraft) === 0) {
-            lineupState = { ...lineupState, stats: false };
-            broadcast({ type: 'lineup_control', mode: lineupState.mode, stats: false });
+        // draft dikosongkan untuk game berikutnya → lineup & statistik kembali kosong (tunggu START lagi)
+        if ((lineupState.stats || lineupState.mode !== 'hide') && draftFilled(cache.matchdraft) === 0) {
+            lineupState = { mode: 'hide', stats: false };
+            broadcast({ type: 'lineup_control', mode: 'hide', stats: false });
         }
         recordPicks(cache.matchdraft.draftdata);
         
@@ -1672,9 +1672,8 @@ const COMPANION_ACTIONS = {
     'mvp-hide': ['Sembunyikan banner MVP in-game', '/api/ingame', () => ({ mvp: { show: false } })],
     'highlights-show': ['Tampilkan badge HIGHLIGHTS', '/api/ingame', () => ({ highlights: { show: true } })],
     'highlights-hide': ['Sembunyikan badge HIGHLIGHTS', '/api/ingame', () => ({ highlights: { show: false } })],
-    'lineup-show': ['Tampilkan lineup', '/api/lineup-control', () => ({ mode: 'show' })],
+    'lineup-show': ['START lineup (animasi masuk)', '/api/lineup-control', () => ({ mode: 'show' })],
     'lineup-hide': ['Sembunyikan lineup', '/api/lineup-control', () => ({ mode: 'hide' })],
-    'lineup-auto': ['Lineup mode otomatis', '/api/lineup-control', () => ({ mode: 'auto' })],
     'lineup-stats-show': ['Tampilkan statistik lineup', '/api/lineup-control', () => ({ stats: true })],
     'lineup-stats-hide': ['Sembunyikan statistik lineup', '/api/lineup-control', () => ({ stats: false })],
     'save-result': ['Simpan hasil game ke turnamen', '/api/tournament/game', () => ({})],
@@ -1749,15 +1748,17 @@ app.get('/api/herofull', async (req, res) => {
 });
 
 // --- LINEUP OVERLAY CONTROL (lineupdisplay.html) ---
-// auto = tampil sendiri saat 10 hero sudah terpilih (fase ADJUSTMENT), show / hide = paksa dari control panel
+// hide (bawaan) = layar kosong · show = tombol START (animasi masuk diputar ulang setiap START ditekan)
 // stats = panel statistik di antara dua baris lineup (tombol TAMPILKAN STATISTIK, butuh 10 hero)
-let lineupState = { mode: 'auto', stats: false };
+let lineupState = { mode: 'hide', stats: false };
 app.get('/api/lineup-control', (req, res) => { res.json(lineupState); });
 app.post('/api/lineup-control', (req, res) => {
     const b = req.body || {};
     const next = { ...lineupState };
+    let start = false;
     if (b.mode != null) {
-        if (!['auto', 'show', 'hide'].includes(b.mode)) return res.status(400).json({ message: 'Mode harus auto, show, atau hide' });
+        if (!['show', 'hide'].includes(b.mode)) return res.status(400).json({ message: 'Mode harus show (START) atau hide' });
+        start = b.mode === 'show';
         next.mode = b.mode;
         if (b.mode === 'hide') next.stats = false;
     }
@@ -1765,12 +1766,14 @@ app.post('/api/lineup-control', (req, res) => {
         next.stats = !!b.stats;
         if (next.stats) {
             if (!lineupStatsCalc().ready) return res.status(400).json({ message: 'Statistik butuh 10 hero terpilih (draft belum lengkap).' });
-            if (next.mode === 'hide') next.mode = 'show';
+            if (next.mode === 'hide') { next.mode = 'show'; start = true; }
         }
     }
     lineupState = next;
-    broadcast({ type: 'lineup_control', mode: lineupState.mode, stats: lineupState.stats });
-    res.json(lineupState);
+    // start = nomor unik tiap START (halaman yang menekan menerima jawaban + siaran WS, animasi cukup sekali)
+    const startId = start ? Date.now() : 0;
+    broadcast({ type: 'lineup_control', mode: lineupState.mode, stats: lineupState.stats, start: startId });
+    res.json({ ...lineupState, start: startId });
 });
 
 // --- PLAYER NOTIFICATION (eventdisplay.html / notifdisplay.html): First Blood, Turtle/Lord Slain & Stolen ---
