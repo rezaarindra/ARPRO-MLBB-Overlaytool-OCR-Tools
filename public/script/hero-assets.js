@@ -32,6 +32,7 @@
     let heroes = [];
     let fullByKey = {};
     let animByKey = {};
+    let loopByKey = {};
     let focus = {};
     let ready = null;
 
@@ -48,7 +49,12 @@
                 fullByKey = {};
                 (Array.isArray(files) ? files : []).forEach(f => { fullByKey[key(f)] = '/Assets/HeroFull/' + encodeURIComponent(f); });
                 animByKey = {};
-                (Array.isArray(anims) ? anims : []).forEach(f => { animByKey[key(f)] = '/Assets/Hero_Animation/' + encodeURIComponent(f); });
+                loopByKey = {};
+                (Array.isArray(anims) ? anims : []).forEach(f => {
+                    const loop = f.startsWith('loop/');
+                    const name = loop ? f.slice(5) : f;
+                    (loop ? loopByKey : animByKey)[key(name)] = '/Assets/Hero_Animation/' + (loop ? 'loop/' : '') + encodeURIComponent(name);
+                });
                 focus = focusMap || {};
             });
         }
@@ -63,12 +69,14 @@
         const hero = heroes.find(h => h.img && fileOf(h.img).toLowerCase() === file.toLowerCase());
         const fullKey = fullByKey[k] ? k : (ALIAS[k] && fullByKey[ALIAS[k]] ? ALIAS[k] : null);
         const anim = animByKey[k] || (ALIAS[k] && animByKey[ALIAS[k]]) || null;
+        const loop = loopByKey[k] || (ALIAS[k] && loopByKey[ALIAS[k]]) || null;
         return {
             key: k,
             name: hero ? hero.name : file.replace(/\.[a-z]+$/i, ''),
             portrait: src,
             full: fullKey ? fullByKey[fullKey] : null,
             anim,
+            loop,
             voice: hero ? hero.voice : null,
             focus: focus[k] || null
         };

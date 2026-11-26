@@ -94,6 +94,19 @@ body.fx-ready .uppermiddle .image-box img {
     object-position: 50% var(--fx-splash-y, 22%);
 }
 
+/* loop animasi hero di kotak pick (Assets/Hero_Animation/loop), posisi & ukuran disalin dari <img> oleh draft-fx.js */
+video.fx-loop {
+    position: absolute;
+    z-index: 2;
+    object-fit: cover;
+    object-position: 50% 20%;
+    max-width: none;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+video.fx-loop.on { opacity: 1; }
+
 /* animasi hero (Assets/Hero_Animation) menggantikan gambar diam bila videonya siap */
 .fx-splash-art video { display: none; }
 .fx-splash-art.is-video img { display: none; }

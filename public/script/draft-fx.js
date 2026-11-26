@@ -441,9 +441,75 @@
     }
     fetch('/api/draftfx', { cache: 'no-store' }).then(r => r.json()).then(d => applyFx(d.config || {})).catch(() => {});
 
+    // ---------- Animasi loop di kotak pick ----------
+    // Assets/Hero_Animation/loop/<Hero>.mp4 (potongan tegak kecil) menggantikan gambar hero di kotak pick (slot 1–10).
+    // Video ditaruh tepat di posisi & ukuran <img> (berlaku di semua template) dan baru tampil setelah transisi
+    // masuk gambar selesai. Hero tanpa file loop / video gagal dimuat → gambar diam seperti biasa.
+    function transitionMs(el) {
+        const cs = getComputedStyle(el);
+        const list = (v) => v.split(',').map(s => parseFloat(s) * (/ms\s*$/.test(s) ? 1 : 1000) || 0);
+        const d = list(cs.transitionDuration), dl = list(cs.transitionDelay);
+        return Math.max(0, ...d.map((x, i) => x + (dl[i % dl.length] || 0)));
+    }
+
+    function placeLoop(vid, img) {
+        Object.assign(vid.style, { left: `${img.offsetLeft}px`, top: `${img.offsetTop}px`, width: `${img.offsetWidth}px`, height: `${img.offsetHeight}px` });
+    }
+
+    function syncLoop(slot) {
+        const img = document.getElementById(`image-display-${slot}`);
+        const box = document.getElementById(`image-box-${slot}`);
+        if (!img || !box) return;
+        const src = img.getAttribute('src') || '';
+        const info = src && box.classList.contains('show') && window.HeroAssets ? HeroAssets.byImg(src) : null;
+        const want = info && info.loop;
+        let vid = box.querySelector(':scope > video.fx-loop');
+        if (vid && vid.dataset.src === want) return;
+        if (vid) vid.remove();
+        img.style.visibility = '';
+        if (!want) return;
+
+        vid = document.createElement('video');
+        vid.className = 'fx-loop';
+        vid.muted = true;
+        vid.loop = true;
+        vid.playsInline = true;
+        vid.preload = 'auto';
+        vid.dataset.src = want;
+        box.appendChild(vid);
+        let ready = false, waited = false;
+        const reveal = () => {
+            if (!ready || !waited || !vid.isConnected) return;
+            placeLoop(vid, img);
+            vid.classList.add('on');
+            img.style.visibility = 'hidden';
+        };
+        vid.oncanplay = () => { ready = true; reveal(); };
+        vid.onerror = () => { vid.remove(); img.style.visibility = ''; };
+        setTimeout(() => { waited = true; reveal(); }, transitionMs(img));
+        vid.src = want;
+        vid.play().catch(() => {});
+    }
+
+    function watchLoops() {
+        for (let s = 1; s <= 10; s++) {
+            const img = document.getElementById(`image-display-${s}`);
+            const box = document.getElementById(`image-box-${s}`);
+            if (!img || !box) continue;
+            const mo = new MutationObserver(() => syncLoop(s));
+            mo.observe(img, { attributes: true, attributeFilter: ['src'] });
+            mo.observe(box, { attributes: true, attributeFilter: ['class'] });
+            syncLoop(s);
+        }
+        addEventListener('resize', () => document.querySelectorAll('video.fx-loop.on').forEach(v => {
+            const img = v.parentElement.querySelector('img');
+            if (img) placeLoop(v, img);
+        }));
+    }
+
     function init() {
         document.body.classList.add('fx-ready');
-        if (window.HeroAssets) HeroAssets.load();
+        if (window.HeroAssets) HeroAssets.load().then(watchLoops);
         watchDom();
         const q = new URLSearchParams(location.search).get('fxdemo');
         if (q) setTimeout(() => demo(q), 1500);

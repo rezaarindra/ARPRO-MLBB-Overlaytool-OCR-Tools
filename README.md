@@ -209,7 +209,14 @@ Taruh video di `public/Assets/Hero_Animation/` dengan nama hero, mis. `Aamon.mp4
 - **Splash pick draft** (`draft-fx.js`: `display.html`, `display2.html`, `displayssc.html` + versi ban6): diputar dari detik 0 tanpa suara (voice line tetap dari hero), posisi ikut Broadcast Control › Posisi Splash. Video yang belum siap dalam 0,7 detik → splash diam.
 - **Banner MVP in-game** (`ingamedisplay.html`): diputar berulang selama banner tampil, berhenti saat disembunyikan.
 
-Hero tanpa video tetap memakai `Assets/HeroFull`. Saran file: 1280×720, tanpa audio, ±3 detik (±1–1,5 MB). Folder ini tidak ikut di-upload ke GitHub (`.gitignore`). File baru langsung terbaca setelah Browser Source di-refresh.
+- **Kotak pick draft** (semua template draft): file loop di `public/Assets/Hero_Animation/loop/<Hero>.mp4` diputar berulang menggantikan gambar hero setelah animasi masuk selesai. Buat dari bagian video yang tenang (hero berdiri), potong tegak & kecil, awal-akhir disambung crossfade agar loop mulus:
+
+  ```
+  ffmpeg -ss <mulai> -t <durasi> -i Aamon.mp4 -an -filter_complex "[0:v]crop=702:1080:<x>:0,scale=320:494,setsar=1,split[a][b];[a]trim=start=<cf>,setpts=PTS-STARTPTS[body];[b]trim=end=<cf>,setpts=PTS-STARTPTS[head];[body][head]xfade=transition=fade:duration=<cf>:offset=<durasi-2×cf>,format=yuv420p[v]" -map "[v]" -c:v libx264 -crf 24 -g 24 -movflags +faststart loop/Aamon.mp4
+  ```
+  `<x>` = tepi kiri potongan (posisi tengah hero − 351), `<cf>` = lama crossfade (0,5–0,75 detik). Contoh yang ada: Aamon detik 3,0–9,5 (x 759, cf 0,75), Cici detik 2,0–3,9 (x 705, cf 0,5). Hasil ±150–400 KB per hero, ringan untuk 10 kotak sekaligus.
+
+Hero tanpa video tetap memakai `Assets/HeroFull` / gambar pick biasa. Saran file: 1280×720, tanpa audio, ±3 detik (±1–1,5 MB). Folder ini tidak ikut di-upload ke GitHub (`.gitignore`). File baru langsung terbaca setelah Browser Source di-refresh.
 
 ## 📐 Lineup & Statistik setelah draft
 
