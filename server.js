@@ -1747,6 +1747,15 @@ app.get('/api/herofull', async (req, res) => {
     } catch (error) { res.json([]); }
 });
 
+// animasi hero (video, opsional per hero) untuk splash pick draft & banner MVP; nama file = nama hero, mis. Aamon.mp4
+const heroAnimDir = path.join(__dirname, 'public/Assets/Hero_Animation');
+app.get('/api/heroanim', async (req, res) => {
+    try {
+        const files = await fs.readdir(heroAnimDir);
+        res.json(files.filter(f => /\.(mp4|webm)$/i.test(f)));
+    } catch (error) { res.json([]); }
+});
+
 // --- LINEUP OVERLAY CONTROL (lineupdisplay.html) ---
 // hide (bawaan) = layar kosong · show = tombol START (animasi masuk diputar ulang setiap START ditekan)
 // stats = panel statistik di antara dua baris lineup (tombol TAMPILKAN STATISTIK, butuh 10 hero)

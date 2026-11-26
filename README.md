@@ -202,6 +202,15 @@ Di **OCR Control** pilih jenis (**Gold / Angka / Teks / Timer**) lalu **+ TAMBAH
 
 Notif Control › Player Notification › **KILL STREAK** (Double Kill, Triple Kill, Maniac, Savage, Wipe Out) → pilih pemain → video notifikasi + kartu pemain (foto, nickname, hero yang dipakai, logo tim). Wipe Out menonjolkan logo & nama tim. Posisi kartu: `video_card` di `eventnotif.json`.
 
+## 🎞️ Animasi hero (video)
+
+Taruh video di `public/Assets/Hero_Animation/` dengan nama hero, mis. `Aamon.mp4`, `Cici.mp4`, `LapuLapu.mp4` (MP4 H.264 atau WebM; besar-kecil huruf, spasi & tanda baca diabaikan). Bila ada, video menggantikan splash diam di:
+
+- **Splash pick draft** (`draft-fx.js`: `display.html`, `display2.html`, `displayssc.html` + versi ban6): diputar dari detik 0 tanpa suara (voice line tetap dari hero), posisi ikut Broadcast Control › Posisi Splash. Video yang belum siap dalam 0,7 detik → splash diam.
+- **Banner MVP in-game** (`ingamedisplay.html`): diputar berulang selama banner tampil, berhenti saat disembunyikan.
+
+Hero tanpa video tetap memakai `Assets/HeroFull`. Saran file: 1280×720, tanpa audio, ±3 detik (±1–1,5 MB). Folder ini tidak ikut di-upload ke GitHub (`.gitignore`). File baru langsung terbaca setelah Browser Source di-refresh.
+
 ## 📐 Lineup & Statistik setelah draft
 
 `lineupdisplay.html` (Browser Source 1920×1080): dua baris pemain (foto, hero, nickname, **spell**). Saat dibuka layar **kosong**; lineup baru masuk dengan animasi setelah operator menekan **START** (tekan lagi untuk memutar ulang animasi), **HIDE** mengosongkan layar, dan lineup otomatis kosong lagi saat draft dikosongkan untuk game berikutnya. START / HIDE ada di area putih bawah, Control Panel › Lineup Overlay, dan Stream Deck (`/api/companion/lineup-show` / `-hide`). Tombol **TAMPILKAN STATISTIK** ada di **area putih di bawah tampilan** (di luar 1920×1080, tidak ikut tertangkap OBS / vMix), juga di Control Panel › Lineup Overlay dan Stream Deck (`/api/companion/lineup-stats-show` / `-hide`). Butuh 10 hero; tertutup otomatis saat draft dikosongkan.

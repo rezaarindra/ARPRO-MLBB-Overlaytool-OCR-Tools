@@ -52,6 +52,24 @@
         });
     }
 
+    // animasi hero: true bila video siap diputar; lambat / gagal → false (splash memakai gambar diam)
+    function loadVideo(v, src) {
+        return new Promise(resolve => {
+            if (!src) {
+                if (v.getAttribute('src')) { v.removeAttribute('src'); v.load(); }
+                resolve(false);
+                return;
+            }
+            let settled = false;
+            const done = (ok) => { if (!settled) { settled = true; v.oncanplay = v.onerror = null; resolve(ok); } };
+            v.oncanplay = () => done(true);
+            v.onerror = () => done(false);
+            if (v.getAttribute('src') !== src) { v.src = src; v.load(); } else v.currentTime = 0;
+            if (v.readyState >= 3) done(true);
+            setTimeout(() => done(v.readyState >= 2), 700); // jangan menahan animasi bila video lambat
+        });
+    }
+
     function teamLogo(side) {
         const el = document.getElementById(side === 'blue' ? 'displayImage1' : 'displayImage2');
         const src = el ? el.getAttribute('src') || '' : '';
@@ -83,7 +101,7 @@
             const el = document.createElement('div');
             el.className = `fx-splash fx-${side}`;
             el.innerHTML = '<div class="fx-splash-inner">'
-                + '<div class="fx-splash-bg"><img alt=""></div><div class="fx-splash-art"><img alt=""></div><div class="fx-splash-shade"></div>'
+                + '<div class="fx-splash-bg"><img alt=""></div><div class="fx-splash-art"><img alt=""><video muted playsinline preload="auto"></video></div><div class="fx-splash-shade"></div>'
                 + '<div class="fx-splash-player"><img alt=""><span></span></div>'
                 + '<div class="fx-splash-name"><span class="fx-splash-hero"></span></div>'
                 + '</div>';
@@ -114,10 +132,12 @@
         return true;
     }
 
+    // media = <img> splash atau <video> animasi hero
     function layoutArt(img, el, focus, side) {
         const W = el.clientWidth, H = el.clientHeight;
-        if (!img.naturalWidth || !W || !window.HeroAssets || !HeroAssets.splashLayout) { img.removeAttribute('style'); return; }
-        const L = HeroAssets.splashLayout(img.naturalWidth, img.naturalHeight, W, H, focus, side);
+        const iw = img.naturalWidth || img.videoWidth, ih = img.naturalHeight || img.videoHeight;
+        if (!iw || !W || !window.HeroAssets || !HeroAssets.splashLayout) { img.removeAttribute('style'); return; }
+        const L = HeroAssets.splashLayout(iw, ih, W, H, focus, side);
         Object.assign(img.style, { position: 'absolute', left: `${L.left}px`, top: `${L.top}px`, width: `${L.width}px`, height: `${L.height}px`, objectFit: 'fill', maxWidth: 'none' });
     }
 
@@ -130,15 +150,23 @@
         // splash art memenuhi area; posisi & zoom per hero dari herofocus.json (Broadcast Control › Posisi Splash)
         const src = info.full || info.portrait;
         const img = el.querySelector('.fx-splash-art img');
+        const vid = el.querySelector('.fx-splash-art video');
         const bg = el.querySelector('.fx-splash-bg img');
         const player = playerOf(job.slot);
         const pl = el.querySelector('.fx-splash-player');
-        await Promise.all([
+        const [, , , hasVid] = await Promise.all([
             loadImg(img, src),
             loadImg(bg, src),
-            player.photo ? loadImg(pl.querySelector('img'), player.photo) : null
+            player.photo ? loadImg(pl.querySelector('img'), player.photo) : null,
+            loadVideo(vid, info.anim) // Assets/Hero_Animation/<Hero>.mp4 bila ada: menggantikan splash diam
         ]);
+        el.querySelector('.fx-splash-art').classList.toggle('is-video', hasVid);
         layoutArt(img, el, info.focus, side);
+        if (hasVid) {
+            layoutArt(vid, el, info.focus, side);
+            vid.currentTime = 0;
+            vid.play().catch(() => {});
+        }
         el.querySelector('.fx-splash-hero').textContent = (info.name || '').toUpperCase();
         pl.style.display = player.photo || player.name ? '' : 'none';
         pl.classList.toggle('no-photo', !player.photo);
@@ -181,6 +209,7 @@
         const landing = playStinger(job, side);
         await out.finished;
         el.style.visibility = 'hidden';
+        vid.pause();
         el.getAnimations({ subtree: true }).forEach(a => a.cancel());
         await landing;
         return true;

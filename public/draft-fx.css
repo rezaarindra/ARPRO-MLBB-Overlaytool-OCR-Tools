@@ -94,6 +94,11 @@ body.fx-ready .uppermiddle .image-box img {
     object-position: 50% var(--fx-splash-y, 22%);
 }
 
+/* animasi hero (Assets/Hero_Animation) menggantikan gambar diam bila videonya siap */
+.fx-splash-art video { display: none; }
+.fx-splash-art.is-video img { display: none; }
+.fx-splash-art.is-video video { display: block; }
+
 .fx-splash-shade {
     position: absolute;
     inset: 0;

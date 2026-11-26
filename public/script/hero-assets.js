@@ -3,7 +3,8 @@
  * (c) 2026 CV. Arindra Production & ARPRO Esport
  * Released under the MIT License: https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools
  */
-// hero-assets.js — data hero bersama untuk overlay: nama hero, potret (Assets/HeroPick) & splash lebar (Assets/HeroFull)
+// hero-assets.js — data hero bersama untuk overlay: nama hero, potret (Assets/HeroPick), splash lebar (Assets/HeroFull)
+// & animasi hero opsional (Assets/Hero_Animation/*.mp4|webm, dicocokkan dengan kunci yang sama seperti HeroFull)
 // Nama file HeroFull tidak seragam dengan herolist.json (akhiran "_29", spasi, titik, ejaan berbeda),
 // jadi dicocokkan lewat kunci yang dinormalisasi + daftar alias di bawah. File gambar tidak perlu di-rename.
 
@@ -22,7 +23,7 @@
     // "Lapu-Lapu_29.png" → "lapulapu", "x.borg.png" → "xborg", "chang_e.png" → "change"
     const key = (s) => (s || '')
         .toLowerCase()
-        .replace(/\.(png|jpe?g|webp)$/, '')
+        .replace(/\.(png|jpe?g|webp|mp4|webm)$/, '')
         .replace(/_\d+$/, '')
         .replace(/[^a-z0-9]/g, '');
 
@@ -30,6 +31,7 @@
 
     let heroes = [];
     let fullByKey = {};
+    let animByKey = {};
     let focus = {};
     let ready = null;
 
@@ -38,12 +40,15 @@
             ready = Promise.all([
                 fetch('/database/herolist.json').then(r => r.json()).catch(() => []),
                 fetch('/api/herofull').then(r => r.json()).catch(() => []),
+                fetch('/api/heroanim').then(r => r.json()).catch(() => []),
                 // posisi splash per hero (Broadcast Control › Posisi Splash): { "zhuxin": { "x": 50, "y": 30, "zoom": 1.2 } }
                 fetch('/database/herofocus.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : {})).catch(() => ({}))
-            ]).then(([list, files, focusMap]) => {
+            ]).then(([list, files, anims, focusMap]) => {
                 heroes = Array.isArray(list) ? list : [];
                 fullByKey = {};
                 (Array.isArray(files) ? files : []).forEach(f => { fullByKey[key(f)] = '/Assets/HeroFull/' + encodeURIComponent(f); });
+                animByKey = {};
+                (Array.isArray(anims) ? anims : []).forEach(f => { animByKey[key(f)] = '/Assets/Hero_Animation/' + encodeURIComponent(f); });
                 focus = focusMap || {};
             });
         }
@@ -57,11 +62,13 @@
         const k = key(file);
         const hero = heroes.find(h => h.img && fileOf(h.img).toLowerCase() === file.toLowerCase());
         const fullKey = fullByKey[k] ? k : (ALIAS[k] && fullByKey[ALIAS[k]] ? ALIAS[k] : null);
+        const anim = animByKey[k] || (ALIAS[k] && animByKey[ALIAS[k]]) || null;
         return {
             key: k,
             name: hero ? hero.name : file.replace(/\.[a-z]+$/i, ''),
             portrait: src,
             full: fullKey ? fullByKey[fullKey] : null,
+            anim,
             voice: hero ? hero.voice : null,
             focus: focus[k] || null
         };

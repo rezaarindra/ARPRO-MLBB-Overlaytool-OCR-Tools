@@ -58,7 +58,10 @@
         document.documentElement.style.setProperty('--ig-team', TEAM_COLOR[side]);
         const art = $('igHeroArt');
         setImg(art, info ? (info.full || info.portrait) : logoOf(team));
-        art.style.objectPosition = info && info.focus ? info.focus : (info && info.full ? '50% 22%' : '50% 15%');
+        // focus (herofocus.json) = { x, y } dalam persen
+        const pos = info && info.focus ? `${info.focus.x ?? 50}% ${info.focus.y ?? 30}%` : (info && info.full ? '50% 22%' : '50% 15%');
+        art.style.objectPosition = pos;
+        setAnim(info && info.anim, pos);
 
         const photo = photoOf(side, player.name);
         mvpEl.classList.toggle('no-photo', !photo);
@@ -77,6 +80,32 @@
         $('igScoreRed').textContent = red.score || '0';
     }
 
+    // animasi hero (bila ada) diputar berulang di belakang banner; gagal dimuat → kembali ke gambar diam
+    function setAnim(src, pos) {
+        const vid = $('igHeroVid'), box = $('igArtBox');
+        vid.style.objectPosition = pos;
+        if (!src) {
+            box.classList.remove('is-video');
+            if (vid.getAttribute('src')) { vid.pause(); vid.removeAttribute('src'); vid.load(); }
+            return;
+        }
+        if (vid.getAttribute('src') !== src) {
+            box.classList.remove('is-video');
+            vid.oncanplay = () => box.classList.add('is-video');
+            vid.onerror = () => box.classList.remove('is-video');
+            vid.src = src;
+            vid.load();
+        }
+    }
+
+    // video hanya berjalan saat banner MVP tampil (hemat CPU di OBS)
+    function syncAnim() {
+        const vid = $('igHeroVid');
+        if (!vid.getAttribute('src')) return;
+        if (mvpEl.classList.contains('show')) vid.play().catch(() => {});
+        else vid.pause();
+    }
+
     function render() {
         const ig = state.ingame;
         if (!ig) return;
@@ -90,13 +119,14 @@
             fillMvp(); // tetap perbarui isi di balik layar
         } else if (state.shownKey && state.shownKey !== key && mvpEl.classList.contains('show')) {
             mvpEl.classList.remove('show');
-            state.swapTimer = setTimeout(() => { fillMvp(); mvpEl.classList.add('show'); }, SWAP_MS);
+            state.swapTimer = setTimeout(() => { fillMvp(); mvpEl.classList.add('show'); syncAnim(); }, SWAP_MS);
             state.shownKey = key;
         } else {
             fillMvp();
             mvpEl.classList.add('show');
             state.shownKey = key;
         }
+        syncAnim();
     }
 
     // ---------- Sponsor (dari website, bergantian tiap 6 detik) ----------

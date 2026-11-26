@@ -44,3 +44,6 @@ public/Assets/costum/ssc/index.json
 
 # output CSV untuk vMix (ditulis server)
 output/
+
+# animasi hero (video besar, simpan lokal saja — lihat README)
+public/Assets/Hero_Animation/
