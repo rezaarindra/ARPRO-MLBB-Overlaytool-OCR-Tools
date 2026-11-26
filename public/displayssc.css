@@ -160,3 +160,29 @@ html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
 @keyframes dsTurn { from { opacity: 0.25; } to { opacity: 0.75; } }
 @keyframes dsLow { from { transform: scale(1); } to { transform: scale(1.15); } }
 @keyframes dsPhase { from { transform: scale(1.6) skewX(-8deg); opacity: 0; letter-spacing: 0.3em; } to { transform: none; opacity: 1; } }
+
+/* ---------- displaysscban6.html: 3 ban per tim ----------
+   ban merah memakai 3 bingkai paling kanan; bingkai ban 4–5 di gambar latar ditutup plat nama tim */
+body.ban6 .ds-bans.red { left: 1643px; }
+.ds-teamplate {
+    position: absolute;
+    top: 719px;
+    width: 165px; height: 86px;
+    box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 10px;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px #1a6ff5, 0 6px 16px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    font-family: 'Bangers', sans-serif;
+    font-size: 28px;
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    color: #fff;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    animation: dsSlotIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.65s both;
+}
+.ds-teamplate > div { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.ds-teamplate.blue { left: 279px; background: linear-gradient(160deg, #3fa0ff 0%, #1b5cff 55%, #0a2f9c 100%); }
+.ds-teamplate.red { left: 1475px; background: linear-gradient(200deg, #ff7a6b 0%, #e3263b 55%, #8e1010 100%); }

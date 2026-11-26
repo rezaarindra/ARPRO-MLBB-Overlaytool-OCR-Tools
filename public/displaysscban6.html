@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draft SSC Ban 6</title>
+    <link rel="stylesheet" href="ssc-theme.css">
+    <link rel="stylesheet" href="draft-fx.css">
+    <link rel="stylesheet" href="displayssc.css">
+</head>
+<!-- Draft pick & ban 6 (3 ban per tim, bingkai ban 4–5 di gambar latar ditutup plat nama tim), desain SPEMMA Student Competition. Browser Source 1920×1080, bagian atas transparan.
+     Script sama dengan display2ban6.html (ID elemen sama): displayhero.js, draft-fx.js (splash + stinger pick), displaynicknamelogo.js, laneimg.js -->
+<body class="ban6">
+<div class="ds-root">
+    <img class="ds-bg" src="Assets/draftssc/bg.png" alt="">
+
+    <div class="ds-bans blue">
+        <div class="banhero blue" style="--i:0">
+            <div class="box ban0" id="ban-left-1"></div>
+            <div id="image-box-11" class="image-box"><img id="image-display-11" src="" alt=""></div>
+        </div>
+        <div class="banhero blue" style="--i:1">
+            <div class="box ban0" id="ban-left-2"></div>
+            <div id="image-box-12" class="image-box"><img id="image-display-12" src="" alt=""></div>
+        </div>
+        <div class="banhero blue" style="--i:2">
+            <div class="box ban0" id="ban-left-3"></div>
+            <div id="image-box-13" class="image-box"><img id="image-display-13" src="" alt=""></div>
+        </div>
+        
+        
+    </div>
+    <div class="ds-bans red">
+        
+        
+        <div class="banhero red" style="--i:2">
+            <div class="box ban0" id="ban-right-3"></div>
+            <div id="image-box-18" class="image-box"><img id="image-display-18" src="" alt=""></div>
+        </div>
+        <div class="banhero red" style="--i:1">
+            <div class="box ban0" id="ban-right-2"></div>
+            <div id="image-box-17" class="image-box"><img id="image-display-17" src="" alt=""></div>
+        </div>
+        <div class="banhero red" style="--i:0">
+            <div class="box ban0" id="ban-right-1"></div>
+            <div id="image-box-16" class="image-box"><img id="image-display-16" src="" alt=""></div>
+        </div>
+    </div>
+
+    <div class="ds-teamplate blue"><div id="name-box-1"></div></div>
+    <div class="ds-teamplate red"><div id="name-box-8"></div></div>
+
+    <div class="ds-picks blue">
+        <div class="heropick blue" style="--i:0">
+            <div class="box pick" id="pick-left-1"></div>
+            <div id="image-box-1" class="image-box"><img id="image-display-1" src="" alt=""></div>
+            <div class="playername"><div id="name-box-3"></div></div>
+            <div class="hide">
+                <img id="player-lane-1-blue" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-3"></div>
+            </div>
+        </div>
+        <div class="heropick blue" style="--i:1">
+            <div class="box pick" id="pick-left-2"></div>
+            <div id="image-box-2" class="image-box"><img id="image-display-2" src="" alt=""></div>
+            <div class="playername"><div id="name-box-4"></div></div>
+            <div class="hide">
+                <img id="player-lane-2-blue" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-4"></div>
+            </div>
+        </div>
+        <div class="heropick blue" style="--i:2">
+            <div class="box pick" id="pick-left-3"></div>
+            <div id="image-box-3" class="image-box"><img id="image-display-3" src="" alt=""></div>
+            <div class="playername"><div id="name-box-5"></div></div>
+            <div class="hide">
+                <img id="player-lane-3-blue" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-5"></div>
+            </div>
+        </div>
+        <div class="heropick blue" style="--i:3">
+            <div class="box pick" id="pick-left-4"></div>
+            <div id="image-box-4" class="image-box"><img id="image-display-4" src="" alt=""></div>
+            <div class="playername"><div id="name-box-6"></div></div>
+            <div class="hide">
+                <img id="player-lane-4-blue" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-6"></div>
+            </div>
+        </div>
+        <div class="heropick blue" style="--i:4">
+            <div class="box pick" id="pick-left-5"></div>
+            <div id="image-box-5" class="image-box"><img id="image-display-5" src="" alt=""></div>
+            <div class="playername"><div id="name-box-7"></div></div>
+            <div class="hide">
+                <img id="player-lane-5-blue" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-7"></div>
+            </div>
+        </div>
+    </div>
+    <div class="ds-picks red">
+        <div class="heropick red" style="--i:4">
+            <div class="box pick" id="pick-right-5"></div>
+            <div id="image-box-10" class="image-box"><img id="image-display-10" src="" alt=""></div>
+            <div class="playername"><div id="name-box-14"></div></div>
+            <div class="hide">
+                <img id="player-lane-5-red" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-14"></div>
+            </div>
+        </div>
+        <div class="heropick red" style="--i:3">
+            <div class="box pick" id="pick-right-4"></div>
+            <div id="image-box-9" class="image-box"><img id="image-display-9" src="" alt=""></div>
+            <div class="playername"><div id="name-box-13"></div></div>
+            <div class="hide">
+                <img id="player-lane-4-red" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-13"></div>
+            </div>
+        </div>
+        <div class="heropick red" style="--i:2">
+            <div class="box pick" id="pick-right-3"></div>
+            <div id="image-box-8" class="image-box"><img id="image-display-8" src="" alt=""></div>
+            <div class="playername"><div id="name-box-12"></div></div>
+            <div class="hide">
+                <img id="player-lane-3-red" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-12"></div>
+            </div>
+        </div>
+        <div class="heropick red" style="--i:1">
+            <div class="box pick" id="pick-right-2"></div>
+            <div id="image-box-7" class="image-box"><img id="image-display-7" src="" alt=""></div>
+            <div class="playername"><div id="name-box-11"></div></div>
+            <div class="hide">
+                <img id="player-lane-2-red" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-11"></div>
+            </div>
+        </div>
+        <div class="heropick red" style="--i:0">
+            <div class="box pick" id="pick-right-1"></div>
+            <div id="image-box-6" class="image-box"><img id="image-display-6" src="" alt=""></div>
+            <div class="playername"><div id="name-box-10"></div></div>
+            <div class="hide">
+                <img id="player-lane-1-red" class="lane-icon" src="Assets/lane/none.png" alt="">
+                <div class="name-image-box" id="name-image-box-10"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ds-logo blue"><img id="displayImage1" src="Assets/Other/nologo.png" alt=""></div>
+    <div class="ds-logo red"><img id="displayImage2" src="Assets/Other/nologo.png" alt=""></div>
+    <div class="ds-score blue"><div id="name-box-2"></div></div>
+    <div class="ds-score red"><div id="name-box-9"></div></div>
+    <div class="ds-vs">VS</div>
+
+    <div class="ds-timer"><p>00:<span id="timer">0</span></p></div>
+    <div class="ds-phase"><h2 id="phase"></h2></div>
+
+    <div class="hide">
+        <div id="timer-bar"></div><img id="arrow" src="" alt="">
+    </div>
+</div>
+
+<audio id="hero-voice"></audio>
+<button class="audiob" onclick="new Audio().play().catch(e => console.log('Audio unlocked'))">Enable Audio</button>
+
+<script>
+// timer ≤ 10 detik berdenyut merah · teks fase berganti = animasi pop
+// teks fase kosong (displayheroban6.js) → diambil dari nama gif arah: LeftBanning / RightPicking / Adjustment
+(function () {
+    const t = document.getElementById('timer'), p = document.getElementById('phase'), arrow = document.getElementById('arrow');
+    new MutationObserver(() => t.parentElement.classList.toggle('low', (parseInt(t.textContent, 10) || 0) <= 10)).observe(t, { childList: true, characterData: true, subtree: true });
+    let last = '';
+    const fill = () => {
+        const m = !p.textContent.trim() && /(banning|picking|adjustment)/i.exec(arrow.getAttribute('src') || '');
+        if (m) p.textContent = m[1].toUpperCase();
+    };
+    new MutationObserver(fill).observe(arrow, { attributes: true, attributeFilter: ['src'] });
+    new MutationObserver(() => {
+        fill();
+        if (p.textContent === last) return;
+        last = p.textContent;
+        p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop');
+    }).observe(p, { childList: true, characterData: true, subtree: true });
+})();
+</script>
+<script src="script/i18n.js"></script>
+<script src="script/displaynicknamelogo.js"></script>
+<script src="script/hero-assets.js"></script>
+<script src="script/draft-fx.js"></script>
+<script src="script/displayheroban6.js"></script>
+<script src="script/laneimg.js"></script>
+</body>
+</html>

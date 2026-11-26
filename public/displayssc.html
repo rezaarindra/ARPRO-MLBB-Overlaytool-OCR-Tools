@@ -174,11 +174,18 @@
 
 <script>
 // timer ≤ 10 detik berdenyut merah · teks fase berganti = animasi pop
+// teks fase kosong (displayheroban6.js) → diambil dari nama gif arah: LeftBanning / RightPicking / Adjustment
 (function () {
-    const t = document.getElementById('timer'), p = document.getElementById('phase');
+    const t = document.getElementById('timer'), p = document.getElementById('phase'), arrow = document.getElementById('arrow');
     new MutationObserver(() => t.parentElement.classList.toggle('low', (parseInt(t.textContent, 10) || 0) <= 10)).observe(t, { childList: true, characterData: true, subtree: true });
     let last = '';
+    const fill = () => {
+        const m = !p.textContent.trim() && /(banning|picking|adjustment)/i.exec(arrow.getAttribute('src') || '');
+        if (m) p.textContent = m[1].toUpperCase();
+    };
+    new MutationObserver(fill).observe(arrow, { attributes: true, attributeFilter: ['src'] });
     new MutationObserver(() => {
+        fill();
         if (p.textContent === last) return;
         last = p.textContent;
         p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop');
