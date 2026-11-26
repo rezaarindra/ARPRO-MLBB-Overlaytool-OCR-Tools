@@ -3,7 +3,7 @@
  * (c) 2026 CV. Arindra Production & ARPRO Esport
  * Released under the MIT License: https://github.com/rezaarindra/ARPRO-MLBB-Overlaytool-OCR-Tools
  */
-// draft-fx.js — animasi pick hero (Task 1), dipakai display.html, displayban6.html, display2.html & display2ban6.html
+// draft-fx.js — animasi pick hero (Task 1), dipakai display.html, displayban6.html, display2.html, display2ban6.html & displayssc.html
 //
 // Urutan per pick (timing mengikuti video referensi):
 //   1. Splash hero penuh bergeser masuk menutupi 5 box tim (biru dari kiri, merah dari kanan — ref. "Revisi Splash Tool"):
