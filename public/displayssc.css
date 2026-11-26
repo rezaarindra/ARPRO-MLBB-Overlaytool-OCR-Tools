@@ -2,58 +2,75 @@
    Posisi slot diukur dari bingkai putih di gambar latar; isi slot ditaruh tepat di dalam bingkai. */
 
 html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
-.ds-root { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: var(--ssc-font-title); }
-.ds-bg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; animation: dsBgIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ds-root { position: relative; width: 1920px; height: 1080px; overflow: hidden; isolation: isolate; transform-origin: 0 0; font-family: var(--ssc-font-title); }
+.ds-bg { position: absolute; left: 0; top: 0; z-index: 2; width: 1920px; height: 1080px; pointer-events: none; animation: dsBgIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+/* semua teks & logo di atas latar */
+.ds-logo, .ds-score, .ds-vs, .ds-timer, .ds-phase, .ds-teamplate { z-index: 3; }
 .hide { display: none; }
 .audiob { position: absolute; left: 0; top: 0; opacity: 0; }
 
-/* ---------- Slot ban & pick ---------- */
-.ds-bans, .ds-picks { position: absolute; display: flex; }
-.ds-bans { top: 726px; gap: 9px; }
-.ds-bans.blue { left: 41px; }
-.ds-bans.red { left: 1482px; }
-.ds-picks { top: 811px; gap: 7px; }
-.ds-picks.blue { left: 12px; }
-.ds-picks.red { left: 1193px; }
+/* ---------- Slot ban & pick ----------
+   Bagian dalam bingkai di bg.png transparan dan latar berada DI ATAS slot: garis bingkai (agak miring, gaya gambar tangan)
+   memotong gambar hero dengan rapi. Slot dibuat 5 px lebih besar dari bagian dalam bingkai agar tidak ada celah. */
+.ds-bans, .ds-picks { position: absolute; left: 0; top: 0; z-index: 1; }
 .banhero, .heropick {
-    position: relative;
+    position: absolute;
     overflow: hidden;
     background: #fff;
-    animation: dsSlotIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    animation-delay: calc(0.45s + var(--i) * 70ms);
+    animation: dsSlotIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(0.75s + var(--i) * 60ms);
 }
-.banhero { width: 74px; height: 73px; }
-.heropick { width: 139px; height: 219px; animation-delay: calc(0.6s + var(--i) * 70ms); }
+.banhero { top: 722px; width: 82px; height: 81px; }
+.heropick { top: 807px; width: 147px; height: 227px; animation-delay: calc(0.85s + var(--i) * 60ms); }
+.ds-bans.blue .banhero:nth-child(1) { left: 37px; }
+.ds-bans.blue .banhero:nth-child(2) { left: 117px; }
+.ds-bans.blue .banhero:nth-child(3) { left: 198px; }
+.ds-bans.blue .banhero:nth-child(4) { left: 279px; }
+.ds-bans.blue .banhero:nth-child(5) { left: 360px; }
+.ds-bans.red .banhero:nth-child(1) { left: 1478px; }
+.ds-bans.red .banhero:nth-child(2) { left: 1558px; }
+.ds-bans.red .banhero:nth-child(3) { left: 1639px; }
+.ds-bans.red .banhero:nth-child(4) { left: 1720px; }
+.ds-bans.red .banhero:nth-child(5) { left: 1801px; }
+.ds-picks.blue .heropick:nth-child(1) { left: 8px; }
+.ds-picks.blue .heropick:nth-child(2) { left: 152px; }
+.ds-picks.blue .heropick:nth-child(3) { left: 296px; }
+.ds-picks.blue .heropick:nth-child(4) { left: 439px; }
+.ds-picks.blue .heropick:nth-child(5) { left: 583px; }
+.ds-picks.red .heropick:nth-child(1) { left: 1189px; }
+.ds-picks.red .heropick:nth-child(2) { left: 1333px; }
+.ds-picks.red .heropick:nth-child(3) { left: 1477px; }
+.ds-picks.red .heropick:nth-child(4) { left: 1620px; }
+.ds-picks.red .heropick:nth-child(5) { left: 1764px; }
 
 .image-box { position: absolute; inset: 0; z-index: 2; }
-.image-box img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; opacity: 0; }
+.image-box img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; opacity: 0; }
 .image-box img:not([src]), .image-box img[src=""] { visibility: hidden; }
 /* pick: splash + stinger dari draft-fx.js menutupi box, gambar cukup muncul halus */
 .heropick .image-box.show img { opacity: 1; transition: opacity 0.25s ease; }
 /* ban: hero jatuh dari besar + kilat putih, lalu abu-abu dengan garis silang merah */
-.banhero .image-box.show img { opacity: 1; filter: grayscale(0.85) brightness(0.8); animation: dsBanIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.banhero .image-box.show img { opacity: 1; filter: grayscale(1) brightness(0.9); animation: dsBanIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .banhero .image-box::after {
     content: '';
     position: absolute;
     inset: 0;
     opacity: 0;
-    background: linear-gradient(45deg, transparent 46%, #e3263b 46% 54%, transparent 54%);
+    background: linear-gradient(45deg, transparent 47.5%, #e3263b 47.5% 52.5%, transparent 52.5%);
     transform: scale(0.2);
 }
 .banhero .image-box.show::after { opacity: 1; transform: scale(1); transition: opacity 0.2s ease 0.35s, transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1) 0.35s; }
 
-/* giliran aktif: kotak berdenyut warna tim (ban = merah) */
+/* giliran aktif: kotak berdenyut warna tim (ban = merah) dengan cincin putih di dalam bingkai */
 .box { position: absolute; inset: 0; z-index: 1; background: transparent; }
-.box.active-ban { background: #e3263b; animation: dsTurn 0.9s ease-in-out infinite alternate; }
-.box.active-pick { animation: dsTurn 0.9s ease-in-out infinite alternate; }
-.banhero:has(.active-ban), .heropick:has(.active-pick) { box-shadow: 0 0 0 3px #fff, 0 0 18px 6px rgba(255, 210, 60, 0.9); z-index: 3; }
+.box.active-ban { background: #e3263b; }
+.box.active-ban, .box.active-pick { box-shadow: inset 0 0 0 9px #fff, inset 0 0 26px 12px rgba(255, 214, 64, 0.95); animation: dsTurn 0.9s ease-in-out infinite alternate; }
 
 /* nickname pemain di bawah kartu pick */
 .playername {
     position: absolute;
     left: 0; right: 0; bottom: 0;
     z-index: 4;
-    padding: 18px 4px 5px;
+    padding: 20px 6px 9px;
     text-align: center;
     font-size: 22px;
     line-height: 1;
@@ -136,10 +153,17 @@ html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
 
 .ds-phase {
     position: absolute;
-    left: 710px; top: 1006px;
-    width: 500px;
-    text-align: center;
+    left: 610px; top: 1006px;
+    width: 700px;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
 }
+/* panah giliran (seperti gif arah template lama): dua segitiga bergerak ke arah tim yang sedang memilih */
+.ds-arrow { display: flex; gap: 5px; visibility: hidden; filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)); }
+.ds-arrow i { width: 30px; height: 46px; background: #0b62e6; clip-path: polygon(100% 0, 0 50%, 100% 100%); animation: dsArrowL 1s ease-in-out infinite; }
+.ds-arrow i:nth-child(2) { animation-delay: 0.18s; }
+.ds-arrow.right { flex-direction: row-reverse; }
+.ds-arrow.right i { background: #e3263b; clip-path: polygon(0 0, 100% 50%, 0 100%); animation-name: dsArrowR; }
+.ds-root[data-turn="left"] .ds-arrow.left, .ds-root[data-turn="right"] .ds-arrow.right { visibility: visible; }
 .ds-phase h2 {
     margin: 0;
     font-family: 'fxnoodle', 'Bangers', sans-serif;
@@ -157,13 +181,17 @@ html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
 @keyframes dsSlotIn { from { transform: translateY(40px) scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes dsPop { from { transform: scale(0.3); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes dsBanIn { 0% { transform: scale(1.8); opacity: 0; filter: brightness(3); } 60% { filter: brightness(1.6); } 100% { transform: none; opacity: 1; filter: grayscale(0.85) brightness(0.8); } }
-@keyframes dsTurn { from { opacity: 0.25; } to { opacity: 0.75; } }
+@keyframes dsTurn { from { opacity: 0.35; } to { opacity: 0.85; } }
+@keyframes dsArrowL { 0% { transform: translateX(10px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateX(-10px); opacity: 0; } }
+@keyframes dsArrowR { 0% { transform: translateX(-10px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateX(10px); opacity: 0; } }
 @keyframes dsLow { from { transform: scale(1); } to { transform: scale(1.15); } }
 @keyframes dsPhase { from { transform: scale(1.6) skewX(-8deg); opacity: 0; letter-spacing: 0.3em; } to { transform: none; opacity: 1; } }
 
 /* ---------- displaysscban6.html: 3 ban per tim ----------
    ban merah memakai 3 bingkai paling kanan; bingkai ban 4–5 di gambar latar ditutup plat nama tim */
-body.ban6 .ds-bans.red { left: 1643px; }
+body.ban6 .ds-bans.red .banhero:nth-child(1) { left: 1639px; }
+body.ban6 .ds-bans.red .banhero:nth-child(2) { left: 1720px; }
+body.ban6 .ds-bans.red .banhero:nth-child(3) { left: 1801px; }
 .ds-teamplate {
     position: absolute;
     top: 719px;

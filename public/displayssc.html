@@ -11,7 +11,7 @@
 <!-- Draft pick & ban (5 ban per tim), desain SPEMMA Student Competition. Browser Source 1920×1080, bagian atas transparan.
      Script sama dengan display2.html (ID elemen sama): displayhero.js, draft-fx.js (splash + stinger pick), displaynicknamelogo.js, laneimg.js -->
 <body>
-<div class="ds-root">
+<div class="ds-root" id="dsRoot">
     <img class="ds-bg" src="Assets/draftssc/bg.png" alt="">
 
     <div class="ds-bans blue">
@@ -161,7 +161,11 @@
     <div class="ds-vs">VS</div>
 
     <div class="ds-timer"><p>00:<span id="timer">0</span></p></div>
-    <div class="ds-phase"><h2 id="phase"></h2></div>
+    <div class="ds-phase">
+        <div class="ds-arrow left"><i></i><i></i></div>
+        <h2 id="phase"></h2>
+        <div class="ds-arrow right"><i></i><i></i></div>
+    </div>
 
     <div class="hide">
         <div id="name-box-1"></div><div id="name-box-8"></div>
@@ -179,10 +183,17 @@
     const t = document.getElementById('timer'), p = document.getElementById('phase'), arrow = document.getElementById('arrow');
     new MutationObserver(() => t.parentElement.classList.toggle('low', (parseInt(t.textContent, 10) || 0) <= 10)).observe(t, { childList: true, characterData: true, subtree: true });
     let last = '';
+    const root = document.getElementById('dsRoot');
     const fill = () => {
-        const m = !p.textContent.trim() && /(banning|picking|adjustment)/i.exec(arrow.getAttribute('src') || '');
+        const src = arrow.getAttribute('src') || '';
+        const m = !p.textContent.trim() && /(banning|picking|adjustment)/i.exec(src);
         if (m) p.textContent = m[1].toUpperCase();
+        // panah giliran mengikuti gif arah yang sama dengan template lama (LeftPicking / RightBanning / Adjustment)
+        root.dataset.turn = /\/left/i.test(src) ? 'left' : /\/right/i.test(src) ? 'right' : '';
     };
+    // pratinjau di browser yang lebih sempit dari 1920 px: diperkecil agar terlihat utuh (OBS / vMix 1920 tidak berubah)
+    const fit = () => { const k = Math.min(1, innerWidth / 1920); root.style.transform = k < 1 ? `scale(${k})` : ''; };
+    addEventListener('resize', fit); fit();
     new MutationObserver(fill).observe(arrow, { attributes: true, attributeFilter: ['src'] });
     new MutationObserver(() => {
         fill();
