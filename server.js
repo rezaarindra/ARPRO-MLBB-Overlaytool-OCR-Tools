@@ -2417,6 +2417,15 @@ function sscMediaSave() {
     }, 500);
 }
 
+function sscImageExt(b) {
+    if (b.length >= 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'webp';
+    if (b.length >= 8 && b.readUInt32BE(0) === 0x89504E47) return 'png';
+    if (b.length >= 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'jpg';
+    if (b.length >= 6 && b.toString('latin1', 0, 3) === 'GIF') return 'gif';
+    if (/<svg[\s>]/i.test(b.toString('utf8', 0, 1024))) return 'svg';
+    return '';
+}
+
 function sscCacheLogo(url, opts = {}) {
     if (!url) return Promise.resolve('');
     const key = `${url}|${opts.maxAge}`;
@@ -2441,9 +2450,10 @@ async function sscCacheLogoRun(url, maxAge) {
             return `/Assets/costum/ssc/${entry.file}`;
         }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const type = response.headers.get('content-type') || '';
-        const ext = type.includes('jpeg') ? 'jpg' : type.includes('webp') ? 'webp' : type.includes('svg') ? 'svg' : type.includes('gif') ? 'gif' : 'png';
         const buffer = Buffer.from(await response.arrayBuffer());
+        // jenis gambar dari isi file (bukan header): WebP/PNG/JPG/GIF/SVG; bukan gambar (mis. halaman error HTML) → pakai salinan lama
+        const ext = sscImageExt(buffer);
+        if (!ext) throw Object.assign(new Error(`bukan gambar (${response.headers.get('content-type') || 'tanpa content-type'})`), { notImage: true });
         const file = `${urlHash}-${crypto.createHash('sha1').update(buffer).digest('hex').slice(0, 10)}.${ext}`;
         if (!fsSync.existsSync(path.join(sscLogoDir, file))) {
             await fs.mkdir(sscLogoDir, { recursive: true });
@@ -2459,7 +2469,7 @@ async function sscCacheLogoRun(url, maxAge) {
         if (have) { entry.checkedAt = Date.now(); return `/Assets/costum/ssc/${entry.file}`; } // pakai salinan terakhir
         // salinan model lama (nama = hash URL saja) masih bisa dipakai saat offline
         try { const old = (await fs.readdir(sscLogoDir)).find(f => f.startsWith(urlHash + '.')); if (old) return `/Assets/costum/ssc/${old}`; } catch (e) {}
-        return url; // tetap pakai URL asli
+        return error.notImage ? '' : url; // website tak terjangkau: tetap pakai URL asli · bukan gambar: tanpa foto
     }
 }
 
