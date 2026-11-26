@@ -1,6 +1,6 @@
 {
-  "enabled": true,
-  "feedUrl": "http://localhost:3000/mock-ssc/feed.php?t=mock",
+  "enabled": false,
+  "feedUrl": "https://www.ssc2027.id/feed.php?t=ISI_TOKEN_DARI_WEBSITE",
   "game": "ML",
   "station": "Ruangan 1",
   "homeSide": "blue",

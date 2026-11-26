@@ -38,9 +38,12 @@ public/database/ocrkey.json
 public/database/lineupstats.json
 public/database/lang.json
 
-# salinan foto & logo dari SSC2027.id (dibuat otomatis oleh server)
-public/Assets/costum/ssc/*-*.*
-public/Assets/costum/ssc/index.json
+# salinan foto pemain & logo dari SSC2027.id (dibuat otomatis oleh server) — data pribadi, jangan pernah di-upload.
+# Semua isi folder diabaikan; file lama yang sudah ada di repo (bendera & gambar hero) tetap terlacak.
+public/Assets/costum/ssc/*
+
+# konfigurasi feed SSC berisi link rahasia (?t=TOKEN) — salin dari ssc_config.example.json
+ssc_config.json
 
 # output CSV untuk vMix (ditulis server)
 output/

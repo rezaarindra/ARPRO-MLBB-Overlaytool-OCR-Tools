@@ -250,7 +250,7 @@ Data dari PC lain hanya diterima bila kodenya cocok (10 kode salah dalam 1 menit
 | File | Fungsi |
 |---|---|
 | `github_config.json` | Untuk fitur **Sync Asset dari GitHub**. Salin dari [`github_config.example.json`](github_config.example.json) lalu isi token sendiri. **Jangan pernah commit file ini.** |
-| `ssc_config.json` | Feed lineup eksternal (SSC). |
+| `ssc_config.json` | Feed lineup eksternal (SSC). Dibuat otomatis saat pengaturan SSC Sync disimpan di Hub (contoh: [`ssc_config.example.json`](ssc_config.example.json)). Berisi link rahasia feed, **jangan pernah commit file ini.** |
 | `public/database/*.json` | Data tim, draft, jadwal, tema, dll. Diubah lewat halaman control. |
 
 ## 📁 Struktur Folder
