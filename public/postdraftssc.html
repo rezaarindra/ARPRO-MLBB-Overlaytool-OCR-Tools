@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Draft SSC</title>
+    <link rel="stylesheet" href="ssc-theme.css">
+    <link rel="stylesheet" href="postdraftssc.css">
+</head>
+<!-- Post draft (hasil pick kedua tim), desain SPEMMA Student Competition — pasangan displayssc.html. Browser Source 1920×1080.
+     ID elemen sama dengan postdraft2.html: displayhero.js (gambar hero), displaynicknamelogo.js (nama tim, skor, nickname, logo), laneimg.js (ikon lane) -->
+<body>
+<div class="pd-root" id="pdRoot">
+    <svg class="pd-wedges" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+            <linearGradient id="gB" x1="0" y1="0.5" x2="1" y2="0.5"><stop offset="0" stop-color="#0b62e6"/><stop offset="0.75" stop-color="#1ba0ff"/><stop offset="1" stop-color="#1ba0ff" stop-opacity="0"/></linearGradient>
+            <linearGradient id="gG" x1="0" y1="0.5" x2="1" y2="0.5"><stop offset="0" stop-color="#1ba0ff"/><stop offset="0.75" stop-color="#7ed957"/><stop offset="1" stop-color="#7ed957" stop-opacity="0"/></linearGradient>
+            <linearGradient id="gY" x1="0" y1="0.5" x2="1" y2="0.5"><stop offset="0" stop-color="#7ed957"/><stop offset="0.75" stop-color="#ffe01c"/><stop offset="1" stop-color="#ffe01c" stop-opacity="0"/></linearGradient>
+            <linearGradient id="gR" x1="1" y1="0.5" x2="0" y2="0.5"><stop offset="0" stop-color="#c4121f"/><stop offset="0.75" stop-color="#ff2d2d"/><stop offset="1" stop-color="#ff2d2d" stop-opacity="0"/></linearGradient>
+            <linearGradient id="gO" x1="1" y1="0.5" x2="0" y2="0.5"><stop offset="0" stop-color="#ff2d2d"/><stop offset="0.75" stop-color="#ff8333"/><stop offset="1" stop-color="#ff8333" stop-opacity="0"/></linearGradient>
+            <linearGradient id="gA" x1="1" y1="0.5" x2="0" y2="0.5"><stop offset="0" stop-color="#ff8333"/><stop offset="0.75" stop-color="#ffe01c"/><stop offset="1" stop-color="#ffe01c" stop-opacity="0"/></linearGradient>
+            <linearGradient id="gP" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff2b8a"/><stop offset="1" stop-color="#ffe01c"/></linearGradient>
+        </defs>
+        <g class="pd-w-left">
+            <polygon fill="url(#gY)" points="0,1080 0,930 1060,1040 760,1080"/>
+            <polygon fill="url(#gG)" points="0,1080 0,800 900,960 380,1080"/>
+            <polygon fill="url(#gB)" points="0,1080 0,620 640,1000 250,1080"/>
+        </g>
+        <g class="pd-w-right">
+            <polygon fill="url(#gA)" points="1920,1080 1920,930 860,1040 1160,1080"/>
+            <polygon fill="url(#gO)" points="1920,1080 1920,800 1020,960 1540,1080"/>
+            <polygon fill="url(#gR)" points="1920,1080 1920,620 1280,1000 1670,1080"/>
+        </g>
+        <g class="pd-w-mid">
+            <polygon fill="url(#gP)" points="760,1080 960,975 1160,1080"/>
+            <rect x="770" y="1000" width="380" height="4" rx="2" fill="#0074ff"/>
+        </g>
+    </svg>
+    <img class="pd-emblem" src="Assets/draftssc/emblem.png" alt="">
+
+    <div class="pd-team blue">
+        <div class="pd-logo"><img id="displayImage1" src="Assets/Other/nologo.png" alt=""></div>
+        <div id="name-box-1" class="pd-name"></div>
+    </div>
+    <div class="pd-team red">
+        <div class="pd-logo"><img id="displayImage2" src="Assets/Other/nologo.png" alt=""></div>
+        <div id="name-box-8" class="pd-name"></div>
+    </div>
+    <div class="pd-score">
+        <div class="pd-num blue"><div id="name-box-2"></div></div>
+        <span class="pd-vs">VS</span>
+        <div class="pd-num red"><div id="name-box-9"></div></div>
+    </div>
+
+    <div class="pd-picks blue">
+        <div class="pd-card blue" style="--i:0">
+            <div id="image-box-1" class="image-box"><img id="image-display-1" src="" alt=""></div>
+            <img id="player-lane-1-blue" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-1"></b><div id="name-box-3" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-3"></div></div>
+        </div>
+        <div class="pd-card blue" style="--i:1">
+            <div id="image-box-2" class="image-box"><img id="image-display-2" src="" alt=""></div>
+            <img id="player-lane-2-blue" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-2"></b><div id="name-box-4" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-4"></div></div>
+        </div>
+        <div class="pd-card blue" style="--i:2">
+            <div id="image-box-3" class="image-box"><img id="image-display-3" src="" alt=""></div>
+            <img id="player-lane-3-blue" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-3"></b><div id="name-box-5" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-5"></div></div>
+        </div>
+        <div class="pd-card blue" style="--i:3">
+            <div id="image-box-4" class="image-box"><img id="image-display-4" src="" alt=""></div>
+            <img id="player-lane-4-blue" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-4"></b><div id="name-box-6" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-6"></div></div>
+        </div>
+        <div class="pd-card blue" style="--i:4">
+            <div id="image-box-5" class="image-box"><img id="image-display-5" src="" alt=""></div>
+            <img id="player-lane-5-blue" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-5"></b><div id="name-box-7" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-7"></div></div>
+        </div>
+    </div>
+    <div class="pd-picks red">
+        <div class="pd-card red" style="--i:4">
+            <div id="image-box-10" class="image-box"><img id="image-display-10" src="" alt=""></div>
+            <img id="player-lane-5-red" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-10"></b><div id="name-box-14" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-14"></div></div>
+        </div>
+        <div class="pd-card red" style="--i:3">
+            <div id="image-box-9" class="image-box"><img id="image-display-9" src="" alt=""></div>
+            <img id="player-lane-4-red" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-9"></b><div id="name-box-13" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-13"></div></div>
+        </div>
+        <div class="pd-card red" style="--i:2">
+            <div id="image-box-8" class="image-box"><img id="image-display-8" src="" alt=""></div>
+            <img id="player-lane-3-red" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-8"></b><div id="name-box-12" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-12"></div></div>
+        </div>
+        <div class="pd-card red" style="--i:1">
+            <div id="image-box-7" class="image-box"><img id="image-display-7" src="" alt=""></div>
+            <img id="player-lane-2-red" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-7"></b><div id="name-box-11" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-11"></div></div>
+        </div>
+        <div class="pd-card red" style="--i:0">
+            <div id="image-box-6" class="image-box"><img id="image-display-6" src="" alt=""></div>
+            <img id="player-lane-1-red" class="pd-lane" src="Assets/lane/none.png" alt="">
+            <div class="pd-info"><b class="pd-hero" data-for="image-display-6"></b><div id="name-box-10" class="pd-nick"></div></div>
+            <div class="hide"><div class="name-image-box" id="name-image-box-10"></div></div>
+        </div>
+    </div>
+</div>
+
+<audio id="hero-voice" muted></audio>
+
+<script src="script/hero-assets.js"></script>
+<script src="script/i18n.js"></script>
+<script src="script/displaynicknamelogo.js"></script>
+<script src="script/displayhero.js"></script>
+<script src="script/laneimg.js"></script>
+<script>
+// nama hero di bawah gambar (dari herolist lewat hero-assets.js) · pratinjau browser < 1920 px diperkecil (OBS / vMix 1920 tidak berubah)
+(function () {
+    const root = document.getElementById('pdRoot');
+    const fit = () => { const k = Math.min(1, innerWidth / 1920); root.style.transform = k < 1 ? `scale(${k})` : ''; };
+    addEventListener('resize', fit); fit();
+    HeroAssets.load().then(() => document.querySelectorAll('.pd-hero').forEach(b => {
+        const img = document.getElementById(b.dataset.for);
+        const set = () => { const h = HeroAssets.byImg(img.getAttribute('src')); b.textContent = h ? h.name : ''; };
+        new MutationObserver(set).observe(img, { attributes: true, attributeFilter: ['src'] });
+        set();
+    }));
+})();
+</script>
+</body>
+</html>
