@@ -90,6 +90,14 @@ npm install
 
 Jangan tutup jendela server selama siaran berlangsung.
 
+### Mengirim ke PC lain (ZIP)
+
+Klik dua kali **`buat-zip.bat`** → ZIP siap kirim (WA / SSD) muncul di Desktop.
+- **[1] UPDATE**: untuk PC yang sudah terpasang. Data pertandingan (`public/database`, kecuali data hero), `ssc_config.json` dan salinan foto SSC **tidak ikut**, jadi data & pengaturan di PC tujuan tidak berubah.
+- **[2] PASANG BARU**: semua ikut, termasuk link rahasia feed SSC; kirim lewat chat pribadi / SSD.
+
+Di PC tujuan: tutup server, extract, salin isi folder `ARPRO MLBB Overlaytool V5` ke folder aplikasi (Replace), jalankan lagi `ARPROESPORTTOOLS.BAT`. `.git`, bahan development, foto asli & video `_original` tidak pernah ikut.
+
 ## 🖥️ Halaman
 
 Semua halaman bisa dibuka dari **Command Center** (`/hub.html`).
