@@ -45,6 +45,9 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | 📐 | **Statistik Lineup** | Setelah draft: 7 statistik tim (early–mid, late, damage, survivability, control, objective & push, team synergy), **Counter Index** & **Line Up Rating** dari data MLBB Academy. Tampil lewat tombol **TAMPILKAN STATISTIK**. |
 | ✨ | **Battle Spell** | Spell tiap pemain dipilih di Control Panel, tampil di lineup, statistik & postgame. |
 | 🖥️ | **ARPRO OCR Observer** | Aplikasi `.exe` kecil untuk PC observer: OCR dijalankan dari PC lain dan datanya dikirim langsung ke tool (kode pasangan 6 digit). |
+| 🖼️ | **Draft Desain SSC** | `displayssc.html` (5 ban), `displaysscban6.html` (3 ban) & `postdraftssc.html` dari desain SPEMMA Student Competition: bingkai gambar tangan, panah giliran tim, animasi masuk. |
+| 🎞️ | **Animasi Hero** | Video hero (`Assets/Hero_Animation`) menggantikan splash diam saat pick & di banner MVP; potongan loop kecil membuat hero di kotak pick ikut bergerak. Hero tanpa video tetap memakai gambar. |
+| 📦 | **Kirim ke PC Lain** | `buat-zip.bat`: ZIP siap kirim (WA / SSD). Mode UPDATE tidak menimpa data pertandingan & pengaturan SSC di PC tujuan. |
 | 🎨 | **Tema SSC 2027** | Halaman control, lineup & statistik memakai gaya "Poster Arena" SSC 2027 (Bangers + Rubik, ungu–kuning–pink, garis 5 warna), pilihan Terang / Gelap. |
 | 🧩 | **Analisis Komposisi Draft** | Tipe komposisi (teamfight/poke/pick-off/split push), power curve, profil damage, sinergi hero dari arsip turnamen. |
 | 🌐 | **Overlay Dua Bahasa** | Label overlay ID ⇄ EN satu tombol, atau dikunci per Browser Source dengan `?lang=id` / `?lang=en`. |
@@ -61,6 +64,8 @@ Dikembangkan oleh **CV. Arindra Production** × **ARPRO Esport**
 | ![Draft](public/Assets/screenshots/display.html.png) | ![Postdraft](public/Assets/screenshots/postdraft2.html.png) |
 | **Scoreboard OCR** | **OCR Control** |
 | ![Scoreboard OCR](public/Assets/screenshots/scoreboardcostumocr.html.png) | ![OCR Control](public/Assets/screenshots/ocrcontrol.html.png) |
+| **Draft SSC** | **Postdraft SSC** |
+| ![Draft SSC](public/Assets/screenshots/displayssc.html.png) | ![Postdraft SSC](public/Assets/screenshots/postdraftssc.html.png) |
 | **Postgame** | **MVP** |
 | ![Postgame](public/Assets/screenshots/postgame.html.png) | ![MVP](public/Assets/screenshots/mvpdisplay.html.png) |
 
@@ -105,7 +110,7 @@ Semua halaman bisa dibuka dari **Command Center** (`/hub.html`).
 | Jenis | Halaman |
 |---|---|
 | **Control** (operator) | `control.html`, `controlban6.html`, `costumoverlaycontrol.html`, `drawcontrol.html`, `notifcontrol.html`, `postgamecontrol.html`, `schedulecontrol.html`, `ocrcontrol.html` |
-| **Display** (Browser Source / vMix) | `display.html`, `display2.html`, `displayssc.html` (desain SSC, 5 ban), `displaycostum.html` (+ versi `ban6`), `postdraft*.html`, `scoreboard*.html`, `previousdraft.html`, `notifdisplay.html`, `builds.html`, `globalban.html`, `lineupdisplay.html`, `ingamedisplay.html`, `eventdisplay.html` |
+| **Display** (Browser Source / vMix) | `display.html`, `display2.html`, `displayssc.html` (desain SSC, 5 ban), `displaycostum.html` (+ versi `ban6`), `postdraft*.html` (termasuk `postdraftssc.html`), `scoreboard*.html`, `previousdraft.html`, `notifdisplay.html`, `builds.html`, `globalban.html`, `lineupdisplay.html`, `ingamedisplay.html`, `eventdisplay.html` |
 | **Utility** | `postgame.html`, `mvpdisplay.html`, `scheduledisplay.html`, `drawdisplay*.html`, `drawfinal.html` |
 
 Untuk OBS: tambahkan **Browser Source** dengan URL `http://IP-SERVER:3000/<halaman>.html`, ukuran 1920×1080.
