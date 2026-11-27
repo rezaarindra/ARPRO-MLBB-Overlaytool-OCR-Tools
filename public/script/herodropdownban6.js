@@ -266,6 +266,8 @@ async function initializePage() {
         if (input && dropdown) {
             input.addEventListener('input', () => filterDropdown(i));
             input.addEventListener('blur', () => hideDropdown(i));
+            // klik pelan (tombol ditahan >200 ms) jangan sampai list tertutup oleh blur sebelum hero terpilih
+            dropdown.addEventListener('mousedown', e => e.preventDefault());
         }
     }
     
